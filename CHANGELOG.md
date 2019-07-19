@@ -1,3 +1,7 @@
+## [0.2.9] - July 19th, 2019
+  
+* File cleanup and removed .iml references. Use "flutter clean" to clear build files and re-build
+
 ## [0.2.8] - June 24th, 2019
 
 * Android add avatar image - was not working.

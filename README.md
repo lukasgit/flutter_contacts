@@ -12,7 +12,7 @@ To use this plugin, add `contacts_service` as a [dependency in your `pubspec.yam
 For example:  
 ```yaml  
 dependencies:  
-    contacts_service: ^0.2.9
+    contacts_service: ^0.3.0
 ```  
   
 ## Permissions  

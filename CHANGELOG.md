@@ -1,5 +1,9 @@
+## [0.3.0] - August 5th, 2019
+
+* @budo385 closed image streams and cursors on Android
+
 ## [0.2.9] - July 19th, 2019
-  
+
 * File cleanup and removed .iml references. Use "flutter clean" to clear build files and re-build
 
 ## [0.2.8] - June 24th, 2019

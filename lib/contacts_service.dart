@@ -9,33 +9,42 @@ export 'share.dart';
 
 class ContactsService {
   static const MethodChannel _channel =
-  MethodChannel('github.com/clovisnicolas/flutter_contacts');
+      MethodChannel('github.com/clovisnicolas/flutter_contacts');
 
   /// Fetches all contacts, or when specified, the contacts with a name
   /// matching [query]
-  static Future<Iterable<Contact>> getContacts({String query, bool withThumbnails = true, bool photoHighResolution = true}) async {
-    Iterable contacts = await _channel.invokeMethod('getContacts', <String, dynamic> {
+  static Future<Iterable<Contact>> getContacts(
+      {String query,
+      bool withThumbnails = true,
+      bool photoHighResolution = true,
+      bool orderByGivenName = true}) async {
+    Iterable contacts =
+        await _channel.invokeMethod('getContacts', <String, dynamic>{
       'query': query,
       'withThumbnails': withThumbnails,
-      'photoHighResolution': photoHighResolution
+      'photoHighResolution': photoHighResolution,
+      'orderByGivenName': orderByGivenName
     });
     return contacts.map((m) => Contact.fromMap(m));
   }
 
   /// Fetches all contacts, or when specified, the contacts with a name
   /// matching [query]
-  static Future<Iterable<Contact>> getContactsForPhone(String phone, {bool withThumbnails = true, bool photoHighResolution = true}) async {
-    if(phone == null || phone.isEmpty )
-      return Iterable.empty();
+  static Future<Iterable<Contact>> getContactsForPhone(String phone,
+      {bool withThumbnails = true,
+      bool photoHighResolution = true,
+      bool orderByGivenName = true}) async {
+    if (phone == null || phone.isEmpty) return Iterable.empty();
 
-    Iterable contacts = await _channel.invokeMethod('getContactsForPhone', <String, dynamic> {
+    Iterable contacts =
+        await _channel.invokeMethod('getContactsForPhone', <String, dynamic>{
       'phone': phone,
       'withThumbnails': withThumbnails,
-      'photoHighResolution': photoHighResolution
+      'photoHighResolution': photoHighResolution,
+      'orderByGivenName': orderByGivenName
     });
     return contacts.map((m) => Contact.fromMap(m));
   }
-
 
   /// Adds the [contact] to the device contact list
   static Future addContact(Contact contact) =>
@@ -51,34 +60,39 @@ class ContactsService {
 }
 
 class Contact {
-  Contact({
-    this.givenName,
-    this.middleName,
-    this.prefix,
-    this.suffix,
-    this.familyName,
-    this.company,
-    this.jobTitle,
-    this.emails,
-    this.phones,
-    this.postalAddresses,
-    this.avatar,
-    this.note
-  });
+  Contact(
+      {this.givenName,
+      this.middleName,
+      this.prefix,
+      this.suffix,
+      this.familyName,
+      this.company,
+      this.jobTitle,
+      this.emails,
+      this.phones,
+      this.postalAddresses,
+      this.avatar,
+      this.note});
 
-  String identifier, displayName, givenName, middleName, prefix, suffix, familyName, company, jobTitle, note;
+  String identifier,
+      displayName,
+      givenName,
+      middleName,
+      prefix,
+      suffix,
+      familyName,
+      company,
+      jobTitle,
+      note;
   Iterable<Item> emails = [];
   Iterable<Item> phones = [];
   Iterable<PostalAddress> postalAddresses = [];
   Uint8List avatar;
 
   String initials() {
-    return ((this.givenName?.isNotEmpty == true
-        ? this.givenName[0]
-        : "") +
-        (this.familyName?.isNotEmpty == true
-            ? this.familyName[0]
-            : "")).toUpperCase();
+    return ((this.givenName?.isNotEmpty == true ? this.givenName[0] : "") +
+            (this.familyName?.isNotEmpty == true ? this.familyName[0] : ""))
+        .toUpperCase();
   }
 
   Contact.fromMap(Map m) {
@@ -153,10 +167,10 @@ class Contact {
       postalAddresses: this.postalAddresses == null
           ? other.postalAddresses
           : this
-          .postalAddresses
-          .toSet()
-          .union(other.postalAddresses?.toSet() ?? Set())
-          .toList(),
+              .postalAddresses
+              .toSet()
+              .union(other.postalAddresses?.toSet() ?? Set())
+              .toList(),
       avatar: this.avatar ?? other.avatar);
 
   /// Returns true if all items in this contact are identical.
@@ -198,14 +212,13 @@ class Contact {
 }
 
 class PostalAddress {
-  PostalAddress({
-    this.label,
-    this.street,
-    this.city,
-    this.postcode,
-    this.region,
-    this.country
-  });
+  PostalAddress(
+      {this.label,
+      this.street,
+      this.city,
+      this.postcode,
+      this.region,
+      this.country});
   String label, street, city, postcode, region, country;
 
   PostalAddress.fromMap(Map m) {
@@ -241,13 +254,13 @@ class PostalAddress {
   }
 
   static Map _toMap(PostalAddress address) => {
-    "label": address.label,
-    "street": address.street,
-    "city": address.city,
-    "postcode": address.postcode,
-    "region": address.region,
-    "country": address.country
-  };
+        "label": address.label,
+        "street": address.street,
+        "city": address.city,
+        "postcode": address.postcode,
+        "region": address.region,
+        "country": address.country
+      };
 }
 
 /// Item class used for contact fields which only have a [label] and

@@ -104,7 +104,7 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin {
         
         if (orderByGivenName) {
             contacts = contacts.sorted { (contactA, contactB) -> Bool in
-                contactA.givenName < contactB.givenName
+                contactA.givenName.lowercased() < contactB.givenName.lowercased()
             }
         }
         

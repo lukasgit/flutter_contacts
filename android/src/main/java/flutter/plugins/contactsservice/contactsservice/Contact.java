@@ -91,6 +91,6 @@ public class Contact implements Comparable<Contact> {
 
     @Override
     public int compareTo(Contact contact) {
-        return this.givenName.compareTo(contact.givenName);
+        return this.givenName.toLowerCase().compareTo(contact.givenName.toLowerCase());
     }
 }

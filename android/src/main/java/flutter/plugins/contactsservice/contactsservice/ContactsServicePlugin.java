@@ -26,6 +26,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 
@@ -54,10 +56,10 @@ public class ContactsServicePlugin implements MethodCallHandler {
   public void onMethodCall(MethodCall call, Result result) {
     switch(call.method){
       case "getContacts":
-        this.getContacts((String)call.argument("query"), (boolean)call.argument("withThumbnails"), (boolean)call.argument("photoHighResolution"), result);
+        this.getContacts((String)call.argument("query"), (boolean)call.argument("withThumbnails"), (boolean)call.argument("photoHighResolution"), (boolean)call.argument("orderByGivenName"), result);
         break;
       case "getContactsForPhone":
-        this.getContactsForPhone((String)call.argument("phone"), (boolean)call.argument("withThumbnails"), (boolean)call.argument("photoHighResolution"), result);
+        this.getContactsForPhone((String)call.argument("phone"), (boolean)call.argument("withThumbnails"), (boolean)call.argument("photoHighResolution"), (boolean)call.argument("orderByGivenName"), result);
         break;
       case "addContact":
         Contact c = Contact.fromMap((HashMap)call.arguments);
@@ -124,12 +126,12 @@ public class ContactsServicePlugin implements MethodCallHandler {
 
 
   @TargetApi(Build.VERSION_CODES.ECLAIR)
-  private void getContacts(String query, boolean withThumbnails, boolean photoHighResolution, Result result) {
-    new GetContactsTask(result, withThumbnails, photoHighResolution).execute(query, false);
+  private void getContacts(String query, boolean withThumbnails, boolean photoHighResolution, boolean orderByGivenName, Result result) {
+    new GetContactsTask(result, withThumbnails, photoHighResolution, orderByGivenName).execute(query, false);
   }
 
-  private void getContactsForPhone(String phone, boolean withThumbnails, boolean photoHighResolution, Result result) {
-    new GetContactsTask(result, withThumbnails, photoHighResolution).execute(phone, true);
+  private void getContactsForPhone(String phone, boolean withThumbnails, boolean photoHighResolution, boolean orderByGivenName, Result result) {
+    new GetContactsTask(result, withThumbnails, photoHighResolution, orderByGivenName).execute(phone, true);
   }
 
   @TargetApi(Build.VERSION_CODES.CUPCAKE)
@@ -138,11 +140,13 @@ public class ContactsServicePlugin implements MethodCallHandler {
     private Result getContactResult;
     private boolean withThumbnails;
     private boolean photoHighResolution;
+    private boolean orderByGivenName;
 
-    public GetContactsTask(Result result, boolean withThumbnails, boolean photoHighResolution){
+    public GetContactsTask(Result result, boolean withThumbnails, boolean photoHighResolution, boolean orderByGivenName){
       this.getContactResult = result;
       this.withThumbnails = withThumbnails;
       this.photoHighResolution = photoHighResolution;
+      this.orderByGivenName = orderByGivenName;
     }
 
     @TargetApi(Build.VERSION_CODES.ECLAIR)
@@ -162,6 +166,18 @@ public class ContactsServicePlugin implements MethodCallHandler {
 //              setAvatarDataForContactIfAvailable(c);
         }
       }
+
+      if (orderByGivenName)
+      {
+        Comparator<Contact> compareByGivenName = new Comparator<Contact>() {
+          @Override
+          public int compare(Contact contactA, Contact contactB) {
+            return contactA.compareTo(contactB);
+          }
+        };
+        Collections.sort(contacts,compareByGivenName);
+      }
+
       //Transform the list of contacts to a list of Map
       ArrayList<HashMap> contactMaps = new ArrayList<>();
       for(Contact c : contacts){

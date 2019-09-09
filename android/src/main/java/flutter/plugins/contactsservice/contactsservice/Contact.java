@@ -3,7 +3,7 @@ package flutter.plugins.contactsservice.contactsservice;
 import java.util.ArrayList;
 import java.util.HashMap;
 
-public class Contact {
+public class Contact implements Comparable<Contact> {
 
     Contact(String id) {
         this.identifier = id;
@@ -87,5 +87,10 @@ public class Contact {
             }
         }
         return contact;
+    }
+
+    @Override
+    public int compareTo(Contact contact) {
+        return this.givenName.toLowerCase().compareTo(contact.givenName.toLowerCase());
     }
 }

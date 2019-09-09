@@ -66,7 +66,6 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin {
                     CNContactNameSuffixKey,
                     CNContactPostalAddressesKey,
                     CNContactOrganizationNameKey,
-                    CNContactNoteKey,
                     CNContactJobTitleKey] as [Any]
         
         if(withThumbnails){
@@ -184,7 +183,6 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin {
                     CNContactNameSuffixKey,
                     CNContactPostalAddressesKey,
                     CNContactOrganizationNameKey,
-                    CNContactNoteKey,
                     CNContactImageDataKey,
                     CNContactJobTitleKey] as [Any]
         do {
@@ -200,7 +198,6 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin {
                 contact.nameSuffix = dictionary["suffix"] as? String ?? ""
                 contact.organizationName = dictionary["company"] as? String ?? ""
                 contact.jobTitle = dictionary["jobTitle"] as? String ?? ""
-                contact.note = dictionary["note"] as? String ?? ""
                 contact.imageData = (dictionary["avatar"] as? FlutterStandardTypedData)?.data
 
                 //Phone numbers
@@ -262,7 +259,6 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin {
         contact.nameSuffix = dictionary["suffix"] as? String ?? ""
         contact.organizationName = dictionary["company"] as? String ?? ""
         contact.jobTitle = dictionary["jobTitle"] as? String ?? ""
-        contact.note = dictionary["note"] as? String ?? ""
         if let avatarData = (dictionary["avatar"] as? FlutterStandardTypedData)?.data {
             contact.imageData = avatarData
         }
@@ -313,7 +309,6 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin {
         result["suffix"] = contact.nameSuffix
         result["company"] = contact.organizationName
         result["jobTitle"] = contact.jobTitle
-        result["note"] = contact.note
         if contact.isKeyAvailable(CNContactThumbnailImageDataKey) {
             if let avatarData = contact.thumbnailImageData {
                 result["avatar"] = FlutterStandardTypedData(bytes: avatarData)

@@ -71,8 +71,7 @@ class Contact {
       this.emails,
       this.phones,
       this.postalAddresses,
-      this.avatar,
-      this.note});
+      this.avatar});
 
   String identifier,
       displayName,
@@ -82,8 +81,7 @@ class Contact {
       suffix,
       familyName,
       company,
-      jobTitle,
-      note;
+      jobTitle;
   Iterable<Item> emails = [];
   Iterable<Item> phones = [];
   Iterable<PostalAddress> postalAddresses = [];
@@ -110,7 +108,6 @@ class Contact {
     postalAddresses = (m["postalAddresses"] as Iterable)
         ?.map((m) => PostalAddress.fromMap(m));
     avatar = m["avatar"];
-    note = m["note"];
   }
 
   static Map _toMap(Contact contact) {
@@ -139,8 +136,7 @@ class Contact {
       "emails": emails,
       "phones": phones,
       "postalAddresses": postalAddresses,
-      "avatar": contact.avatar,
-      "note": contact.note
+      "avatar": contact.avatar
     };
   }
 
@@ -157,7 +153,6 @@ class Contact {
       familyName: this.familyName ?? other.familyName,
       company: this.company ?? other.company,
       jobTitle: this.jobTitle ?? other.jobTitle,
-      note: this.note ?? other.note,
       emails: this.emails == null
           ? other.emails
           : this.emails.toSet().union(other.emails?.toSet() ?? Set()).toList(),
@@ -185,7 +180,6 @@ class Contact {
         this.identifier == other.identifier &&
         this.jobTitle == other.jobTitle &&
         this.middleName == other.middleName &&
-        this.note == other.note &&
         this.prefix == other.prefix &&
         this.suffix == other.suffix &&
         DeepCollectionEquality.unordered().equals(this.phones, other.phones) &&
@@ -204,7 +198,6 @@ class Contact {
       this.identifier,
       this.jobTitle,
       this.middleName,
-      this.note,
       this.prefix,
       this.suffix
     ].where((s) => s != null));

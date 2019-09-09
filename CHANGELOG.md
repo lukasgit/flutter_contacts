@@ -1,6 +1,12 @@
+## [0.3.1] - September 8, 2019
+
+* Added order by given name, now contacts come sorted from the device (@Tryneeth)
+* Return contacts that start with query instead of contains (@dakaugu)
+* Removed notes field due to iOS 13 blocking access (@imvm)
+
 ## [0.3.0] - August 5th, 2019
 
-* @budo385 closed image streams and cursors on Android
+* Closed image streams and cursors on Android (@budo385)
 
 ## [0.2.9] - July 19th, 2019
 

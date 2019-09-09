@@ -203,7 +203,7 @@ public class ContactsServicePlugin implements MethodCallHandler {
             StructuredPostal.CONTENT_ITEM_TYPE,
     };
     if(query != null){
-      selectionArgs = new String[]{"%" + query + "%"};
+      selectionArgs = new String[]{query + "%"};
       selection = ContactsContract.Contacts.DISPLAY_NAME_PRIMARY + " LIKE ?";
     }
     return contentResolver.query(ContactsContract.Data.CONTENT_URI, PROJECTION, selection, selectionArgs, null);

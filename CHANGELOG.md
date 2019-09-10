@@ -1,3 +1,9 @@
+## [0.3.2] - September 10, 2019
+  
+* Fixed swift_version error (@adithyaxx)
+* Removed executable file attributes (@creativepsyco)
+* Removed references to notes field removed in v0.3.1 (@lukasgit)
+
 ## [0.3.1] - September 8, 2019
 
 * Added order by given name, now contacts come sorted from the device (@Tryneeth)

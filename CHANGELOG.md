@@ -1,3 +1,7 @@
+## [0.3.3] - September 12, 2019
+  
+* Example app, removed references to notes field removed in v0.3.1 (@lukasgit)
+
 ## [0.3.2] - September 10, 2019
   
 * Fixed swift_version error (@adithyaxx)

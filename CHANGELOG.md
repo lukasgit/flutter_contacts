@@ -1,3 +1,7 @@
+## [0.3.4] - September 21, 2019
+  
+* Fix Contact.java comparison to guard NPEs (@creativepsyco)
+
 ## [0.3.3] - September 12, 2019
   
 * Example app, removed references to notes field removed in v0.3.1 (@lukasgit)

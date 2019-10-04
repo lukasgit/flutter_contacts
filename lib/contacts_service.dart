@@ -254,19 +254,6 @@ class PostalAddress {
         "region": address.region,
         "country": address.country
       };
-  
-  @override
-  int get hashCode => label.hashCode^street.hashCode^city.hashCode^postcode.hashCode^region.hashCode^country.hashCode;
-
-  @override
-  bool operator ==(other) =>
-    other is PostalAddress &&
-    other.label == label
-    && other.street == street
-    && other.city == city
-    && other.postcode == postcode
-    && other.region == region
-    && other.country == country;
 
   @override
   String toString() {

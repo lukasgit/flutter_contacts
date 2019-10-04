@@ -254,6 +254,56 @@ class PostalAddress {
         "region": address.region,
         "country": address.country
       };
+  
+  @override
+  int get hashCode => label.hashCode^street.hashCode^city.hashCode^postcode.hashCode^region.hashCode^country.hashCode;
+
+  @override
+  bool operator ==(other) =>
+    other is PostalAddress &&
+    other.label == label
+    && other.street == street
+    && other.city == city
+    && other.postcode == postcode
+    && other.region == region
+    && other.country == country;
+
+  @override
+  String toString() {
+    String finalString = "";
+    if (this.street != null) {
+      finalString += this.street;
+    }
+    if (this.city != null) {
+      if (finalString.isNotEmpty) {
+        finalString += ", " + this.city;
+      } else {
+        finalString += this.city;
+      }
+    }
+    if (this.region != null) {
+      if (finalString.isNotEmpty) {
+        finalString += ", " + this.region;
+      } else {
+        finalString += this.region;
+      }
+    }
+    if (this.postcode != null) {
+      if (finalString.isNotEmpty) {
+        finalString += " " + this.postcode;
+      } else {
+        finalString += this.postcode;
+      }
+    }
+    if (this.country != null) {
+      if (finalString.isNotEmpty) {
+        finalString += ", " + this.country;
+      } else {
+        finalString += this.country;
+      }
+    }
+    return finalString;
+  }
 }
 
 /// Item class used for contact fields which only have a [label] and

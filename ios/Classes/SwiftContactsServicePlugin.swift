@@ -12,6 +12,8 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin {
     
     public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
         switch call.method {
+        case "getGroups":
+            result(getGroups())
         case "getContacts":
             let arguments = call.arguments as! [String:Any]
             result(getContacts(query: (arguments["query"] as? String), withThumbnails: arguments["withThumbnails"] as! Bool,
@@ -49,6 +51,25 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin {
         }
     }
 
+    func getGroups() -> [[String:Any]] {
+        let store = CNContactStore()
+        var groups : [CNGroup] = []
+        var result = [[String:Any]]()
+        do{
+             try groups = store.groups(matching:nil)
+         }
+        catch let error as NSError {
+            print(error.localizedDescription)
+            return result
+        }
+
+
+        for group : CNGroup in groups {
+            result.append(groupToDictionary(group: group))
+        }
+        return result
+    }
+    
     func getContacts(query : String?, withThumbnails: Bool, photoHighResolution: Bool, phoneQuery: Bool, orderByGivenName: Bool) -> [[String:Any]]{
         
         var contacts : [CNContact] = []
@@ -375,6 +396,14 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin {
         case "iPhone": return CNLabelPhoneNumberiPhone
         default: return labelValue
         }
+    }
+    
+    func groupToDictionary(group: CNGroup) -> [String:Any]{
+
+        var result = [String:Any]()
+        result["identifier"] = group.identifier
+        result["name"] = group.name
+        return result
     }
 
 }

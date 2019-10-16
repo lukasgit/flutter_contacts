@@ -28,6 +28,13 @@ class ContactsService {
     return contacts.map((m) => Contact.fromMap(m));
   }
 
+  static Future<Iterable<Group>> getGroups() async {
+    Iterable groups =
+    await _channel.invokeMethod('getGroups', <String, dynamic>{
+    });
+    return groups.map((m) => Group.fromMap(m));
+  }
+
   /// Fetches all contacts, or when specified, the contacts with a name
   /// matching [query]
   static Future<Iterable<Contact>> getContactsForPhone(String phone,
@@ -59,6 +66,28 @@ class ContactsService {
       _channel.invokeMethod('updateContact', Contact._toMap(contact));
 }
 
+class Group {
+  Group({this.name});
+
+  String identifier,
+      name;
+  Group.fromMap(Map m) {
+    identifier = m["identifier"];
+    name = m["name"];
+  }
+
+  Map toMap() {
+    return Group._toMap(this);
+  }
+
+  static Map _toMap(Group group) {
+    return {
+      'identifier': group.identifier,
+      'name': group.name
+    };
+  }
+
+}
 class Contact {
   Contact(
       {this.givenName,

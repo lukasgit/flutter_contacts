@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:contacts_service/contacts_service.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -20,6 +22,12 @@ void main() {
           ]
         },
       ];
+    } else if (methodCall.method == 'getAvatarForContacts') {
+      return [
+        Uint8List.fromList([0, 1, 2, 3]),
+        null /* no avatar for contact */,
+        Uint8List.fromList([4, 5, 6, 7]),
+      ];
     }
     return null;
   });
@@ -35,6 +43,39 @@ void main() {
     expect(contacts.toList()[0].givenName, 'givenName1');
     expect(contacts.toList()[1].postalAddresses.toList()[0].label, 'label');
     expect(contacts.toList()[1].emails.toList()[0].label, 'label');
+  });
+
+  test('should get avatar for contact identifiers', () async {
+    final avatars = await ContactsService.getAvatarForContacts([
+      'first',
+      'second',
+      'third',
+    ]);
+
+    expect(log, <Matcher>[
+      isMethodCall('getAvatarForContacts', arguments: <String, dynamic>{
+        'identifiers': ['first', 'second', 'third'],
+        'photoHighResolution': true,
+      })
+    ]);
+
+    expect(avatars, [
+      Uint8List.fromList([0, 1, 2, 3]),
+      null,
+      Uint8List.fromList([4, 5, 6, 7]),
+    ]);
+  });
+
+  test('should get low-res avatar for contact identifiers', () async {
+    await ContactsService.getAvatarForContacts(
+        ['first', 'second', 'third'], photoHighRes: false);
+
+    expect(log, <Matcher>[
+      isMethodCall('getAvatarForContacts', arguments: <String, dynamic>{
+        'identifiers': ['first', 'second', 'third'],
+        'photoHighResolution': false,
+      })
+    ]);
   });
 
   test('should add contact', () async {

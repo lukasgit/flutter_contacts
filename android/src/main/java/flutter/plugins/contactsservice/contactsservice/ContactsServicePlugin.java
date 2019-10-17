@@ -33,6 +33,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 
 @TargetApi(Build.VERSION_CODES.ECLAIR)
 public class ContactsServicePlugin implements MethodCallHandler {
@@ -56,6 +57,9 @@ public class ContactsServicePlugin implements MethodCallHandler {
         break;
       case "getContactsForPhone":
         this.getContactsForPhone((String)call.argument("phone"), (boolean)call.argument("withThumbnails"), (boolean)call.argument("photoHighResolution"), (boolean)call.argument("orderByGivenName"), result);
+        break;
+      case "getAvatarForContacts":
+        this.getAvatarForContacts((List<String>)call.argument("identifiers"), (boolean)call.argument("photoHighResolution"), result);
         break;
       case "addContact":
         Contact c = Contact.fromMap((HashMap)call.arguments);
@@ -155,9 +159,16 @@ public class ContactsServicePlugin implements MethodCallHandler {
 
       if (withThumbnails) {
         for(Contact c : contacts){
-          loadContactPhotoHighRes(c, photoHighResolution);
+          final byte[] avatar = loadContactPhotoHighRes(
+              c.identifier, photoHighResolution, contentResolver);
+          if (avatar != null) {
+            c.avatar = avatar;
+          } else {
+            // To stay backwards-compatible, return an empty byte array rather than `null`.
+            c.avatar = new byte[0];
+          }
 //          if ((Boolean) params[3])
-//              loadContactPhotoHighRes(c, (Boolean) params[3]);
+//              loadContactPhotoHighRes(c.identifier, (Boolean) params[3]);
 //          else
 //              setAvatarDataForContactIfAvailable(c);
         }
@@ -308,26 +319,62 @@ public class ContactsServicePlugin implements MethodCallHandler {
     }
   }
 
-  private void loadContactPhotoHighRes(Contact contact, boolean photoHighResolution) {
-      try {
-          Uri uri = ContentUris.withAppendedId(ContactsContract.Contacts.CONTENT_URI, Long.parseLong(contact.identifier));
-          InputStream input = ContactsContract.Contacts.openContactPhotoInputStream(contentResolver, uri, photoHighResolution);
+  private void getAvatarForContacts(final List<String> identifiers, final boolean highRes,
+      final Result result) {
+    new GetAvatarsTask(identifiers, highRes, contentResolver, result).execute();
+  }
 
-          if (input == null){
-              contact.avatar = new byte[0];
-              return;
-          }
+  private static class GetAvatarsTask extends AsyncTask<Void, Void, List<byte[]>> {
+    final List<String> identifiers;
+    final boolean highRes;
+    final ContentResolver contentResolver;
+    final Result result;
 
-          Bitmap bitmap = BitmapFactory.decodeStream(input);
-          input.close();
-          ByteArrayOutputStream stream = new ByteArrayOutputStream();
-          bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream);
-          contact.avatar = stream.toByteArray();
-          stream.close();
+    GetAvatarsTask(final List<String> identifiers, final boolean highRes,
+        final ContentResolver contentResolver, final Result result) {
+      this.identifiers = identifiers;
+      this.highRes = highRes;
+      this.contentResolver = contentResolver;
+      this.result = result;
+    }
 
-      } catch (IOException e){
-          e.printStackTrace();
+    @Override
+    protected List<byte[]> doInBackground(final Void... params) {
+      // Load avatar for each contact identifier.
+      final List<byte[]> avatars = new ArrayList<>();
+      for (final String identifier : identifiers) {
+        avatars.add(loadContactPhotoHighRes(identifier, highRes, contentResolver));
       }
+
+      return avatars;
+    }
+
+    @Override
+    protected void onPostExecute(final List<byte[]> avatars) {
+      result.success(avatars);
+    }
+  }
+
+  private static byte[] loadContactPhotoHighRes(final String identifier,
+      final boolean photoHighResolution, final ContentResolver contentResolver) {
+    try {
+      Uri uri = ContentUris.withAppendedId(ContactsContract.Contacts.CONTENT_URI, Long.parseLong(identifier));
+      InputStream input = ContactsContract.Contacts.openContactPhotoInputStream(contentResolver, uri, photoHighResolution);
+
+      if (input == null) return null;
+
+      Bitmap bitmap = BitmapFactory.decodeStream(input);
+      input.close();
+
+      ByteArrayOutputStream stream = new ByteArrayOutputStream();
+      bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream);
+      final byte[] bytes = stream.toByteArray();
+      stream.close();
+      return bytes;
+    } catch (IOException e){
+      e.printStackTrace();
+      return null;
+    }
   }
 
   private boolean addContact(Contact contact){

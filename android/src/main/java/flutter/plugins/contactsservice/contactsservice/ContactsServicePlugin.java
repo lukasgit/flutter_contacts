@@ -20,6 +20,7 @@ import android.os.Build;
 import android.provider.BaseColumns;
 import android.provider.ContactsContract;
 import android.text.TextUtils;
+import io.flutter.Log;
 import io.flutter.plugin.common.MethodCall;
 import io.flutter.plugin.common.MethodChannel;
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler;
@@ -42,6 +43,7 @@ public class ContactsServicePlugin implements MethodCallHandler {
     this.contentResolver = contentResolver;
   }
 
+  private static final String LOG_TAG = "flutter_contacts";
   private final ContentResolver contentResolver;
 
   public static void registerWith(Registrar registrar) {
@@ -58,8 +60,8 @@ public class ContactsServicePlugin implements MethodCallHandler {
       case "getContactsForPhone":
         this.getContactsForPhone((String)call.argument("phone"), (boolean)call.argument("withThumbnails"), (boolean)call.argument("photoHighResolution"), (boolean)call.argument("orderByGivenName"), result);
         break;
-      case "getAvatarForContacts":
-        this.getAvatarForContacts((List<String>)call.argument("identifiers"), (boolean)call.argument("photoHighResolution"), result);
+      case "getAvatars":
+        this.getAvatars((List<String>)call.argument("identifiers"), (boolean)call.argument("photoHighResolution"), result);
         break;
       case "addContact":
         Contact c = Contact.fromMap((HashMap)call.arguments);
@@ -319,7 +321,7 @@ public class ContactsServicePlugin implements MethodCallHandler {
     }
   }
 
-  private void getAvatarForContacts(final List<String> identifiers, final boolean highRes,
+  private void getAvatars(final List<String> identifiers, final boolean highRes,
       final Result result) {
     new GetAvatarsTask(identifiers, highRes, contentResolver, result).execute();
   }
@@ -358,21 +360,21 @@ public class ContactsServicePlugin implements MethodCallHandler {
   private static byte[] loadContactPhotoHighRes(final String identifier,
       final boolean photoHighResolution, final ContentResolver contentResolver) {
     try {
-      Uri uri = ContentUris.withAppendedId(ContactsContract.Contacts.CONTENT_URI, Long.parseLong(identifier));
-      InputStream input = ContactsContract.Contacts.openContactPhotoInputStream(contentResolver, uri, photoHighResolution);
+      final Uri uri = ContentUris.withAppendedId(ContactsContract.Contacts.CONTENT_URI, Long.parseLong(identifier));
+      final InputStream input = ContactsContract.Contacts.openContactPhotoInputStream(contentResolver, uri, photoHighResolution);
 
       if (input == null) return null;
 
-      Bitmap bitmap = BitmapFactory.decodeStream(input);
+      final Bitmap bitmap = BitmapFactory.decodeStream(input);
       input.close();
 
-      ByteArrayOutputStream stream = new ByteArrayOutputStream();
+      final ByteArrayOutputStream stream = new ByteArrayOutputStream();
       bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream);
       final byte[] bytes = stream.toByteArray();
       stream.close();
       return bytes;
-    } catch (IOException e){
-      e.printStackTrace();
+    } catch (final IOException ex){
+      Log.e(LOG_TAG, ex.getMessage());
       return null;
     }
   }

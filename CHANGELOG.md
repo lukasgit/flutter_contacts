@@ -1,3 +1,8 @@
+## [0.3.5] - October 17, 2019
+
+* Added `getAvatars()` API to lazily retrieve contact avatars.
+  * Only implemented for Android.
+
 ## [0.3.4] - September 21, 2019
   
 * Fix Contact.java comparison to guard NPEs (@creativepsyco)

@@ -17,7 +17,8 @@ void main() {
           ],
           'emails': [
             {'label': 'label'}
-          ]
+          ],
+          'birthday': '1994-02-01'
         },
       ];
     }
@@ -29,12 +30,13 @@ void main() {
   });
 
   test('should get contacts', () async {
-    final Iterable contacts = await ContactsService.getContacts();
+    final contacts = await ContactsService.getContacts();
     expect(contacts.length, 2);
     expect(contacts, everyElement(isInstanceOf<Contact>()));
     expect(contacts.toList()[0].givenName, 'givenName1');
     expect(contacts.toList()[1].postalAddresses.toList()[0].label, 'label');
     expect(contacts.toList()[1].emails.toList()[0].label, 'label');
+    expect(contacts.toList()[1].birthday, DateTime(1994, 2, 1));
   });
 
   test('should add contact', () async {
@@ -156,7 +158,8 @@ void main() {
       "emails": [],
       "phones": [],
       "postalAddresses": [],
-      "avatar": null
+      "avatar": null,
+      "birthday": null
     });
   });
 }
@@ -191,7 +194,8 @@ void expectMethodCall(List<MethodCall> log, String methodName) {
             'country': null
           }
         ],
-        'avatar': null
+        'avatar': null,
+        'birthday': null
       },
     ),
   ]);

@@ -48,8 +48,8 @@ Iterable<Contact> contacts = await ContactsService.getContacts();
 // Get all contacts without thumbnail (faster)
 Iterable<Contact> contacts = await ContactsService.getContacts(withThumbnails: false);
 
-// Get thumbnails for avatars afterwards (only necessary if `withThumbnails: false` is used)
-Iterable<Uint8List> avatars = await ContactsService.getAvatars(contacts.map((c) => c.identifier));
+// Get thumbnail for an avatar afterwards (only necessary if `withThumbnails: false` is used)
+Uint8List avatar = await ContactsService.getAvatar(contact);
   
 // Get contacts matching a string
 Iterable<Contact> johns = await ContactsService.getContacts(query : "john");

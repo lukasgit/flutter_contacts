@@ -46,6 +46,16 @@ class ContactsService {
     return contacts.map((m) => Contact.fromMap(m));
   }
 
+  /// Loads the avatar for the given contact and returns it. If the user does
+  /// not have an avatar, then `null` is returned in that slot. Only implemented
+  /// on Android.
+  static Future<Uint8List> getAvatar(
+      final Contact contact, {final bool photoHighRes = true}) =>
+      _channel.invokeMethod('getAvatar', <String, dynamic>{
+        'contact': Contact._toMap(contact),
+        'photoHighResolution': photoHighRes,
+      });
+
   /// Adds the [contact] to the device contact list
   static Future addContact(Contact contact) =>
       _channel.invokeMethod('addContact', Contact._toMap(contact));

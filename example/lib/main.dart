@@ -25,7 +25,7 @@ class ContactListPage extends StatefulWidget {
 }
 
 class _ContactListPageState extends State<ContactListPage> {
-  Iterable<Contact> _contacts;
+  List<Contact> _contacts;
 
   @override
   initState() {
@@ -36,11 +36,22 @@ class _ContactListPageState extends State<ContactListPage> {
   refreshContacts() async {
     PermissionStatus permissionStatus = await _getContactPermission();
     if (permissionStatus == PermissionStatus.granted) {
-      var contacts = await ContactsService.getContacts();
-//      var contacts = await ContactsService.getContactsForPhone("8554964652");
+      // Load without thumbnails initially.
+      var contacts = (await ContactsService.getContacts(withThumbnails: false))
+          .toList();
+//      var contacts = (await ContactsService.getContactsForPhone("8554964652"))
+//          .toList();
       setState(() {
         _contacts = contacts;
       });
+
+      // Lazy load thumbnails after rendering initial contacts.
+      for (final contact in contacts) {
+        ContactsService.getAvatar(contact).then((avatar) {
+          if (avatar == null) return; // Don't redraw if no change.
+          setState(() => contact.avatar = avatar);
+        });
+      }
     } else {
       _handleInvalidPermissions(permissionStatus);
     }

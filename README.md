@@ -45,8 +45,11 @@ import 'package:contacts_service/contacts_service.dart';
 // Get all contacts on device
 Iterable<Contact> contacts = await ContactsService.getContacts();  
 
-// Get all contacts without thumbnail(faster)
+// Get all contacts without thumbnail (faster)
 Iterable<Contact> contacts = await ContactsService.getContacts(withThumbnails: false);
+
+// Get thumbnail for an avatar afterwards (only necessary if `withThumbnails: false` is used)
+Uint8List avatar = await ContactsService.getAvatar(contact);
   
 // Get contacts matching a string
 Iterable<Contact> johns = await ContactsService.getContacts(query : "john");

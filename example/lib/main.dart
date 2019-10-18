@@ -46,13 +46,12 @@ class _ContactListPageState extends State<ContactListPage> {
       });
 
       // Lazy load thumbnails after rendering initial contacts.
-      final avatars = (await ContactsService.getAvatars(
-          contacts.map((c) => c.identifier))).toList();
-      setState(() {
-        for (var i = 0; i < contacts.length; ++i) {
-          contacts[i].avatar = avatars[i];
-        }
-      });
+      for (final contact in contacts) {
+        ContactsService.getAvatar(contact).then((avatar) {
+          if (avatar == null) return; // Don't redraw if no change.
+          setState(() => contact.avatar = avatar);
+        });
+      }
     } else {
       _handleInvalidPermissions(permissionStatus);
     }

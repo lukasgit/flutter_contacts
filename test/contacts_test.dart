@@ -22,12 +22,8 @@ void main() {
           ]
         },
       ];
-    } else if (methodCall.method == 'getAvatars') {
-      return [
-        Uint8List.fromList([0, 1, 2, 3]),
-        null /* no avatar for contact */,
-        Uint8List.fromList([4, 5, 6, 7]),
-      ];
+    } else if (methodCall.method == 'getAvatar') {
+      return Uint8List.fromList([0, 1, 2, 3]);
     }
     return null;
   });
@@ -46,33 +42,28 @@ void main() {
   });
 
   test('should get avatar for contact identifiers', () async {
-    final avatars = await ContactsService.getAvatars([
-      'first',
-      'second',
-      'third',
-    ]);
+    final contact = Contact(givenName: 'givenName');
+
+    final avatar = await ContactsService.getAvatar(contact);
 
     expect(log, <Matcher>[
-      isMethodCall('getAvatars', arguments: <String, dynamic>{
-        'identifiers': ['first', 'second', 'third'],
+      isMethodCall('getAvatar', arguments: <String, dynamic>{
+        'contact': contact.toMap(),
         'photoHighResolution': true,
       })
     ]);
 
-    expect(avatars, [
-      Uint8List.fromList([0, 1, 2, 3]),
-      null,
-      Uint8List.fromList([4, 5, 6, 7]),
-    ]);
+    expect(avatar, Uint8List.fromList([0, 1, 2, 3]));
   });
 
   test('should get low-res avatar for contact identifiers', () async {
-    await ContactsService.getAvatars(
-        ['first', 'second', 'third'], photoHighRes: false);
+    final contact = Contact(givenName: 'givenName');
+
+    await ContactsService.getAvatar(contact, photoHighRes: false);
 
     expect(log, <Matcher>[
-      isMethodCall('getAvatars', arguments: <String, dynamic>{
-        'identifiers': ['first', 'second', 'third'],
+      isMethodCall('getAvatar', arguments: <String, dynamic>{
+        'contact': contact.toMap(),
         'photoHighResolution': false,
       })
     ]);

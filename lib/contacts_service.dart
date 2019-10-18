@@ -46,21 +46,15 @@ class ContactsService {
     return contacts.map((m) => Contact.fromMap(m));
   }
 
-  /// Fetches the avatar for each of the contacts with the provided
-  /// [identifiers]. Returns a list of avatars in the same order as the
-  /// [identifiers] given. If a user does not have an avatar, then `null` is
-  /// returned in that slot. Only implemented on Android.
-  static Future<Iterable<Uint8List>> getAvatars(
-      final Iterable<String> identifiers, {final bool photoHighRes = true}) async {
-    // Returns a List<_Uint8ArrayView>.
-    final list = await _channel.invokeMethod('getAvatars', <String, dynamic>{
-      'identifiers': identifiers.toList(),
-      'photoHighResolution': photoHighRes,
-    });
-
-    // Cast to a List<Uint8List> to avoid runtime type errors.
-    return list.map<Uint8List>((avatar) => avatar as Uint8List);
-  }
+  /// Loads the avatar for the given contact and returns it. If the user does
+  /// not have an avatar, then `null` is returned in that slot. Only implemented
+  /// on Android.
+  static Future<Uint8List> getAvatar(
+      final Contact contact, {final bool photoHighRes = true}) =>
+      _channel.invokeMethod('getAvatar', <String, dynamic>{
+        'contact': Contact._toMap(contact),
+        'photoHighResolution': photoHighRes,
+      });
 
   /// Adds the [contact] to the device contact list
   static Future addContact(Contact contact) =>

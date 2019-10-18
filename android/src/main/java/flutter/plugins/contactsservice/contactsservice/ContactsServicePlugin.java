@@ -34,7 +34,10 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.List;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 @TargetApi(Build.VERSION_CODES.ECLAIR)
 public class ContactsServicePlugin implements MethodCallHandler {
@@ -45,6 +48,8 @@ public class ContactsServicePlugin implements MethodCallHandler {
 
   private static final String LOG_TAG = "flutter_contacts";
   private final ContentResolver contentResolver;
+  private final ExecutorService executor =
+      new ThreadPoolExecutor(0, 10, 60, TimeUnit.SECONDS, new ArrayBlockingQueue<Runnable>(1000));
 
   public static void registerWith(Registrar registrar) {
     final MethodChannel channel = new MethodChannel(registrar.messenger(), "github.com/clovisnicolas/flutter_contacts");
@@ -54,42 +59,44 @@ public class ContactsServicePlugin implements MethodCallHandler {
   @Override
   public void onMethodCall(MethodCall call, Result result) {
     switch(call.method){
-      case "getContacts":
+      case "getContacts": {
         this.getContacts((String)call.argument("query"), (boolean)call.argument("withThumbnails"), (boolean)call.argument("photoHighResolution"), (boolean)call.argument("orderByGivenName"), result);
         break;
-      case "getContactsForPhone":
+      } case "getContactsForPhone": {
         this.getContactsForPhone((String)call.argument("phone"), (boolean)call.argument("withThumbnails"), (boolean)call.argument("photoHighResolution"), (boolean)call.argument("orderByGivenName"), result);
         break;
-      case "getAvatars":
-        this.getAvatars((List<String>)call.argument("identifiers"), (boolean)call.argument("photoHighResolution"), result);
+      } case "getAvatar": {
+        final Contact contact = Contact.fromMap((HashMap)call.argument("contact"));
+        this.getAvatar(contact, (boolean)call.argument("photoHighResolution"), result);
         break;
-      case "addContact":
-        Contact c = Contact.fromMap((HashMap)call.arguments);
-        if(this.addContact(c)) {
+      } case "addContact": {
+        final Contact contact = Contact.fromMap((HashMap)call.arguments);
+        if (this.addContact(contact)) {
           result.success(null);
-        } else{
+        } else {
           result.error(null, "Failed to add the contact", null);
         }
         break;
-      case "deleteContact":
-        Contact ct = Contact.fromMap((HashMap)call.arguments);
-        if(this.deleteContact(ct)){
+      } case "deleteContact": {
+        final Contact contact = Contact.fromMap((HashMap)call.arguments);
+        if (this.deleteContact(contact)) {
           result.success(null);
-        } else{
+        } else {
           result.error(null, "Failed to delete the contact, make sure it has a valid identifier", null);
         }
         break;
-      case "updateContact":
-        Contact ct1 = Contact.fromMap((HashMap)call.arguments);
-        if(this.updateContact(ct1)) {
+      } case "updateContact": {
+        final Contact contact = Contact.fromMap((HashMap)call.arguments);
+        if (this.updateContact(contact)) {
           result.success(null);
         } else {
           result.error(null, "Failed to update the contact, make sure it has a valid identifier", null);
         }
         break;
-      default:
+      } default: {
         result.notImplemented();
         break;
+      }
     }
   }
 
@@ -129,11 +136,11 @@ public class ContactsServicePlugin implements MethodCallHandler {
 
   @TargetApi(Build.VERSION_CODES.ECLAIR)
   private void getContacts(String query, boolean withThumbnails, boolean photoHighResolution, boolean orderByGivenName, Result result) {
-    new GetContactsTask(result, withThumbnails, photoHighResolution, orderByGivenName).execute(query, false);
+    new GetContactsTask(result, withThumbnails, photoHighResolution, orderByGivenName).executeOnExecutor(executor, query, false);
   }
 
   private void getContactsForPhone(String phone, boolean withThumbnails, boolean photoHighResolution, boolean orderByGivenName, Result result) {
-    new GetContactsTask(result, withThumbnails, photoHighResolution, orderByGivenName).execute(phone, true);
+    new GetContactsTask(result, withThumbnails, photoHighResolution, orderByGivenName).executeOnExecutor(executor, phone, true);
   }
 
   @TargetApi(Build.VERSION_CODES.CUPCAKE)
@@ -321,39 +328,34 @@ public class ContactsServicePlugin implements MethodCallHandler {
     }
   }
 
-  private void getAvatars(final List<String> identifiers, final boolean highRes,
+  private void getAvatar(final Contact contact, final boolean highRes,
       final Result result) {
-    new GetAvatarsTask(identifiers, highRes, contentResolver, result).execute();
+    new GetAvatarsTask(contact, highRes, contentResolver, result).executeOnExecutor(this.executor);
   }
 
-  private static class GetAvatarsTask extends AsyncTask<Void, Void, List<byte[]>> {
-    final List<String> identifiers;
+  private static class GetAvatarsTask extends AsyncTask<Void, Void, byte[]> {
+    final Contact contact;
     final boolean highRes;
     final ContentResolver contentResolver;
     final Result result;
 
-    GetAvatarsTask(final List<String> identifiers, final boolean highRes,
+    GetAvatarsTask(final Contact contact, final boolean highRes,
         final ContentResolver contentResolver, final Result result) {
-      this.identifiers = identifiers;
+      this.contact = contact;
       this.highRes = highRes;
       this.contentResolver = contentResolver;
       this.result = result;
     }
 
     @Override
-    protected List<byte[]> doInBackground(final Void... params) {
+    protected byte[] doInBackground(final Void... params) {
       // Load avatar for each contact identifier.
-      final List<byte[]> avatars = new ArrayList<>();
-      for (final String identifier : identifiers) {
-        avatars.add(loadContactPhotoHighRes(identifier, highRes, contentResolver));
-      }
-
-      return avatars;
+      return loadContactPhotoHighRes(contact.identifier, highRes, contentResolver);
     }
 
     @Override
-    protected void onPostExecute(final List<byte[]> avatars) {
-      result.success(avatars);
+    protected void onPostExecute(final byte[] avatar) {
+      result.success(avatar);
     }
   }
 

@@ -63,6 +63,7 @@ class Contact {
   Contact(
       {this.givenName,
       this.middleName,
+      this.displayName,
       this.prefix,
       this.suffix,
       this.familyName,

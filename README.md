@@ -12,7 +12,7 @@ To use this plugin, add `contacts_service` as a [dependency in your `pubspec.yam
 For example:  
 ```yaml  
 dependencies:  
-    contacts_service: ^0.3.4
+    contacts_service: ^0.3.5
 ```  
   
 ## Permissions  
@@ -38,15 +38,18 @@ If you do not request user permission or have it granted, the application will f
   
 ## Example  
 
-``` dart  
+```dart  
 // Import package  
 import 'package:contacts_service/contacts_service.dart';  
   
 // Get all contacts on device
 Iterable<Contact> contacts = await ContactsService.getContacts();  
 
-// Get all contacts without thumbnail(faster)
+// Get all contacts without thumbnail (faster)
 Iterable<Contact> contacts = await ContactsService.getContacts(withThumbnails: false);
+
+// Android only: Get thumbnail for an avatar afterwards (only necessary if `withThumbnails: false` is used)
+Uint8List avatar = await ContactsService.getAvatar(contact);
   
 // Get contacts matching a string
 Iterable<Contact> johns = await ContactsService.getContacts(query : "john");
@@ -63,8 +66,6 @@ await ContactsService.deleteContact(contact);
 // The contact must have a valid identifier
 await ContactsService.updateContact(contact);
 
-// Share a contact as a vcf
-await shareVCFCard(context, contact: contact),
 ```  
 
 **Contact Model**
@@ -86,6 +87,7 @@ Iterable<PostalAddress> postalAddresses = [];
 
 // Contact avatar/thumbnail
 Uint8List avatar;
+
 ```
   
 ![Example](doc/example.gif "Example screenshot")  

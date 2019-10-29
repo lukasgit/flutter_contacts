@@ -70,32 +70,27 @@ class ContactsService {
 }
 
 class Contact {
-  Contact(
-      {this.givenName,
-      this.middleName,
-      this.prefix,
-      this.suffix,
-      this.familyName,
-      this.company,
-      this.jobTitle,
-      this.emails,
-      this.phones,
-      this.postalAddresses,
-      this.avatar});
+  Contact({
+    this.givenName,
+    this.middleName,
+    this.prefix,
+    this.suffix,
+    this.familyName,
+    this.company,
+    this.jobTitle,
+    this.emails,
+    this.phones,
+    this.postalAddresses,
+    this.avatar,
+    this.birthday,
+  });
 
-  String identifier,
-      displayName,
-      givenName,
-      middleName,
-      prefix,
-      suffix,
-      familyName,
-      company,
-      jobTitle;
+  String identifier, displayName, givenName, middleName, prefix, suffix, familyName, company, jobTitle;
   Iterable<Item> emails = [];
   Iterable<Item> phones = [];
   Iterable<PostalAddress> postalAddresses = [];
   Uint8List avatar;
+  DateTime birthday;
 
   String initials() {
     return ((this.givenName?.isNotEmpty == true ? this.givenName[0] : "") +
@@ -118,6 +113,11 @@ class Contact {
     postalAddresses = (m["postalAddresses"] as Iterable)
         ?.map((m) => PostalAddress.fromMap(m));
     avatar = m["avatar"];
+    try {
+      birthday = DateTime.parse(m["birthday"]);
+    } catch (e) {
+      birthday = null;
+    }
   }
 
   static Map _toMap(Contact contact) {
@@ -133,6 +133,11 @@ class Contact {
     for (PostalAddress address in contact.postalAddresses ?? []) {
       postalAddresses.add(PostalAddress._toMap(address));
     }
+
+    final birthday = contact.birthday == null
+        ? null
+        : "${contact.birthday.year.toString()}-${contact.birthday.month.toString().padLeft(2, '0')}-${contact.birthday.day.toString().padLeft(2, '0')}";
+
     return {
       "identifier": contact.identifier,
       "displayName": contact.displayName,
@@ -146,7 +151,8 @@ class Contact {
       "emails": emails,
       "phones": phones,
       "postalAddresses": postalAddresses,
-      "avatar": contact.avatar
+      "avatar": contact.avatar,
+      "birthday": birthday
     };
   }
 
@@ -176,7 +182,9 @@ class Contact {
               .toSet()
               .union(other.postalAddresses?.toSet() ?? Set())
               .toList(),
-      avatar: this.avatar ?? other.avatar);
+      avatar: this.avatar ?? other.avatar,
+      birthday: this.birthday ?? other.birthday,
+    );
 
   /// Returns true if all items in this contact are identical.
   @override
@@ -192,6 +200,7 @@ class Contact {
         this.middleName == other.middleName &&
         this.prefix == other.prefix &&
         this.suffix == other.suffix &&
+        this.birthday == other.birthday &&
         DeepCollectionEquality.unordered().equals(this.phones, other.phones) &&
         DeepCollectionEquality.unordered().equals(this.emails, other.emails) &&
         DeepCollectionEquality.unordered()
@@ -209,7 +218,8 @@ class Contact {
       this.jobTitle,
       this.middleName,
       this.prefix,
-      this.suffix
+      this.suffix,
+      this.birthday,
     ].where((s) => s != null));
   }
 }

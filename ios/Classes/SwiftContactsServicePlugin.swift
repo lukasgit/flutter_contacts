@@ -66,7 +66,8 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin {
                     CNContactNameSuffixKey,
                     CNContactPostalAddressesKey,
                     CNContactOrganizationNameKey,
-                    CNContactJobTitleKey] as [Any]
+                    CNContactJobTitleKey,
+                    CNContactBirthdayKey] as [Any]
         
         if(withThumbnails){
             if(photoHighResolution){
@@ -363,6 +364,13 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin {
             postalAddresses.append(addressDictionary)
         }
         result["postalAddresses"] = postalAddresses
+
+        //BIRTHDAY
+        if let birthday : Date = contact.birthday?.date {
+            let formatter = DateFormatter()
+            formatter.dateFormat = "yyyy-MM-dd"
+            result["birthday"] = formatter.string(from: birthday)
+        }      
 
         return result
     }

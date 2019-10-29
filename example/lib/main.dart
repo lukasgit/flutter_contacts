@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'package:contacts_service/contacts_service.dart';
+import 'package:intl/intl.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 void main() => runApp(ContactsExampleApp());
@@ -175,6 +176,10 @@ class ContactDetailsPage extends StatelessWidget {
             ListTile(
               title: Text("Suffix"),
               trailing: Text(_contact.suffix ?? ""),
+            ),
+            ListTile(
+              title: Text("Birthday"),
+              trailing: Text(_contact.birthday != null ? DateFormat('dd-MM-yyyy').format(_contact.birthday) : ""),
             ),
             ListTile(
               title: Text("Company"),

@@ -1,3 +1,10 @@
+## [0.3.6] - October 28, 2019
+
+* Added the birthday property in the contact class, display it in the example app (@ZaraclaJ)
+* Added missing birthday property in the contact class (@ZaraclaJ)
+* Removed redundant equals operator and hashing (@kmccmk9)
+* Added toString, equals operator and hashcode (@kmccmk9)
+
 ## [0.3.5] - October 17, 2019
 
 * Added `getAvatar()` API to lazily retrieve contact avatars (@dgp1130)

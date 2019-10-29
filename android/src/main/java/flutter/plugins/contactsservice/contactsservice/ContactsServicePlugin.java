@@ -208,20 +208,20 @@ public class ContactsServicePlugin implements MethodCallHandler {
     }
   }
 
-  private Cursor getCursor(String query){
-    String selection = ContactsContract.Data.MIMETYPE + "=? OR " + ContactsContract.Data.MIMETYPE + "=? OR " + ContactsContract.Data.MIMETYPE + "=? OR " + ContactsContract.Data.MIMETYPE + "=? OR " + ContactsContract.Data.MIMETYPE + "=? OR " + ContactsContract.Data.MIMETYPE + "=?";
-    String[] selectionArgs = new String[]{
-            CommonDataKinds.Note.CONTENT_ITEM_TYPE,
-            Email.CONTENT_ITEM_TYPE,
-            Phone.CONTENT_ITEM_TYPE,
-            StructuredName.CONTENT_ITEM_TYPE,
-            Organization.CONTENT_ITEM_TYPE,
-            StructuredPostal.CONTENT_ITEM_TYPE,
-    };
+
+  private Cursor getCursor(String query) {
+    String selection = ContactsContract.Data.MIMETYPE + "=? OR " + ContactsContract.Data.MIMETYPE + "=? OR "
+        + ContactsContract.Data.MIMETYPE + "=? OR " + ContactsContract.Data.MIMETYPE + "=? OR "
+        + ContactsContract.Data.MIMETYPE + "=? OR " + ContactsContract.Data.MIMETYPE + "=? OR "
+        + ContactsContract.Data.MIMETYPE + "=?";
+    String[] selectionArgs = new String[] { CommonDataKinds.Note.CONTENT_ITEM_TYPE, Email.CONTENT_ITEM_TYPE,
+        Phone.CONTENT_ITEM_TYPE, StructuredName.CONTENT_ITEM_TYPE, Organization.CONTENT_ITEM_TYPE,
+        StructuredPostal.CONTENT_ITEM_TYPE, CommonDataKinds.Event.CONTENT_ITEM_TYPE, };
     if(query != null){
       selectionArgs = new String[]{query + "%"};
       selection = ContactsContract.Contacts.DISPLAY_NAME_PRIMARY + " LIKE ?";
     }
+
     return contentResolver.query(ContactsContract.Data.CONTENT_URI, PROJECTION, selection, selectionArgs, null);
   }
 
@@ -305,6 +305,13 @@ public class ContactsServicePlugin implements MethodCallHandler {
       //ADDRESSES
       else if (mimeType.equals(CommonDataKinds.StructuredPostal.CONTENT_ITEM_TYPE)) {
         contact.postalAddresses.add(new PostalAddress(cursor));
+      }
+      // BIRTHDAY
+      else if (mimeType.equals(CommonDataKinds.Event.CONTENT_ITEM_TYPE)) {
+        int eventType = cursor.getInt(cursor.getColumnIndex(CommonDataKinds.Event.TYPE));
+        if (eventType == CommonDataKinds.Event.TYPE_BIRTHDAY) {
+          contact.birthday = cursor.getString(cursor.getColumnIndex(CommonDataKinds.Event.START_DATE));
+        }
       }
     }
 

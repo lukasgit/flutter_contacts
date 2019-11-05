@@ -305,10 +305,6 @@ class _AddContactPageState extends State<AddContactPage> {
           child: ListView(
             children: <Widget>[
               TextFormField(
-                decoration: const InputDecoration(labelText: 'Account Type'),
-                onSaved: (v) => contact.accountType = v,
-              ),
-              TextFormField(
                 decoration: const InputDecoration(labelText: 'First name'),
                 onSaved: (v) => contact.givenName = v,
               ),
@@ -483,11 +479,6 @@ class _UpdateContactsPageState extends State<UpdateContactsPage> {
                 initialValue: address.country ?? "",
                 decoration: const InputDecoration(labelText: 'Country'),
                 onSaved: (v) => address.country = v,
-              ),
-              TextFormField(
-                initialValue: contact.accountType ?? "",
-                decoration: const InputDecoration(labelText: 'AccountType'),
-                onSaved: (v) => contact.accountType = v,
               ),
             ],
           ),

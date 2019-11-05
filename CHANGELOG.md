@@ -1,3 +1,7 @@
+## [0.3.7] - November 5, 2019
+
+* Expose account_type from android (@lidongze91)
+
 ## [0.3.6] - October 28, 2019
 
 * Added the birthday property in the contact class, display it in the example app (@ZaraclaJ)

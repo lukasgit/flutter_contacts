@@ -253,31 +253,6 @@ public class ContactsServicePlugin implements MethodCallHandler {
     return null;
   }
 
-  private String getAccountTypeString(String id, ContentResolver contentResolver) {
-    System.out.println("get account type string");
-    Cursor cursor = null;
-    try {
-      cursor = contentResolver.query(ContactsContract.RawContacts.CONTENT_URI,
-          new String[]{ContactsContract.RawContacts.ACCOUNT_TYPE},
-          ContactsContract.RawContacts.CONTACT_ID +"=?",
-          new String[]{id},
-          null);
-      System.out.println(cursor.getCount());
-      if (cursor != null && cursor.getCount() >0)
-      {
-        cursor.moveToFirst();
-        String accountType = cursor.getString(cursor.getColumnIndex(ContactsContract.RawContacts.ACCOUNT_TYPE));
-        System.out.println(accountType);
-        cursor.close();
-        return accountType;
-      }
-    } catch (Exception e) {
-
-    } finally{
-      cursor.close();
-    }
-    return "";
-  }
   /**
    * Builds the list of contacts from the cursor
    * @param cursor

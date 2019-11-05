@@ -19,6 +19,7 @@ import android.os.AsyncTask;
 import android.os.Build;
 import android.provider.BaseColumns;
 import android.provider.ContactsContract;
+import android.provider.ContactsContract.RawContacts;
 import android.text.TextUtils;
 import android.util.Log;
 import io.flutter.plugin.common.MethodCall;
@@ -105,6 +106,7 @@ public class ContactsServicePlugin implements MethodCallHandler {
                   ContactsContract.Data.CONTACT_ID,
                   ContactsContract.Profile.DISPLAY_NAME,
                   ContactsContract.Contacts.Data.MIMETYPE,
+                  ContactsContract.RawContacts.ACCOUNT_TYPE,
                   StructuredName.DISPLAY_NAME,
                   StructuredName.GIVEN_NAME,
                   StructuredName.MIDDLE_NAME,
@@ -213,10 +215,11 @@ public class ContactsServicePlugin implements MethodCallHandler {
     String selection = ContactsContract.Data.MIMETYPE + "=? OR " + ContactsContract.Data.MIMETYPE + "=? OR "
         + ContactsContract.Data.MIMETYPE + "=? OR " + ContactsContract.Data.MIMETYPE + "=? OR "
         + ContactsContract.Data.MIMETYPE + "=? OR " + ContactsContract.Data.MIMETYPE + "=? OR "
-        + ContactsContract.Data.MIMETYPE + "=?";
+        + ContactsContract.Data.MIMETYPE + "=? OR " + ContactsContract.RawContacts.ACCOUNT_TYPE + "=?";
     String[] selectionArgs = new String[] { CommonDataKinds.Note.CONTENT_ITEM_TYPE, Email.CONTENT_ITEM_TYPE,
         Phone.CONTENT_ITEM_TYPE, StructuredName.CONTENT_ITEM_TYPE, Organization.CONTENT_ITEM_TYPE,
-        StructuredPostal.CONTENT_ITEM_TYPE, CommonDataKinds.Event.CONTENT_ITEM_TYPE, };
+        StructuredPostal.CONTENT_ITEM_TYPE, CommonDataKinds.Event.CONTENT_ITEM_TYPE, ContactsContract.RawContacts.ACCOUNT_TYPE
+    };
     if(query != null){
       selectionArgs = new String[]{query + "%"};
       selection = ContactsContract.Contacts.DISPLAY_NAME_PRIMARY + " LIKE ?";
@@ -268,6 +271,7 @@ public class ContactsServicePlugin implements MethodCallHandler {
 
       String mimeType = cursor.getString(cursor.getColumnIndex(ContactsContract.Data.MIMETYPE));
       contact.displayName = cursor.getString(cursor.getColumnIndex(ContactsContract.Contacts.DISPLAY_NAME));
+      contact.accountType = cursor.getString(cursor.getColumnIndex(ContactsContract.RawContacts.ACCOUNT_TYPE));
 
       //NAMES
       if (mimeType.equals(CommonDataKinds.StructuredName.CONTENT_ITEM_TYPE)) {

@@ -83,9 +83,10 @@ class Contact {
     this.postalAddresses,
     this.avatar,
     this.birthday,
+    this.accountType,
   });
 
-  String identifier, displayName, givenName, middleName, prefix, suffix, familyName, company, jobTitle;
+  String identifier, displayName, givenName, middleName, prefix, suffix, familyName, company, jobTitle, accountType;
   Iterable<Item> emails = [];
   Iterable<Item> phones = [];
   Iterable<PostalAddress> postalAddresses = [];
@@ -108,6 +109,7 @@ class Contact {
     suffix = m["suffix"];
     company = m["company"];
     jobTitle = m["jobTitle"];
+    accountType = m["accountType"];
     emails = (m["emails"] as Iterable)?.map((m) => Item.fromMap(m));
     phones = (m["phones"] as Iterable)?.map((m) => Item.fromMap(m));
     postalAddresses = (m["postalAddresses"] as Iterable)
@@ -148,6 +150,7 @@ class Contact {
       "suffix": contact.suffix,
       "company": contact.company,
       "jobTitle": contact.jobTitle,
+      "accountType": contact.accountType,
       "emails": emails,
       "phones": phones,
       "postalAddresses": postalAddresses,
@@ -169,6 +172,7 @@ class Contact {
       familyName: this.familyName ?? other.familyName,
       company: this.company ?? other.company,
       jobTitle: this.jobTitle ?? other.jobTitle,
+      accountType: this.accountType ?? other.accountType,
       emails: this.emails == null
           ? other.emails
           : this.emails.toSet().union(other.emails?.toSet() ?? Set()).toList(),
@@ -197,6 +201,7 @@ class Contact {
         this.familyName == other.familyName &&
         this.identifier == other.identifier &&
         this.jobTitle == other.jobTitle &&
+        this.accountType == other.accountType &&
         this.middleName == other.middleName &&
         this.prefix == other.prefix &&
         this.suffix == other.suffix &&
@@ -216,6 +221,7 @@ class Contact {
       this.givenName,
       this.identifier,
       this.jobTitle,
+      this.accountType,
       this.middleName,
       this.prefix,
       this.suffix,

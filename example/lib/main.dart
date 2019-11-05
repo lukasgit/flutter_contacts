@@ -189,6 +189,10 @@ class ContactDetailsPage extends StatelessWidget {
               title: Text("Job"),
               trailing: Text(_contact.jobTitle ?? ""),
             ),
+            ListTile(
+              title: Text("Account Type"),
+              trailing: Text(_contact.accountType ?? ""),
+            ),
             AddressesTile(_contact.postalAddresses),
             ItemsTile("Phones", _contact.phones),
             ItemsTile("Emails", _contact.emails)

@@ -291,7 +291,6 @@ class _AddContactPageState extends State<AddContactPage> {
             onPressed: () {
               _formKey.currentState.save();
               contact.postalAddresses = [address];
-              print(contact.accountType);
               ContactsService.addContact(contact);
               Navigator.of(context).pop();
             },

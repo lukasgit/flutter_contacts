@@ -51,7 +51,6 @@ public class ContactsServicePlugin implements MethodCallHandler {
   private final ContentResolver contentResolver;
   private final ExecutorService executor =
       new ThreadPoolExecutor(0, 10, 60, TimeUnit.SECONDS, new ArrayBlockingQueue<Runnable>(1000));
-  private static final int INDEX_ACCOUNT_TYPE = 3;
 
   public static void registerWith(Registrar registrar) {
     final MethodChannel channel = new MethodChannel(registrar.messenger(), "github.com/clovisnicolas/flutter_contacts");

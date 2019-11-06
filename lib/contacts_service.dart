@@ -71,6 +71,7 @@ class ContactsService {
 
 class Contact {
   Contact({
+    this.displayName,
     this.givenName,
     this.middleName,
     this.prefix,

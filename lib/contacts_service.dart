@@ -152,7 +152,7 @@ class Contact {
       "suffix": contact.suffix,
       "company": contact.company,
       "jobTitle": contact.jobTitle,
-      "androidAccountType": contact.androidAccountType.toString(),
+      "androidAccountType": (contact.androidAccountType != null) ? contact.androidAccountType.toString() : null,
       "emails": emails,
       "phones": phones,
       "postalAddresses": postalAddresses,

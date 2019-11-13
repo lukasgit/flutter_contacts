@@ -84,10 +84,11 @@ class Contact {
     this.postalAddresses,
     this.avatar,
     this.birthday,
-    this.accountType,
+    this.androidAccountType,
   });
 
-  String identifier, displayName, givenName, middleName, prefix, suffix, familyName, company, jobTitle, accountType;
+  String identifier, displayName, givenName, middleName, prefix, suffix, familyName, company, jobTitle;
+  AndroidAccountType androidAccountType;
   Iterable<Item> emails = [];
   Iterable<Item> phones = [];
   Iterable<PostalAddress> postalAddresses = [];
@@ -110,7 +111,7 @@ class Contact {
     suffix = m["suffix"];
     company = m["company"];
     jobTitle = m["jobTitle"];
-    accountType = m["accountType"];
+    androidAccountType = accountTypeFromString(m["androidAccountType"]);
     emails = (m["emails"] as Iterable)?.map((m) => Item.fromMap(m));
     phones = (m["phones"] as Iterable)?.map((m) => Item.fromMap(m));
     postalAddresses = (m["postalAddresses"] as Iterable)
@@ -151,7 +152,7 @@ class Contact {
       "suffix": contact.suffix,
       "company": contact.company,
       "jobTitle": contact.jobTitle,
-      "accountType": contact.accountType,
+      "androidAccountType": (contact.androidAccountType != null) ? contact.androidAccountType.toString() : null,
       "emails": emails,
       "phones": phones,
       "postalAddresses": postalAddresses,
@@ -173,7 +174,7 @@ class Contact {
       familyName: this.familyName ?? other.familyName,
       company: this.company ?? other.company,
       jobTitle: this.jobTitle ?? other.jobTitle,
-      accountType: this.accountType ?? other.accountType,
+      androidAccountType: this.androidAccountType ?? other.androidAccountType,
       emails: this.emails == null
           ? other.emails
           : this.emails.toSet().union(other.emails?.toSet() ?? Set()).toList(),
@@ -202,7 +203,7 @@ class Contact {
         this.familyName == other.familyName &&
         this.identifier == other.identifier &&
         this.jobTitle == other.jobTitle &&
-        this.accountType == other.accountType &&
+        this.androidAccountType == other.androidAccountType &&
         this.middleName == other.middleName &&
         this.prefix == other.prefix &&
         this.suffix == other.suffix &&
@@ -222,12 +223,28 @@ class Contact {
       this.givenName,
       this.identifier,
       this.jobTitle,
-      this.accountType,
+      this.androidAccountType,
       this.middleName,
       this.prefix,
       this.suffix,
       this.birthday,
     ].where((s) => s != null));
+  }
+
+  AndroidAccountType accountTypeFromString(String androidAccountType) {
+    if (androidAccountType == null) {
+      return null;
+    }
+    if (androidAccountType.startsWith("com.google")) {
+      return AndroidAccountType.google;
+    } else if (androidAccountType.startsWith("com.whatsapp")) {
+      return AndroidAccountType.whatsapp;
+    } else if (androidAccountType.startsWith("com.facebook")) {
+      return AndroidAccountType.facebook;
+    }
+    /// Other account types are not supported on Android 
+    /// such as Samsung, htc etc...
+    return AndroidAccountType.other;
   }
 }
 
@@ -343,4 +360,11 @@ class Item {
   int get hashCode => hash2(label ?? "", value ?? "");
 
   static Map _toMap(Item i) => {"label": i.label, "value": i.value};
+}
+
+enum AndroidAccountType {
+  facebook,
+  google,
+  whatsapp,
+  other
 }

@@ -187,7 +187,7 @@ void main() {
       "suffix": null,
       "company": null,
       "jobTitle": null,
-      "accountType": null,
+      "androidAccountType": null,
       "emails": [],
       "phones": [],
       "postalAddresses": [],
@@ -211,7 +211,7 @@ void expectMethodCall(List<MethodCall> log, String methodName) {
         'suffix': null,
         'company': null,
         'jobTitle': null,
-        'accountType': null,
+        'androidAccountType': null,
         'emails': [
           {'label': 'label', 'value': null}
         ],

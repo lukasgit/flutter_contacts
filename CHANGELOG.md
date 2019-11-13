@@ -1,3 +1,8 @@
+## [0.3.9] - November 12, 2019
+
+* Expose androidAccountType as enum in dart (@lidongze91)
+  * Only supported for Android.
+
 ## [0.3.8] - November 6, 2019
 
 * Added displayName parameter to Contact Constructor (@biswa1751)

@@ -191,7 +191,7 @@ class ContactDetailsPage extends StatelessWidget {
             ),
             ListTile(
               title: Text("Account Type"),
-              trailing: Text(_contact.accountType ?? ""),
+              trailing: Text((_contact.androidAccountType != null) ? _contact.androidAccountType.toString() : ""),
             ),
             AddressesTile(_contact.postalAddresses),
             ItemsTile("Phones", _contact.phones),

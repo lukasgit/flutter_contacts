@@ -85,9 +85,12 @@ class Contact {
     this.avatar,
     this.birthday,
     this.androidAccountType,
+    this.androidAccountTypeRaw,
+    this.androidAccountName,
   });
 
   String identifier, displayName, givenName, middleName, prefix, suffix, familyName, company, jobTitle;
+  String androidAccountTypeRaw, androidAccountName;
   AndroidAccountType androidAccountType;
   Iterable<Item> emails = [];
   Iterable<Item> phones = [];
@@ -111,7 +114,9 @@ class Contact {
     suffix = m["suffix"];
     company = m["company"];
     jobTitle = m["jobTitle"];
-    androidAccountType = accountTypeFromString(m["androidAccountType"]);
+    androidAccountTypeRaw = m["androidAccountType"];
+    androidAccountType = accountTypeFromString(androidAccountTypeRaw);
+    androidAccountName = m["androidAccountName"];
     emails = (m["emails"] as Iterable)?.map((m) => Item.fromMap(m));
     phones = (m["phones"] as Iterable)?.map((m) => Item.fromMap(m));
     postalAddresses = (m["postalAddresses"] as Iterable)
@@ -152,7 +157,8 @@ class Contact {
       "suffix": contact.suffix,
       "company": contact.company,
       "jobTitle": contact.jobTitle,
-      "androidAccountType": (contact.androidAccountType != null) ? contact.androidAccountType.toString() : null,
+      "androidAccountType": contact.androidAccountTypeRaw, 
+      "androidAccountName": contact.androidAccountName,
       "emails": emails,
       "phones": phones,
       "postalAddresses": postalAddresses,
@@ -175,6 +181,7 @@ class Contact {
       company: this.company ?? other.company,
       jobTitle: this.jobTitle ?? other.jobTitle,
       androidAccountType: this.androidAccountType ?? other.androidAccountType,
+      androidAccountName: this.androidAccountName ?? other.androidAccountName,
       emails: this.emails == null
           ? other.emails
           : this.emails.toSet().union(other.emails?.toSet() ?? Set()).toList(),
@@ -204,6 +211,7 @@ class Contact {
         this.identifier == other.identifier &&
         this.jobTitle == other.jobTitle &&
         this.androidAccountType == other.androidAccountType &&
+        this.androidAccountName == other.androidAccountName &&
         this.middleName == other.middleName &&
         this.prefix == other.prefix &&
         this.suffix == other.suffix &&
@@ -224,6 +232,7 @@ class Contact {
       this.identifier,
       this.jobTitle,
       this.androidAccountType,
+      this.androidAccountName,
       this.middleName,
       this.prefix,
       this.suffix,

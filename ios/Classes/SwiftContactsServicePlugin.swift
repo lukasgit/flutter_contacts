@@ -381,6 +381,9 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin {
         case "main": return CNLabelPhoneNumberMain
         case "mobile": return CNLabelPhoneNumberMobile
         case "iPhone": return CNLabelPhoneNumberiPhone
+        case "work": return CNLabelWork
+        case "home": return CNLabelHome
+        case "other": return CNLabelOther
         default: return labelValue
         }
     }

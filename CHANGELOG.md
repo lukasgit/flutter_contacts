@@ -1,3 +1,9 @@
+## [0.3.10] - December 6, 2019
+
+* Expose the raw account type (e.g. "com.google" or "com.skype") and account name on Android (@joachimvalente)
+* Added additional labels for work, home, and other for PhoneLabel (@pavanbuzz)
+* Added additional labels for work, home, and other for PostalAddress (@pavanbuzz)
+
 ## [0.3.9] - November 12, 2019
 
 * Expose androidAccountType as enum in dart (@lidongze91)

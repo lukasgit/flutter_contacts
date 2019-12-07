@@ -188,6 +188,7 @@ void main() {
       "company": null,
       "jobTitle": null,
       "androidAccountType": null,
+      "androidAccountName": null,
       "emails": [],
       "phones": [],
       "postalAddresses": [],
@@ -212,6 +213,7 @@ void expectMethodCall(List<MethodCall> log, String methodName) {
         'company': null,
         'jobTitle': null,
         'androidAccountType': null,
+        'androidAccountName': null,
         'emails': [
           {'label': 'label', 'value': null}
         ],

@@ -107,6 +107,7 @@ public class ContactsServicePlugin implements MethodCallHandler {
                   ContactsContract.Profile.DISPLAY_NAME,
                   ContactsContract.Contacts.Data.MIMETYPE,
                   ContactsContract.RawContacts.ACCOUNT_TYPE,
+                  ContactsContract.RawContacts.ACCOUNT_NAME,
                   StructuredName.DISPLAY_NAME,
                   StructuredName.GIVEN_NAME,
                   StructuredName.MIDDLE_NAME,
@@ -272,6 +273,7 @@ public class ContactsServicePlugin implements MethodCallHandler {
       String mimeType = cursor.getString(cursor.getColumnIndex(ContactsContract.Data.MIMETYPE));
       contact.displayName = cursor.getString(cursor.getColumnIndex(ContactsContract.Contacts.DISPLAY_NAME));
       contact.androidAccountType = cursor.getString(cursor.getColumnIndex(ContactsContract.RawContacts.ACCOUNT_TYPE));
+      contact.androidAccountName = cursor.getString(cursor.getColumnIndex(ContactsContract.RawContacts.ACCOUNT_NAME));
 
       //NAMES
       if (mimeType.equals(CommonDataKinds.StructuredName.CONTENT_ITEM_TYPE)) {

@@ -13,7 +13,7 @@ public class Contact implements Comparable<Contact> {
     }
 
     String identifier;
-    String displayName, givenName, middleName, familyName, prefix, suffix, company, jobTitle, note, birthday, androidAccountType;
+    String displayName, givenName, middleName, familyName, prefix, suffix, company, jobTitle, note, birthday, androidAccountType, androidAccountName;
     ArrayList<Item> emails = new ArrayList<>();
     ArrayList<Item> phones = new ArrayList<>();
     ArrayList<PostalAddress> postalAddresses = new ArrayList<>();
@@ -34,6 +34,7 @@ public class Contact implements Comparable<Contact> {
         contactMap.put("note", note);
         contactMap.put("birthday", birthday);
         contactMap.put("androidAccountType", androidAccountType);
+        contactMap.put("androidAccountName", androidAccountName);
 
         ArrayList<HashMap<String, String>> emailsMap = new ArrayList<>();
         for (Item email : emails) {
@@ -71,6 +72,7 @@ public class Contact implements Comparable<Contact> {
         contact.note = (String) map.get("note");
         contact.birthday = (String) map.get("birthday");
         contact.androidAccountType = (String) map.get("androidAccountType");
+        contact.androidAccountName = (String) map.get("androidAccountName");
 
         ArrayList<HashMap> emails = (ArrayList<HashMap>) map.get("emails");
         if (emails != null) {

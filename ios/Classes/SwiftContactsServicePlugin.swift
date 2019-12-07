@@ -231,7 +231,7 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin {
                         newAddress.country = postalAddress["country"] ?? ""
                         newAddress.state = postalAddress["region"] ?? ""
                         let label = postalAddress["label"] ?? ""
-                        updatedPostalAddresses.append(CNLabeledValue(label: label, value: newAddress))
+                        updatedPostalAddresses.append(CNLabeledValue(label: getPostalAddressLabel(label: label), value: newAddress))
                     }
                     contact.postalAddresses = updatedPostalAddresses
                 }
@@ -289,7 +289,7 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin {
                 newAddress.country = postalAddress["country"] ?? ""
                 newAddress.state = postalAddress["region"] ?? ""
                 let label = postalAddress["label"] ?? ""
-                contact.postalAddresses.append(CNLabeledValue(label:label, value:newAddress))
+                contact.postalAddresses.append(CNLabeledValue(label: getPostalAddressLabel(label: label), value: newAddress))
             }
         }
 
@@ -381,6 +381,16 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin {
         case "main": return CNLabelPhoneNumberMain
         case "mobile": return CNLabelPhoneNumberMobile
         case "iPhone": return CNLabelPhoneNumberiPhone
+        case "work": return CNLabelWork
+        case "home": return CNLabelHome
+        case "other": return CNLabelOther
+        default: return labelValue
+        }
+    }
+    
+    func getPostalAddressLabel(label:String?) -> String{
+        let labelValue = label ?? ""
+        switch(labelValue){
         case "work": return CNLabelWork
         case "home": return CNLabelHome
         case "other": return CNLabelOther

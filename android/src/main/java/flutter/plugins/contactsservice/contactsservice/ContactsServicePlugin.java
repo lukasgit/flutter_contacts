@@ -11,6 +11,7 @@ import android.annotation.TargetApi;
 import android.content.ContentProviderOperation;
 import android.content.ContentResolver;
 import android.content.ContentUris;
+import android.content.Intent;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -26,7 +27,9 @@ import io.flutter.plugin.common.MethodCall;
 import io.flutter.plugin.common.MethodChannel;
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler;
 import io.flutter.plugin.common.MethodChannel.Result;
+import io.flutter.plugin.common.PluginRegistry;
 import io.flutter.plugin.common.PluginRegistry.Registrar;
+import io.flutter.plugin.common.PluginRegistry.ActivityResultListener;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -43,18 +46,23 @@ import java.util.concurrent.TimeUnit;
 @TargetApi(Build.VERSION_CODES.ECLAIR)
 public class ContactsServicePlugin implements MethodCallHandler {
 
-  ContactsServicePlugin(ContentResolver contentResolver){
+  ContactsServicePlugin(Registrar registrar, ContentResolver contentResolver){
     this.contentResolver = contentResolver;
+    this.registrar = registrar;
+    this.delegate = new ContactServiceDelegate(registrar);
   }
 
   private static final String LOG_TAG = "flutter_contacts";
   private final ContentResolver contentResolver;
+  private final Registrar registrar;
+  final ContactServiceDelegate delegate;
+
   private final ExecutorService executor =
       new ThreadPoolExecutor(0, 10, 60, TimeUnit.SECONDS, new ArrayBlockingQueue<Runnable>(1000));
 
   public static void registerWith(Registrar registrar) {
     final MethodChannel channel = new MethodChannel(registrar.messenger(), "github.com/clovisnicolas/flutter_contacts");
-    channel.setMethodCallHandler(new ContactsServicePlugin(registrar.context().getContentResolver()));
+    channel.setMethodCallHandler(new ContactsServicePlugin(registrar, registrar.context().getContentResolver()));
   }
 
   @Override
@@ -94,7 +102,17 @@ public class ContactsServicePlugin implements MethodCallHandler {
           result.error(null, "Failed to update the contact, make sure it has a valid identifier", null);
         }
         break;
-      } default: {
+      } case "openExistingContact" :{
+        final Contact contact = Contact.fromMap((HashMap)call.arguments);
+        delegate.setResult(result);
+        delegate.openExistingContact(contact);
+        break;
+      }case "openContactForm": {
+        delegate.setResult(result);
+        delegate.openContactForm();
+        break;
+      }
+      default: {
         result.notImplemented();
         break;
       }
@@ -144,6 +162,107 @@ public class ContactsServicePlugin implements MethodCallHandler {
 
   private void getContactsForPhone(String phone, boolean withThumbnails, boolean photoHighResolution, boolean orderByGivenName, Result result) {
     new GetContactsTask(result, withThumbnails, photoHighResolution, orderByGivenName).executeOnExecutor(executor, phone, true);
+  }
+
+  private class ContactServiceDelegate implements PluginRegistry.ActivityResultListener{
+
+    private static final int REQUEST_OPEN_CONTACT_FORM = 52941;
+    private static final int REQUEST_OPEN_EXISTING_CONTACT = 52942;
+
+    private final PluginRegistry.Registrar registrar;
+    private Result result;
+
+    public ContactServiceDelegate(PluginRegistry.Registrar registrar) {
+      this.registrar = registrar;
+      registrar.addActivityResultListener(this);
+    }
+
+    void setResult(Result result) {
+      this.result = result;
+    }
+
+    void finishWithResult(Object result) {
+      if(result != null) {
+        this.result.success(result);
+        this.result = null;
+      }
+    }
+
+    @Override
+    public boolean onActivityResult(int requestCode, int resultCode, Intent intent) {
+      if(requestCode == REQUEST_OPEN_EXISTING_CONTACT || requestCode == REQUEST_OPEN_CONTACT_FORM) {
+        Log.d("", String.format("requestCode: %d", requestCode));
+        Log.d("", String.format("resultCode: %d", resultCode));
+        try {
+          Uri ur = intent.getData();
+          Log.d("contactUri", ur.getLastPathSegment());
+          finishWithResult(getContactByIdentifier(ur.getLastPathSegment()));
+        } catch (NullPointerException e) {
+          Log.d("nullPointer", "contactNotSaved");
+          finishWithResult(null);
+        }
+        return true;
+      } else {
+        finishWithResult(null);
+      }
+      return false;
+    }
+
+    private void openExistingContact(Contact contact) {
+      String identifier = contact.identifier;
+      try {
+        Uri uri = Uri.withAppendedPath(ContactsContract.Contacts.CONTENT_URI, identifier);
+        Intent intent = new Intent(Intent.ACTION_EDIT);
+        intent.setDataAndType(uri, ContactsContract.Contacts.CONTENT_ITEM_TYPE);
+        intent.putExtra("finishActivityOnSaveCompleted", true);
+        startIntent(intent, REQUEST_OPEN_EXISTING_CONTACT);
+      } catch(Exception e) {
+      }
+    }
+
+    private void openContactForm() {
+      try {
+        Intent intent = new Intent(Intent.ACTION_INSERT, ContactsContract.Contacts.CONTENT_URI);
+        intent.putExtra("finishActivityOnSaveCompleted", true);
+        startIntent(intent, REQUEST_OPEN_CONTACT_FORM);
+      }catch(Exception e) {
+      }
+    }
+
+
+    private void startIntent(Intent intent, int request) {
+      Log.d("contacts_service", "startingIntent");
+      if (registrar.activity() != null) {
+        Log.d("contacts_service", "withActivity");
+        registrar.activity().startActivityForResult(intent, request);
+      } else {
+        Log.d("contacts_service", "withContext");
+        registrar.context().startActivity(intent);
+      }
+    }
+
+    private HashMap getContactByIdentifier(String identifier) {
+      ArrayList<Contact> matchingContacts;
+      {
+        Cursor cursor = contentResolver.query(
+                ContactsContract.Data.CONTENT_URI, PROJECTION,
+                ContactsContract.RawContacts.CONTACT_ID + " = ?",
+                new String[]{identifier},
+                null
+        );
+        try {
+          matchingContacts = getContactsFrom(cursor);
+        } finally {
+          if(cursor != null) {
+            cursor.close();
+          }
+        }
+      }
+      if(matchingContacts.size() > 0) {
+        return matchingContacts.iterator().next().toMap();
+      }
+      return null;
+    }
   }
 
   @TargetApi(Build.VERSION_CODES.CUPCAKE)

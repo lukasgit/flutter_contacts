@@ -67,6 +67,16 @@ class ContactsService {
   /// Updates the [contact] if it has a valid identifier
   static Future updateContact(Contact contact) =>
       _channel.invokeMethod('updateContact', Contact._toMap(contact));
+
+  static Future<Contact> openContactForm() async {
+    Map contactMap = await _channel.invokeMethod('openContactForm');
+    return contactMap != null ? Contact.fromMap(contactMap) : null;
+  }
+
+  static Future<Contact> openExistingContact(Contact contact) async {
+   Map contactMap = await _channel.invokeMethod('openExistingContact', Contact._toMap(contact));
+   return Contact.fromMap(contactMap);
+  }
 }
 
 class Contact {

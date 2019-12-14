@@ -75,7 +75,7 @@ class ContactsService {
 
   static Future<Contact> openExistingContact(Contact contact) async {
    Map contactMap = await _channel.invokeMethod('openExistingContact', Contact._toMap(contact));
-   return Contact.fromMap(contactMap);
+   return contactMap != null ? Contact.fromMap(contactMap) : null;
   }
 }
 

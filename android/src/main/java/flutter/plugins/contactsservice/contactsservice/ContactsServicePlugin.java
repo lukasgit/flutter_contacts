@@ -46,6 +46,9 @@ import java.util.concurrent.TimeUnit;
 @TargetApi(Build.VERSION_CODES.ECLAIR)
 public class ContactsServicePlugin implements MethodCallHandler {
 
+  private static final int FORM_OPERATION_CANCELED = 1;
+  private static final int FORM_COULD_NOT_BE_OPEN = 2;
+  
   ContactsServicePlugin(Registrar registrar, ContentResolver contentResolver){
     this.contentResolver = contentResolver;
     this.registrar = registrar;
@@ -198,12 +201,11 @@ public class ContactsServicePlugin implements MethodCallHandler {
           Log.d("contactUri", ur.getLastPathSegment());
           finishWithResult(getContactByIdentifier(ur.getLastPathSegment()));
         } catch (NullPointerException e) {
-          Log.d("nullPointer", "contactNotSaved");
-          finishWithResult(null);
+          finishWithResult(FORM_OPERATION_CANCELED);
         }
         return true;
       } else {
-        finishWithResult(null);
+        finishWithResult(FORM_COULD_NOT_BE_OPEN);
       }
       return false;
     }

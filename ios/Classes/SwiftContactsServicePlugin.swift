@@ -6,6 +6,8 @@ import ContactsUI
 @available(iOS 9.0, *)
 public class SwiftContactsServicePlugin: NSObject, FlutterPlugin, CNContactViewControllerDelegate {
     private var result: FlutterResult? = nil
+    static let FORM_OPERATION_CANCELED: Int = 1
+    static let FORM_COULD_NOT_BE_OPEN: Int = 2
     
     public static func register(with registrar: FlutterPluginRegistrar) {
         let channel = FlutterMethodChannel(name: "github.com/clovisnicolas/flutter_contacts", binaryMessenger: registrar.messenger())
@@ -172,8 +174,7 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin, CNContactViewC
     func preLoadContactView() {
         DispatchQueue.main.asyncAfter(deadline: .now()+5) {
             NSLog("Preloading CNContactViewController")
-            let contactViewController = CNContactViewController.init()
-            contactViewController.viewIfLoaded
+            let contactViewController = CNContactViewController.init(forNewContact: nil)
         }
     }
     
@@ -181,7 +182,7 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin, CNContactViewC
         if let result = self.result {
             let viewController : UIViewController? = UIApplication.shared.delegate?.window??.rootViewController
             viewController?.dismiss(animated: true, completion: nil)
-            result(nil)
+            result(SwiftContactsServicePlugin.FORM_OPERATION_CANCELED)
             self.result = nil
         }
     }
@@ -192,7 +193,7 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin, CNContactViewC
             if let contact = contact {
                 result(contactToDictionary(contact: contact))
             } else {
-                result(nil)
+                result(SwiftContactsServicePlugin.FORM_OPERATION_CANCELED)
             }
             self.result = nil
         }
@@ -203,7 +204,7 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin, CNContactViewC
          do {
             // Check to make sure dictionary has an identifier
              guard let identifier = contact["identifier"] as? String else{
-                 result(nil)
+                 result(SwiftContactsServicePlugin.FORM_COULD_NOT_BE_OPEN)
                  return nil;
              }
             let backTitle = contact["backTitle"] as? String
@@ -241,8 +242,7 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin, CNContactViewC
             return nil
          } catch {
             NSLog(error.localizedDescription)
-            NSLog("Error When trying to edit contact")
-            result(nil)
+            result(SwiftContactsServicePlugin.FORM_COULD_NOT_BE_OPEN)
             return nil
          }
      }

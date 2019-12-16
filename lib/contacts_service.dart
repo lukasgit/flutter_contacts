@@ -69,15 +69,46 @@ class ContactsService {
       _channel.invokeMethod('updateContact', Contact._toMap(contact));
 
   static Future<Contact> openContactForm() async {
-    Map contactMap = await _channel.invokeMethod('openContactForm');
-    return contactMap != null ? Contact.fromMap(contactMap) : null;
+    dynamic result = await _channel.invokeMethod('openContactForm');
+   return _handleFormOperation(result);
   }
 
   static Future<Contact> openExistingContact(Contact contact) async {
-   Map contactMap = await _channel.invokeMethod('openExistingContact', Contact._toMap(contact));
-   return contactMap != null ? Contact.fromMap(contactMap) : null;
+   dynamic result = await _channel.invokeMethod('openExistingContact', Contact._toMap(contact));
+   return _handleFormOperation(result);
+  }
+
+  static Contact _handleFormOperation(dynamic result) {
+    if(result is int) {
+      switch (result) {
+        case 1:
+          throw FormOperationException(errorCode: FormOperationErrorCode.FORM_OPERATION_CANCELED);
+        case 2:
+          throw FormOperationException(errorCode: FormOperationErrorCode.FORM_COULD_NOT_BE_OPEN);
+        default:
+          throw FormOperationException(errorCode: FormOperationErrorCode.FORM_OPERATION_UNKNOWN_ERROR);
+      }
+    } else if(result is Map) {
+      return Contact.fromMap(result);
+    } else {
+      throw FormOperationException(errorCode: FormOperationErrorCode.FORM_OPERATION_UNKNOWN_ERROR);
+    }
   }
 }
+
+class FormOperationException implements Exception {
+  final FormOperationErrorCode errorCode;
+
+  const FormOperationException({this.errorCode});
+   String toString() => 'FormOperationException: $errorCode';
+}
+
+enum FormOperationErrorCode {
+  FORM_OPERATION_CANCELED,
+  FORM_COULD_NOT_BE_OPEN,
+  FORM_OPERATION_UNKNOWN_ERROR
+}
+
 
 class Contact {
   Contact({

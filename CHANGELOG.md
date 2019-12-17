@@ -1,3 +1,7 @@
+## [0.3.11] - December 16, 2019
+
+* Two methods have been added to handle creating and editing contacts with device contact form (@engylemure)
+
 ## [0.3.10] - December 6, 2019
 
 * Expose the raw account type (e.g. "com.google" or "com.skype") and account name on Android (@joachimvalente)

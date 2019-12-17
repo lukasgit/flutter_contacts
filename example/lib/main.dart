@@ -96,6 +96,21 @@ class _ContactListPageState extends State<ContactListPage> {
     }
   }
 
+  _openContactForm() async {
+    try {
+      var contact = await ContactsService.openContactForm();
+      refreshContacts();
+    } on FormOperationException catch(e) {
+      switch(e.errorCode) {
+        case FormOperationErrorCode.FORM_OPERATION_CANCELED:
+        case FormOperationErrorCode.FORM_COULD_NOT_BE_OPEN:
+        case FormOperationErrorCode.FORM_OPERATION_UNKNOWN_ERROR:
+        default:
+          print(e.errorCode);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -106,9 +121,7 @@ class _ContactListPageState extends State<ContactListPage> {
         actions: <Widget>[
           IconButton(
             icon: Icon(Icons.create),
-            onPressed: () async {
-              print((await ContactsService.openContactForm()).toMap());
-            },
+            onPressed: _openContactForm,
           )
         ],
       ),
@@ -152,6 +165,21 @@ class ContactDetailsPage extends StatelessWidget {
 
   final Contact _contact;
 
+  _openExistingContactOnDevice() async {
+    try {
+      var contact = await ContactsService.openExistingContact(_contact);
+      print(contact.toMap());
+    } on FormOperationException catch (e) {
+      switch (e.errorCode) {
+        case FormOperationErrorCode.FORM_OPERATION_CANCELED:
+        case FormOperationErrorCode.FORM_COULD_NOT_BE_OPEN:
+        case FormOperationErrorCode.FORM_OPERATION_UNKNOWN_ERROR:
+        default:
+          print(e.toString());
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -177,12 +205,7 @@ class ContactDetailsPage extends StatelessWidget {
             ),
           ),
           IconButton(
-              icon: Icon(Icons.edit),
-              onPressed: () async {
-                print((await ContactsService.openExistingContact(_contact))
-                    ?.toMap());
-                print('contactOpened');
-              }),
+              icon: Icon(Icons.edit), onPressed: _openExistingContactOnDevice),
         ],
       ),
       body: SafeArea(

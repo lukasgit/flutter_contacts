@@ -20,7 +20,6 @@ import android.os.AsyncTask;
 import android.os.Build;
 import android.provider.BaseColumns;
 import android.provider.ContactsContract;
-import android.provider.ContactsContract.RawContacts;
 import android.text.TextUtils;
 import android.util.Log;
 import io.flutter.plugin.common.MethodCall;
@@ -29,7 +28,6 @@ import io.flutter.plugin.common.MethodChannel.MethodCallHandler;
 import io.flutter.plugin.common.MethodChannel.Result;
 import io.flutter.plugin.common.PluginRegistry;
 import io.flutter.plugin.common.PluginRegistry.Registrar;
-import io.flutter.plugin.common.PluginRegistry.ActivityResultListener;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -194,11 +192,8 @@ public class ContactsServicePlugin implements MethodCallHandler {
     @Override
     public boolean onActivityResult(int requestCode, int resultCode, Intent intent) {
       if(requestCode == REQUEST_OPEN_EXISTING_CONTACT || requestCode == REQUEST_OPEN_CONTACT_FORM) {
-        Log.d("", String.format("requestCode: %d", requestCode));
-        Log.d("", String.format("resultCode: %d", resultCode));
         try {
           Uri ur = intent.getData();
-          Log.d("contactUri", ur.getLastPathSegment());
           finishWithResult(getContactByIdentifier(ur.getLastPathSegment()));
         } catch (NullPointerException e) {
           finishWithResult(FORM_OPERATION_CANCELED);
@@ -233,12 +228,9 @@ public class ContactsServicePlugin implements MethodCallHandler {
 
 
     private void startIntent(Intent intent, int request) {
-      Log.d("contacts_service", "startingIntent");
       if (registrar.activity() != null) {
-        Log.d("contacts_service", "withActivity");
         registrar.activity().startActivityForResult(intent, request);
       } else {
-        Log.d("contacts_service", "withContext");
         registrar.context().startActivity(intent);
       }
     }

@@ -208,11 +208,17 @@ public class ContactsServicePlugin implements MethodCallHandler {
     private void openExistingContact(Contact contact) {
       String identifier = contact.identifier;
       try {
-        Uri uri = Uri.withAppendedPath(ContactsContract.Contacts.CONTENT_URI, identifier);
-        Intent intent = new Intent(Intent.ACTION_EDIT);
-        intent.setDataAndType(uri, ContactsContract.Contacts.CONTENT_ITEM_TYPE);
-        intent.putExtra("finishActivityOnSaveCompleted", true);
-        startIntent(intent, REQUEST_OPEN_EXISTING_CONTACT);
+        HashMap contactMapFromDevice = getContactByIdentifier(identifier);
+        // Contact existence check
+        if(contactMapFromDevice != null) {
+          Uri uri = Uri.withAppendedPath(ContactsContract.Contacts.CONTENT_URI, identifier);
+          Intent intent = new Intent(Intent.ACTION_EDIT);
+          intent.setDataAndType(uri, ContactsContract.Contacts.CONTENT_ITEM_TYPE);
+          intent.putExtra("finishActivityOnSaveCompleted", true);
+          startIntent(intent, REQUEST_OPEN_EXISTING_CONTACT);
+        } else {
+          finishWithResult(FORM_COULD_NOT_BE_OPEN);
+        }
       } catch(Exception e) {
       }
     }

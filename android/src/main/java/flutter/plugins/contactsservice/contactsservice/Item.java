@@ -30,7 +30,7 @@ public class Item{
         return new Item(map.get("label"), map.get("value"));
     }
 
-    public static String getPhoneLabel(int type){
+    public static String getPhoneLabel(int type, Cursor cursor){
         switch (type) {
             case CommonDataKinds.Phone.TYPE_HOME:
                 return "home";
@@ -48,6 +48,10 @@ public class Item{
                 return "company";
             case CommonDataKinds.Phone.TYPE_PAGER:
                 return "pager";
+            case CommonDataKinds.Phone.TYPE_CUSTOM:
+                if (cursor.getString(cursor.getColumnIndex(CommonDataKinds.Phone.LABEL)) != null) {
+                    return cursor.getString(cursor.getColumnIndex(CommonDataKinds.Phone.LABEL)).toLowerCase();
+                } else return "";
             default:
                 return "other";
         }

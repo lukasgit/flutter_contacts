@@ -291,10 +291,8 @@ public class ContactsServicePlugin implements MethodCallHandler {
       else if (mimeType.equals(CommonDataKinds.Phone.CONTENT_ITEM_TYPE)){
         String phoneNumber = cursor.getString(cursor.getColumnIndex(Phone.NUMBER));
         if (!TextUtils.isEmpty(phoneNumber)){
-        int type = cursor.getInt(cursor.getColumnIndex(Phone.TYPE));
-          String label = (type == ContactsContract.CommonDataKinds.BaseTypes.TYPE_CUSTOM)
-            ? cursor.getString(cursor.getColumnIndex(Phone.LABEL))
-            : Item.getPhoneLabel(type);
+          int type = cursor.getInt(cursor.getColumnIndex(Phone.TYPE));
+          String label = Item.getPhoneLabel(type, cursor);
           contact.phones.add(new Item(label,phoneNumber));
         }
       }

@@ -9,17 +9,19 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin {
         let instance = SwiftContactsServicePlugin()
         registrar.addMethodCallDelegate(instance, channel: channel)
     }
-    
+
     public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
         switch call.method {
         case "getContacts":
             let arguments = call.arguments as! [String:Any]
             result(getContacts(query: (arguments["query"] as? String), withThumbnails: arguments["withThumbnails"] as! Bool,
-                               photoHighResolution: arguments["photoHighResolution"] as! Bool, phoneQuery:  false, orderByGivenName: arguments["orderByGivenName"] as! Bool ))
+                               photoHighResolution: arguments["photoHighResolution"] as! Bool, phoneQuery:  false, orderByGivenName: arguments["orderByGivenName"] as! Bool,
+                               localizedLabels: arguments["iOSLocalizedLabels"] as! Bool ))
         case "getContactsForPhone":
             let arguments = call.arguments as! [String:Any]
             result(getContacts(query: (arguments["phone"] as? String), withThumbnails: arguments["withThumbnails"] as! Bool,
-                               photoHighResolution: arguments["photoHighResolution"] as! Bool, phoneQuery:  true, orderByGivenName: arguments["orderByGivenName"] as! Bool))
+                               photoHighResolution: arguments["photoHighResolution"] as! Bool, phoneQuery:  true, orderByGivenName: arguments["orderByGivenName"] as! Bool,
+                               localizedLabels: arguments["iOSLocalizedLabels"] as! Bool))
         case "addContact":
             let contact = dictionaryToContact(dictionary: call.arguments as! [String : Any])
 
@@ -49,11 +51,11 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin {
         }
     }
 
-    func getContacts(query : String?, withThumbnails: Bool, photoHighResolution: Bool, phoneQuery: Bool, orderByGivenName: Bool) -> [[String:Any]]{
-        
+    func getContacts(query : String?, withThumbnails: Bool, photoHighResolution: Bool, phoneQuery: Bool, orderByGivenName: Bool, localizedLabels: Bool) -> [[String:Any]]{
+
         var contacts : [CNContact] = []
         var result = [[String:Any]]()
-        
+
         //Create the store, keys & fetch request
         let store = CNContactStore()
         var keys = [CNContactFormatter.descriptorForRequiredKeys(for: .fullName),
@@ -68,7 +70,7 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin {
                     CNContactOrganizationNameKey,
                     CNContactJobTitleKey,
                     CNContactBirthdayKey] as [Any]
-        
+
         if(withThumbnails){
             if(photoHighResolution){
                 keys.append(CNContactImageDataKey)
@@ -76,13 +78,13 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin {
                 keys.append(CNContactThumbnailImageDataKey)
             }
         }
-        
+
         let fetchRequest = CNContactFetchRequest(keysToFetch: keys as! [CNKeyDescriptor])
         // Set the predicate if there is a query
         if query != nil && !phoneQuery {
             fetchRequest.predicate = CNContact.predicateForContacts(matchingName: query!)
         }
-        
+
         // Fetch contacts
         do{
             try store.enumerateContacts(with: fetchRequest, usingBlock: { (contact, stop) -> Void in
@@ -101,18 +103,18 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin {
             print(error.localizedDescription)
             return result
         }
-        
+
         if (orderByGivenName) {
             contacts = contacts.sorted { (contactA, contactB) -> Bool in
                 contactA.givenName.lowercased() < contactB.givenName.lowercased()
             }
         }
-        
+
         // Transform the CNContacts into dictionaries
         for contact : CNContact in contacts{
-            result.append(contactToDictionary(contact: contact))
+            result.append(contactToDictionary(contact: contact, localizedLabels: localizedLabels))
         }
-        
+
         return result
     }
 
@@ -120,7 +122,7 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin {
         if (!contact.phoneNumbers.isEmpty) {
             let phoneNumberToCompareAgainst = phone.components(separatedBy: NSCharacterSet.decimalDigits.inverted).joined(separator: "")
             for phoneNumber in contact.phoneNumbers {
-                
+
                 if let phoneNumberStruct = phoneNumber.value as CNPhoneNumber? {
                     let phoneNumberString = phoneNumberStruct.stringValue
                     let phoneNumberToCompare = phoneNumberString.components(separatedBy: NSCharacterSet.decimalDigits.inverted).joined(separator: "")
@@ -132,7 +134,7 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin {
         }
         return false
     }
-    
+
     func addContact(contact : CNMutableContact) -> String {
         let store = CNContactStore()
         do {
@@ -296,7 +298,7 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin {
         return contact
     }
 
-    func contactToDictionary(contact: CNContact) -> [String:Any]{
+    func contactToDictionary(contact: CNContact, localizedLabels: Bool) -> [String:Any]{
 
         var result = [String:Any]()
 
@@ -328,7 +330,7 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin {
             phoneDictionary["value"] = phone.value.stringValue
             phoneDictionary["label"] = "other"
             if let label = phone.label{
-                phoneDictionary["label"] = CNLabeledValue<NSString>.localizedString(forLabel: label)
+                phoneDictionary["label"] = localizedLabels ? CNLabeledValue<NSString>.localizedString(forLabel: label) : getRawPhoneLabel(label);
             }
             phoneNumbers.append(phoneDictionary)
         }
@@ -341,7 +343,7 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin {
             emailDictionary["value"] = String(email.value)
             emailDictionary["label"] = "other"
             if let label = email.label{
-                emailDictionary["label"] = CNLabeledValue<NSString>.localizedString(forLabel: label)
+                emailDictionary["label"] = localizedLabels ? CNLabeledValue<NSString>.localizedString(forLabel: label) : getRawCommonLabel(label);
             }
             emailAddresses.append(emailDictionary)
         }
@@ -353,7 +355,7 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin {
             var addressDictionary = [String:String]()
             addressDictionary["label"] = ""
             if let label = address.label{
-                addressDictionary["label"] = CNLabeledValue<NSString>.localizedString(forLabel: label)
+                addressDictionary["label"] = localizedLabels ? CNLabeledValue<NSString>.localizedString(forLabel: label) : getRawCommonLabel(label);
             }
             addressDictionary["street"] = address.value.street
             addressDictionary["city"] = address.value.city
@@ -370,7 +372,7 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin {
             let formatter = DateFormatter()
             formatter.dateFormat = "yyyy-MM-dd"
             result["birthday"] = formatter.string(from: birthday)
-        }      
+        }
 
         return result
     }
@@ -387,7 +389,7 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin {
         default: return labelValue
         }
     }
-    
+
     func getPostalAddressLabel(label:String?) -> String{
         let labelValue = label ?? ""
         switch(labelValue){
@@ -395,6 +397,29 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin {
         case "home": return CNLabelHome
         case "other": return CNLabelOther
         default: return labelValue
+        }
+    }
+
+    func getRawPhoneLabel(_ label: String?) -> String{
+        let labelValue = label ?? ""
+        switch(labelValue){
+            case CNLabelPhoneNumberMain: return "main"
+            case CNLabelPhoneNumberMobile: return "mobile"
+            case CNLabelPhoneNumberiPhone: return "iPhone"
+            case CNLabelWork: return "work"
+            case CNLabelHome: return "home"
+            case CNLabelOther: return "other"
+            default: return labelValue
+        }
+    }
+
+    func getRawCommonLabel(_ label: String?) -> String{
+        let labelValue = label ?? ""
+        switch(labelValue){
+            case CNLabelWork: return "work"
+            case CNLabelHome: return "home"
+            case CNLabelOther: return "other"
+            default: return labelValue
         }
     }
 

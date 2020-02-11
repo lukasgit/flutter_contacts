@@ -17,13 +17,15 @@ class ContactsService {
       {String query,
       bool withThumbnails = true,
       bool photoHighResolution = true,
-      bool orderByGivenName = true}) async {
+      bool orderByGivenName = true,
+      bool iOSLocalizedLabels = true}) async {
     Iterable contacts =
         await _channel.invokeMethod('getContacts', <String, dynamic>{
       'query': query,
       'withThumbnails': withThumbnails,
       'photoHighResolution': photoHighResolution,
-      'orderByGivenName': orderByGivenName
+      'orderByGivenName': orderByGivenName,
+      'iOSLocalizedLabels': iOSLocalizedLabels,
     });
     return contacts.map((m) => Contact.fromMap(m));
   }
@@ -33,7 +35,8 @@ class ContactsService {
   static Future<Iterable<Contact>> getContactsForPhone(String phone,
       {bool withThumbnails = true,
       bool photoHighResolution = true,
-      bool orderByGivenName = true}) async {
+      bool orderByGivenName = true,
+      bool iOSLocalizedLabels = true}) async {
     if (phone == null || phone.isEmpty) return Iterable.empty();
 
     Iterable contacts =
@@ -41,7 +44,8 @@ class ContactsService {
       'phone': phone,
       'withThumbnails': withThumbnails,
       'photoHighResolution': photoHighResolution,
-      'orderByGivenName': orderByGivenName
+      'orderByGivenName': orderByGivenName,
+      'iOSLocalizedLabels': iOSLocalizedLabels,
     });
     return contacts.map((m) => Contact.fromMap(m));
   }

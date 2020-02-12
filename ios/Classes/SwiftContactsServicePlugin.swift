@@ -217,7 +217,7 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin {
                     var updatedEmails = [CNLabeledValue<NSString>]()
                     for email in emails where nil != email["value"] {
                         let emailLabel = email["label"] ?? ""
-                        updatedEmails.append(CNLabeledValue(label: emailLabel, value: email["value"]! as NSString))
+                        updatedEmails.append(CNLabeledValue(label: getCommonLabel(label: emailLabel), value: email["value"]! as NSString))
                     }
                     contact.emailAddresses = updatedEmails
                 }
@@ -233,7 +233,7 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin {
                         newAddress.country = postalAddress["country"] ?? ""
                         newAddress.state = postalAddress["region"] ?? ""
                         let label = postalAddress["label"] ?? ""
-                        updatedPostalAddresses.append(CNLabeledValue(label: getPostalAddressLabel(label: label), value: newAddress))
+                        updatedPostalAddresses.append(CNLabeledValue(label: getCommonLabel(label: label), value: newAddress))
                     }
                     contact.postalAddresses = updatedPostalAddresses
                 }
@@ -277,7 +277,7 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin {
         if let emails = dictionary["emails"] as? [[String:String]]{
             for email in emails where nil != email["value"] {
                 let emailLabel = email["label"] ?? ""
-                contact.emailAddresses.append(CNLabeledValue(label:emailLabel, value:email["value"]! as NSString))
+                contact.emailAddresses.append(CNLabeledValue(label:getCommonLabel(label: emailLabel), value:email["value"]! as NSString))
             }
         }
 
@@ -291,7 +291,7 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin {
                 newAddress.country = postalAddress["country"] ?? ""
                 newAddress.state = postalAddress["region"] ?? ""
                 let label = postalAddress["label"] ?? ""
-                contact.postalAddresses.append(CNLabeledValue(label: getPostalAddressLabel(label: label), value: newAddress))
+                contact.postalAddresses.append(CNLabeledValue(label: getCommonLabel(label: label), value: newAddress))
             }
         }
 
@@ -399,7 +399,7 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin {
         }
     }
 
-    func getPostalAddressLabel(label:String?) -> String{
+    func getCommonLabel(label:String?) -> String{
         let labelValue = label ?? ""
         switch(labelValue){
         case "work": return CNLabelWork

@@ -295,6 +295,14 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin {
             }
         }
 
+        //BIRTHDAY
+        if let birthday = dictionary["birthday"] as? String {
+            let formatter = DateFormatter()
+            formatter.dateFormat = "yyyy-MM-dd"
+            let date = formatter.date(from: birthday)!
+            contact.birthday = Calendar.current.dateComponents([.year, .month, .day], from: date)
+        }
+
         return contact
     }
 
@@ -370,7 +378,8 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin {
         //BIRTHDAY
         if let birthday : Date = contact.birthday?.date {
             let formatter = DateFormatter()
-            formatter.dateFormat = "yyyy-MM-dd"
+            let year = Calendar.current.component(.year, from: birthday)
+            formatter.dateFormat = year == 1 ? "--MM-dd" : "yyyy-MM-dd";
             result["birthday"] = formatter.string(from: birthday)
         }
 

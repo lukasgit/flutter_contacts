@@ -1,3 +1,7 @@
+## [0.4.0] - March 30, 2020
+
+* Migrate the plugin to android v2 embedding.
+
 ## [0.3.10] - December 6, 2019
 
 * Expose the raw account type (e.g. "com.google" or "com.skype") and account name on Android (@joachimvalente)

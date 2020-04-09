@@ -11,6 +11,7 @@ import android.annotation.TargetApi;
 import android.content.ContentProviderOperation;
 import android.content.ContentResolver;
 import android.content.ContentUris;
+import android.content.Context;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -22,6 +23,8 @@ import android.provider.ContactsContract;
 import android.provider.ContactsContract.RawContacts;
 import android.text.TextUtils;
 import android.util.Log;
+import io.flutter.embedding.engine.plugins.FlutterPlugin;
+import io.flutter.plugin.common.BinaryMessenger;
 import io.flutter.plugin.common.MethodCall;
 import io.flutter.plugin.common.MethodChannel;
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler;
@@ -41,20 +44,35 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 @TargetApi(Build.VERSION_CODES.ECLAIR)
-public class ContactsServicePlugin implements MethodCallHandler {
-
-  ContactsServicePlugin(ContentResolver contentResolver){
-    this.contentResolver = contentResolver;
-  }
+public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin {
 
   private static final String LOG_TAG = "flutter_contacts";
-  private final ContentResolver contentResolver;
+  private ContentResolver contentResolver;
+  private MethodChannel methodChannel;
   private final ExecutorService executor =
       new ThreadPoolExecutor(0, 10, 60, TimeUnit.SECONDS, new ArrayBlockingQueue<Runnable>(1000));
 
   public static void registerWith(Registrar registrar) {
-    final MethodChannel channel = new MethodChannel(registrar.messenger(), "github.com/clovisnicolas/flutter_contacts");
-    channel.setMethodCallHandler(new ContactsServicePlugin(registrar.context().getContentResolver()));
+    ContactsServicePlugin instance = new ContactsServicePlugin();
+    instance.initInstance(registrar.messenger(), registrar.context());
+  }
+
+  private void initInstance(BinaryMessenger messenger, Context context) {
+    methodChannel = new MethodChannel(messenger, "github.com/clovisnicolas/flutter_contacts");
+    methodChannel.setMethodCallHandler(this);
+    this.contentResolver = context.getContentResolver();
+  }
+
+  @Override
+  public void onAttachedToEngine(FlutterPluginBinding binding) {
+    initInstance(binding.getBinaryMessenger(), binding.getApplicationContext());
+  }
+
+  @Override
+  public void onDetachedFromEngine(FlutterPluginBinding binding) {
+    methodChannel.setMethodCallHandler(null);
+    methodChannel = null;
+    contentResolver = null;
   }
 
   @Override

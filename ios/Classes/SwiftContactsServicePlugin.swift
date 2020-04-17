@@ -82,13 +82,22 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin {
         if query != nil && !phoneQuery {
             fetchRequest.predicate = CNContact.predicateForContacts(matchingName: query!)
         }
-        
+
+        if #available(iOS 11, *) {
+            if query != nil && phoneQuery {
+                let phoneNumberPredicate = CNPhoneNumber(stringValue: query!)
+                fetchRequest.predicate = CNContact.predicateForContacts(matching: phoneNumberPredicate)
+            }
+        }
+
         // Fetch contacts
         do{
             try store.enumerateContacts(with: fetchRequest, usingBlock: { (contact, stop) -> Void in
 
                 if phoneQuery {
-                    if query != nil && self.has(contact: contact, phone: query!){
+                    if #available(iOS 11, *) {
+                        contacts.append(contact)
+                    } else if query != nil && self.has(contact: contact, phone: query!){
                         contacts.append(contact)
                     }
                 } else {

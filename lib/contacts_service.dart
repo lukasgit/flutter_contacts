@@ -30,8 +30,8 @@ class ContactsService {
     return contacts.map((m) => Contact.fromMap(m));
   }
 
-  /// Fetches all contacts, or when specified, the contacts with a name
-  /// matching [query]
+  /// Fetches all contacts, or when specified, the contacts with the phone
+  /// matching [phone]
   static Future<Iterable<Contact>> getContactsForPhone(String phone,
       {bool withThumbnails = true,
       bool photoHighResolution = true,
@@ -46,6 +46,22 @@ class ContactsService {
       'photoHighResolution': photoHighResolution,
       'orderByGivenName': orderByGivenName,
       'iOSLocalizedLabels': iOSLocalizedLabels,
+    });
+    return contacts.map((m) => Contact.fromMap(m));
+  }
+
+  /// Fetches all contacts, or when specified, the contacts with the email
+  /// matching [email]
+  /// Works only on iOS
+  static Future<Iterable<Contact>> getContactsForEmail(String email,
+      {bool withThumbnails = true,
+        bool photoHighResolution = true,
+        bool orderByGivenName = true}) async {
+    Iterable contacts = await _channel.invokeMethod('getContactsForEmail',<String,dynamic>{
+      'email': email,
+      'withThumbnails': withThumbnails,
+      'photoHighResolution': photoHighResolution,
+      'orderByGivenName': orderByGivenName
     });
     return contacts.map((m) => Contact.fromMap(m));
   }
@@ -161,7 +177,7 @@ class Contact {
       "suffix": contact.suffix,
       "company": contact.company,
       "jobTitle": contact.jobTitle,
-      "androidAccountType": contact.androidAccountTypeRaw, 
+      "androidAccountType": contact.androidAccountTypeRaw,
       "androidAccountName": contact.androidAccountName,
       "emails": emails,
       "phones": phones,
@@ -255,7 +271,7 @@ class Contact {
     } else if (androidAccountType.startsWith("com.facebook")) {
       return AndroidAccountType.facebook;
     }
-    /// Other account types are not supported on Android 
+    /// Other account types are not supported on Android
     /// such as Samsung, htc etc...
     return AndroidAccountType.other;
   }

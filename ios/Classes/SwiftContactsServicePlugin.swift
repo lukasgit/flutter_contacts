@@ -19,9 +19,29 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin {
                                localizedLabels: arguments["iOSLocalizedLabels"] as! Bool ))
         case "getContactsForPhone":
             let arguments = call.arguments as! [String:Any]
-            result(getContacts(query: (arguments["phone"] as? String), withThumbnails: arguments["withThumbnails"] as! Bool,
-                               photoHighResolution: arguments["photoHighResolution"] as! Bool, phoneQuery:  true, orderByGivenName: arguments["orderByGivenName"] as! Bool,
-                               localizedLabels: arguments["iOSLocalizedLabels"] as! Bool))
+            result(
+                getContacts(
+                    query: (arguments["phone"] as? String),
+                    withThumbnails: arguments["withThumbnails"] as! Bool,
+                    photoHighResolution: arguments["photoHighResolution"] as! Bool,
+                    phoneQuery: true,
+                    orderByGivenName: arguments["orderByGivenName"] as! Bool,
+                    localizedLabels: arguments["iOSLocalizedLabels"] as! Bool
+                )
+            )
+        case "getContactsForEmail":
+            let arguments = call.arguments as! [String:Any]
+            result(
+                getContacts(
+                    query: (arguments["email"] as? String),
+                    withThumbnails: arguments["withThumbnails"] as! Bool,
+                    photoHighResolution: arguments["photoHighResolution"] as! Bool,
+                    phoneQuery: false,
+                    emailQuery: true,
+                    orderByGivenName: arguments["orderByGivenName"] as! Bool,
+                    localizedLabels: arguments["iOSLocalizedLabels"] as! Bool
+                )
+            )
         case "addContact":
             let contact = dictionaryToContact(dictionary: call.arguments as! [String : Any])
 
@@ -51,7 +71,7 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin {
         }
     }
 
-    func getContacts(query : String?, withThumbnails: Bool, photoHighResolution: Bool, phoneQuery: Bool, orderByGivenName: Bool, localizedLabels: Bool) -> [[String:Any]]{
+    func getContacts(query : String?, withThumbnails: Bool, photoHighResolution: Bool, phoneQuery: Bool, emailQuery: Bool = false, orderByGivenName: Bool, localizedLabels: Bool) -> [[String:Any]]{
 
         var contacts : [CNContact] = []
         var result = [[String:Any]]()
@@ -81,8 +101,14 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin {
 
         let fetchRequest = CNContactFetchRequest(keysToFetch: keys as! [CNKeyDescriptor])
         // Set the predicate if there is a query
-        if query != nil && !phoneQuery {
+        if query != nil && !phoneQuery  && !emailQuery {
             fetchRequest.predicate = CNContact.predicateForContacts(matchingName: query!)
+        }
+
+        if #available(iOS 11, *) {
+            if query != nil && emailQuery {
+             fetchRequest.predicate = CNContact.predicateForContacts(matchingEmailAddress: query!)
+            }
         }
 
         // Fetch contacts
@@ -91,6 +117,12 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin {
 
                 if phoneQuery {
                     if query != nil && self.has(contact: contact, phone: query!){
+                        contacts.append(contact)
+                    }
+                } else if emailQuery {
+                    if #available(iOS 11, *) {
+                        contacts.append(contact)
+                    } else if query != nil && (contact.emailAddresses.contains { $0.value.caseInsensitiveCompare(query!) == .orderedSame}) {
                         contacts.append(contact)
                     }
                 } else {

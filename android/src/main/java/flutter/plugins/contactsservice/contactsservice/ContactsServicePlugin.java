@@ -11,6 +11,7 @@ import android.annotation.TargetApi;
 import android.content.ContentProviderOperation;
 import android.content.ContentResolver;
 import android.content.ContentUris;
+import android.content.Context;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -22,6 +23,8 @@ import android.provider.ContactsContract;
 import android.provider.ContactsContract.RawContacts;
 import android.text.TextUtils;
 import android.util.Log;
+import io.flutter.embedding.engine.plugins.FlutterPlugin;
+import io.flutter.plugin.common.BinaryMessenger;
 import io.flutter.plugin.common.MethodCall;
 import io.flutter.plugin.common.MethodChannel;
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler;
@@ -41,20 +44,35 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 @TargetApi(Build.VERSION_CODES.ECLAIR)
-public class ContactsServicePlugin implements MethodCallHandler {
-
-  ContactsServicePlugin(ContentResolver contentResolver){
-    this.contentResolver = contentResolver;
-  }
+public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin {
 
   private static final String LOG_TAG = "flutter_contacts";
-  private final ContentResolver contentResolver;
+  private ContentResolver contentResolver;
+  private MethodChannel methodChannel;
   private final ExecutorService executor =
-      new ThreadPoolExecutor(0, 10, 60, TimeUnit.SECONDS, new ArrayBlockingQueue<Runnable>(1000));
+          new ThreadPoolExecutor(0, 10, 60, TimeUnit.SECONDS, new ArrayBlockingQueue<Runnable>(1000));
 
   public static void registerWith(Registrar registrar) {
-    final MethodChannel channel = new MethodChannel(registrar.messenger(), "github.com/clovisnicolas/flutter_contacts");
-    channel.setMethodCallHandler(new ContactsServicePlugin(registrar.context().getContentResolver()));
+    ContactsServicePlugin instance = new ContactsServicePlugin();
+    instance.initInstance(registrar.messenger(), registrar.context());
+  }
+
+  private void initInstance(BinaryMessenger messenger, Context context) {
+    methodChannel = new MethodChannel(messenger, "github.com/clovisnicolas/flutter_contacts");
+    methodChannel.setMethodCallHandler(this);
+    this.contentResolver = context.getContentResolver();
+  }
+
+  @Override
+  public void onAttachedToEngine(FlutterPluginBinding binding) {
+    initInstance(binding.getBinaryMessenger(), binding.getApplicationContext());
+  }
+
+  @Override
+  public void onDetachedFromEngine(FlutterPluginBinding binding) {
+    methodChannel.setMethodCallHandler(null);
+    methodChannel = null;
+    contentResolver = null;
   }
 
   @Override
@@ -172,7 +190,7 @@ public class ContactsServicePlugin implements MethodCallHandler {
       if (withThumbnails) {
         for(Contact c : contacts){
           final byte[] avatar = loadContactPhotoHighRes(
-              c.identifier, photoHighResolution, contentResolver);
+                  c.identifier, photoHighResolution, contentResolver);
           if (avatar != null) {
             c.avatar = avatar;
           } else {
@@ -214,12 +232,12 @@ public class ContactsServicePlugin implements MethodCallHandler {
 
   private Cursor getCursor(String query) {
     String selection = ContactsContract.Data.MIMETYPE + "=? OR " + ContactsContract.Data.MIMETYPE + "=? OR "
-        + ContactsContract.Data.MIMETYPE + "=? OR " + ContactsContract.Data.MIMETYPE + "=? OR "
-        + ContactsContract.Data.MIMETYPE + "=? OR " + ContactsContract.Data.MIMETYPE + "=? OR "
-        + ContactsContract.Data.MIMETYPE + "=? OR " + ContactsContract.RawContacts.ACCOUNT_TYPE + "=?";
+            + ContactsContract.Data.MIMETYPE + "=? OR " + ContactsContract.Data.MIMETYPE + "=? OR "
+            + ContactsContract.Data.MIMETYPE + "=? OR " + ContactsContract.Data.MIMETYPE + "=? OR "
+            + ContactsContract.Data.MIMETYPE + "=? OR " + ContactsContract.RawContacts.ACCOUNT_TYPE + "=?";
     String[] selectionArgs = new String[] { CommonDataKinds.Note.CONTENT_ITEM_TYPE, Email.CONTENT_ITEM_TYPE,
-        Phone.CONTENT_ITEM_TYPE, StructuredName.CONTENT_ITEM_TYPE, Organization.CONTENT_ITEM_TYPE,
-        StructuredPostal.CONTENT_ITEM_TYPE, CommonDataKinds.Event.CONTENT_ITEM_TYPE, ContactsContract.RawContacts.ACCOUNT_TYPE
+            Phone.CONTENT_ITEM_TYPE, StructuredName.CONTENT_ITEM_TYPE, Organization.CONTENT_ITEM_TYPE,
+            StructuredPostal.CONTENT_ITEM_TYPE, CommonDataKinds.Event.CONTENT_ITEM_TYPE, ContactsContract.RawContacts.ACCOUNT_TYPE
     };
     if(query != null){
       selectionArgs = new String[]{query + "%"};
@@ -290,9 +308,10 @@ public class ContactsServicePlugin implements MethodCallHandler {
       //PHONES
       else if (mimeType.equals(CommonDataKinds.Phone.CONTENT_ITEM_TYPE)){
         String phoneNumber = cursor.getString(cursor.getColumnIndex(Phone.NUMBER));
-        int type = cursor.getInt(cursor.getColumnIndex(Phone.TYPE));
         if (!TextUtils.isEmpty(phoneNumber)){
-          contact.phones.add(new Item(Item.getPhoneLabel(type),phoneNumber));
+          int type = cursor.getInt(cursor.getColumnIndex(Phone.TYPE));
+          String label = Item.getPhoneLabel(type, cursor);
+          contact.phones.add(new Item(label,phoneNumber));
         }
       }
       //MAILS
@@ -342,7 +361,7 @@ public class ContactsServicePlugin implements MethodCallHandler {
   }
 
   private void getAvatar(final Contact contact, final boolean highRes,
-      final Result result) {
+                         final Result result) {
     new GetAvatarsTask(contact, highRes, contentResolver, result).executeOnExecutor(this.executor);
   }
 
@@ -353,7 +372,7 @@ public class ContactsServicePlugin implements MethodCallHandler {
     final Result result;
 
     GetAvatarsTask(final Contact contact, final boolean highRes,
-        final ContentResolver contentResolver, final Result result) {
+                   final ContentResolver contentResolver, final Result result) {
       this.contact = contact;
       this.highRes = highRes;
       this.contentResolver = contentResolver;
@@ -373,7 +392,7 @@ public class ContactsServicePlugin implements MethodCallHandler {
   }
 
   private static byte[] loadContactPhotoHighRes(final String identifier,
-      final boolean photoHighResolution, final ContentResolver contentResolver) {
+                                                final boolean photoHighResolution, final ContentResolver contentResolver) {
     try {
       final Uri uri = ContentUris.withAppendedId(ContactsContract.Contacts.CONTENT_URI, Long.parseLong(identifier));
       final InputStream input = ContactsContract.Contacts.openContactPhotoInputStream(contentResolver, uri, photoHighResolution);
@@ -476,6 +495,14 @@ public class ContactsServicePlugin implements MethodCallHandler {
       ops.add(op.build());
     }
 
+    // Birthday
+    op = ContentProviderOperation.newInsert(ContactsContract.Data.CONTENT_URI)
+            .withValueBackReference(ContactsContract.Data.RAW_CONTACT_ID, 0)
+            .withValue(ContactsContract.Data.MIMETYPE, CommonDataKinds.Event.CONTENT_ITEM_TYPE)
+            .withValue(CommonDataKinds.Event.TYPE, CommonDataKinds.Event.TYPE_BIRTHDAY)
+            .withValue(CommonDataKinds.Event.START_DATE, contact.birthday);
+    ops.add(op.build());
+
     try {
       contentResolver.applyBatch(ContactsContract.AUTHORITY, ops);
       return true;
@@ -562,10 +589,10 @@ public class ContactsServicePlugin implements MethodCallHandler {
 
     //Photo
     op = ContentProviderOperation.newInsert(ContactsContract.Data.CONTENT_URI)
-          .withValue(ContactsContract.Data.RAW_CONTACT_ID, contact.identifier)
-          .withValue(ContactsContract.Data.IS_SUPER_PRIMARY, 1)
-          .withValue(ContactsContract.CommonDataKinds.Photo.PHOTO, contact.avatar)
-          .withValue(ContactsContract.Data.MIMETYPE, ContactsContract.CommonDataKinds.Photo.CONTENT_ITEM_TYPE);
+            .withValue(ContactsContract.Data.RAW_CONTACT_ID, contact.identifier)
+            .withValue(ContactsContract.Data.IS_SUPER_PRIMARY, 1)
+            .withValue(ContactsContract.CommonDataKinds.Photo.PHOTO, contact.avatar)
+            .withValue(ContactsContract.Data.MIMETYPE, ContactsContract.CommonDataKinds.Photo.CONTENT_ITEM_TYPE);
     ops.add(op.build());
 
 

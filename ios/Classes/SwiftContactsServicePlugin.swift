@@ -101,13 +101,16 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin {
 
         let fetchRequest = CNContactFetchRequest(keysToFetch: keys as! [CNKeyDescriptor])
         // Set the predicate if there is a query
-        if query != nil && !phoneQuery  && !emailQuery {
+        if query != nil && !phoneQuery && !emailQuery {
             fetchRequest.predicate = CNContact.predicateForContacts(matchingName: query!)
         }
 
         if #available(iOS 11, *) {
-            if query != nil && emailQuery {
-             fetchRequest.predicate = CNContact.predicateForContacts(matchingEmailAddress: query!)
+            if query != nil && phoneQuery {
+                let phoneNumberPredicate = CNPhoneNumber(stringValue: query!)
+                fetchRequest.predicate = CNContact.predicateForContacts(matching: phoneNumberPredicate)
+            } else if query != nil && emailQuery {
+                fetchRequest.predicate = CNContact.predicateForContacts(matchingEmailAddress: query!)
             }
         }
 
@@ -116,7 +119,9 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin {
             try store.enumerateContacts(with: fetchRequest, usingBlock: { (contact, stop) -> Void in
 
                 if phoneQuery {
-                    if query != nil && self.has(contact: contact, phone: query!){
+                    if #available(iOS 11, *) {
+                        contacts.append(contact)
+                    } else if query != nil && self.has(contact: contact, phone: query!){
                         contacts.append(contact)
                     }
                 } else if emailQuery {

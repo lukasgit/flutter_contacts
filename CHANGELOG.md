@@ -1,3 +1,7 @@
+## [0.4.2] - April 21, 2020
+
+* Two methods have been added to handle creating and editing contacts with device contact form (@engylemure)
+
 ## [0.4.1] - April 21, 2020
 
 * @sperochon

@@ -12,6 +12,7 @@ import android.content.ContentProviderOperation;
 import android.content.ContentResolver;
 import android.content.ContentUris;
 import android.content.Context;
+import android.content.Intent;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -24,11 +25,14 @@ import android.provider.ContactsContract.RawContacts;
 import android.text.TextUtils;
 import android.util.Log;
 import io.flutter.embedding.engine.plugins.FlutterPlugin;
+import io.flutter.embedding.engine.plugins.activity.ActivityAware;
+import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding;
 import io.flutter.plugin.common.BinaryMessenger;
 import io.flutter.plugin.common.MethodCall;
 import io.flutter.plugin.common.MethodChannel;
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler;
 import io.flutter.plugin.common.MethodChannel.Result;
+import io.flutter.plugin.common.PluginRegistry;
 import io.flutter.plugin.common.PluginRegistry.Registrar;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -44,17 +48,27 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 @TargetApi(Build.VERSION_CODES.ECLAIR)
-public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin {
+public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, ActivityAware {
+
+  private static final int FORM_OPERATION_CANCELED = 1;
+  private static final int FORM_COULD_NOT_BE_OPEN = 2;
 
   private static final String LOG_TAG = "flutter_contacts";
   private ContentResolver contentResolver;
   private MethodChannel methodChannel;
+  private BaseContactsServiceDelegate delegate;
+
   private final ExecutorService executor =
       new ThreadPoolExecutor(0, 10, 60, TimeUnit.SECONDS, new ArrayBlockingQueue<Runnable>(1000));
+
+  private void initDelegateWithRegister(Registrar registrar) {
+    this.delegate = new ContactServiceDelegateOld(registrar);
+  }
 
   public static void registerWith(Registrar registrar) {
     ContactsServicePlugin instance = new ContactsServicePlugin();
     instance.initInstance(registrar.messenger(), registrar.context());
+    instance.initDelegateWithRegister(registrar);
   }
 
   private void initInstance(BinaryMessenger messenger, Context context) {
@@ -66,6 +80,7 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin {
   @Override
   public void onAttachedToEngine(FlutterPluginBinding binding) {
     initInstance(binding.getBinaryMessenger(), binding.getApplicationContext());
+    this.delegate = new ContactServiceDelegate(binding.getApplicationContext());
   }
 
   @Override
@@ -73,6 +88,7 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin {
     methodChannel.setMethodCallHandler(null);
     methodChannel = null;
     contentResolver = null;
+    this.delegate = null;
   }
 
   @Override
@@ -110,6 +126,23 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin {
           result.success(null);
         } else {
           result.error(null, "Failed to update the contact, make sure it has a valid identifier", null);
+        }
+        break;
+      } case "openExistingContact" :{
+        final Contact contact = Contact.fromMap((HashMap)call.arguments);
+        if (delegate != null) {
+          delegate.setResult(result);
+          delegate.openExistingContact(contact);
+        } else {
+          result.success(FORM_COULD_NOT_BE_OPEN);
+        }
+        break;
+      } case "openContactForm": {
+        if (delegate != null) {
+          delegate.setResult(result);
+          delegate.openContactForm();
+        } else {
+          result.success(FORM_COULD_NOT_BE_OPEN);
         }
         break;
       } default: {
@@ -162,6 +195,166 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin {
 
   private void getContactsForPhone(String phone, boolean withThumbnails, boolean photoHighResolution, boolean orderByGivenName, Result result) {
     new GetContactsTask(result, withThumbnails, photoHighResolution, orderByGivenName).executeOnExecutor(executor, phone, true);
+  }
+
+  @Override
+  public void onAttachedToActivity(ActivityPluginBinding binding) {
+    if (delegate instanceof  ContactServiceDelegate) {
+      ((ContactServiceDelegate) delegate).bindToActivity(binding);
+    }
+  }
+
+  @Override
+  public void onDetachedFromActivityForConfigChanges() {
+    if (delegate instanceof ContactServiceDelegate) {
+      ((ContactServiceDelegate) delegate).unbindActivity();
+    }
+  }
+
+  @Override
+  public void onReattachedToActivityForConfigChanges(ActivityPluginBinding binding) {
+    if (delegate instanceof  ContactServiceDelegate) {
+      ((ContactServiceDelegate) delegate).bindToActivity(binding);
+    }
+  }
+
+  @Override
+  public void onDetachedFromActivity() {
+    if (delegate instanceof ContactServiceDelegate) {
+      ((ContactServiceDelegate) delegate).unbindActivity();
+    }
+  }
+
+  private class BaseContactsServiceDelegate implements PluginRegistry.ActivityResultListener {
+    private static final int REQUEST_OPEN_CONTACT_FORM = 52941;
+    private static final int REQUEST_OPEN_EXISTING_CONTACT = 52942;
+    private Result result;
+
+    void setResult(Result result) {
+      this.result = result;
+    }
+
+    void finishWithResult(Object result) {
+      if(result != null) {
+        this.result.success(result);
+        this.result = null;
+      }
+    }
+
+    @Override
+    public boolean onActivityResult(int requestCode, int resultCode, Intent intent) {
+      if(requestCode == REQUEST_OPEN_EXISTING_CONTACT || requestCode == REQUEST_OPEN_CONTACT_FORM) {
+        try {
+          Uri ur = intent.getData();
+          finishWithResult(getContactByIdentifier(ur.getLastPathSegment()));
+        } catch (NullPointerException e) {
+          finishWithResult(FORM_OPERATION_CANCELED);
+        }
+        return true;
+      } else {
+        finishWithResult(FORM_COULD_NOT_BE_OPEN);
+      }
+      return false;
+    }
+
+    void openExistingContact(Contact contact) {
+      String identifier = contact.identifier;
+      try {
+        HashMap contactMapFromDevice = getContactByIdentifier(identifier);
+        // Contact existence check
+        if(contactMapFromDevice != null) {
+          Uri uri = Uri.withAppendedPath(ContactsContract.Contacts.CONTENT_URI, identifier);
+          Intent intent = new Intent(Intent.ACTION_EDIT);
+          intent.setDataAndType(uri, ContactsContract.Contacts.CONTENT_ITEM_TYPE);
+          intent.putExtra("finishActivityOnSaveCompleted", true);
+          startIntent(intent, REQUEST_OPEN_EXISTING_CONTACT);
+        } else {
+          finishWithResult(FORM_COULD_NOT_BE_OPEN);
+        }
+      } catch(Exception e) {
+      }
+    }
+
+    void openContactForm() {
+      try {
+        Intent intent = new Intent(Intent.ACTION_INSERT, ContactsContract.Contacts.CONTENT_URI);
+        intent.putExtra("finishActivityOnSaveCompleted", true);
+        startIntent(intent, REQUEST_OPEN_CONTACT_FORM);
+      }catch(Exception e) {
+      }
+    }
+
+    void startIntent(Intent intent, int request) {
+    }
+
+    HashMap getContactByIdentifier(String identifier) {
+      ArrayList<Contact> matchingContacts;
+      {
+        Cursor cursor = contentResolver.query(
+                ContactsContract.Data.CONTENT_URI, PROJECTION,
+                ContactsContract.RawContacts.CONTACT_ID + " = ?",
+                new String[]{identifier},
+                null
+        );
+        try {
+          matchingContacts = getContactsFrom(cursor);
+        } finally {
+          if(cursor != null) {
+            cursor.close();
+          }
+        }
+      }
+      if(matchingContacts.size() > 0) {
+        return matchingContacts.iterator().next().toMap();
+      }
+      return null;
+    }
+  }
+
+  private class ContactServiceDelegateOld extends BaseContactsServiceDelegate {
+    private final PluginRegistry.Registrar registrar;
+
+    ContactServiceDelegateOld(PluginRegistry.Registrar registrar) {
+      this.registrar = registrar;
+      registrar.addActivityResultListener(this);
+    }
+
+    @Override
+    void startIntent(Intent intent, int request) {
+      if (registrar.activity() != null) {
+        registrar.activity().startActivityForResult(intent, request);
+      } else {
+        registrar.context().startActivity(intent);
+      }
+    }
+  }
+
+  private class ContactServiceDelegate extends BaseContactsServiceDelegate {
+    private final Context context;
+    private ActivityPluginBinding activityPluginBinding;
+
+    ContactServiceDelegate(Context context) {
+      this.context = context;
+    }
+
+    void bindToActivity(ActivityPluginBinding activityPluginBinding) {
+      this.activityPluginBinding = activityPluginBinding;
+      this.activityPluginBinding.addActivityResultListener(this);
+    }
+
+    void unbindActivity() {
+      this.activityPluginBinding.removeActivityResultListener(this);
+      this.activityPluginBinding = null;
+    }
+
+    @Override
+    void startIntent(Intent intent, int request) {
+      if (this.activityPluginBinding != null) {
+        activityPluginBinding.getActivity().startActivityForResult(intent, request);
+      } else {
+        context.startActivity(intent);
+      }
+    }
   }
 
   @TargetApi(Build.VERSION_CODES.CUPCAKE)

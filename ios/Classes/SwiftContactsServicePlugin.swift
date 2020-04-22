@@ -1,13 +1,19 @@
 import Flutter
 import UIKit
 import Contacts
+import ContactsUI
 
 @available(iOS 9.0, *)
-public class SwiftContactsServicePlugin: NSObject, FlutterPlugin {
+public class SwiftContactsServicePlugin: NSObject, FlutterPlugin, CNContactViewControllerDelegate {
+    private var result: FlutterResult? = nil
+    static let FORM_OPERATION_CANCELED: Int = 1
+    static let FORM_COULD_NOT_BE_OPEN: Int = 2
+    
     public static func register(with registrar: FlutterPluginRegistrar) {
         let channel = FlutterMethodChannel(name: "github.com/clovisnicolas/flutter_contacts", binaryMessenger: registrar.messenger())
         let instance = SwiftContactsServicePlugin()
         registrar.addMethodCallDelegate(instance, channel: channel)
+        instance.preLoadContactView()
     }
     
     public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
@@ -44,6 +50,13 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin {
             else {
                 result(FlutterError(code: "", message: "Failed to update contact, make sure it has a valid identifier", details: nil))
             }
+         case "openContactForm":
+            self.result = result
+            openContactForm()
+         case "openExistingContact":
+             let contact = call.arguments as! [String : Any]
+             self.result = result
+             openExistingContact(contact: contact, result: result)
         default:
             result(FlutterMethodNotImplemented)
         }
@@ -145,6 +158,94 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin {
         }
         return ""
     }
+
+    func openContactForm() -> [String:Any]? {
+        let contact = CNMutableContact.init()
+        let controller = CNContactViewController.init(forNewContact:contact)
+        controller.delegate = self
+        DispatchQueue.main.async {
+         let navigation = UINavigationController .init(rootViewController: controller)
+         let viewController : UIViewController? = UIApplication.shared.delegate?.window??.rootViewController
+            viewController?.present(navigation, animated:true, completion: nil)
+        }
+        return nil
+    }
+    
+    func preLoadContactView() {
+        DispatchQueue.main.asyncAfter(deadline: .now()+5) {
+            NSLog("Preloading CNContactViewController")
+            let contactViewController = CNContactViewController.init(forNewContact: nil)
+        }
+    }
+    
+    @objc func cancelContactForm() {
+        if let result = self.result {
+            let viewController : UIViewController? = UIApplication.shared.delegate?.window??.rootViewController
+            viewController?.dismiss(animated: true, completion: nil)
+            result(SwiftContactsServicePlugin.FORM_OPERATION_CANCELED)
+            self.result = nil
+        }
+    }
+    
+    public func contactViewController(_ viewController: CNContactViewController, didCompleteWith contact: CNContact?) {
+        viewController.dismiss(animated: true, completion: nil)
+        if let result = self.result {
+            if let contact = contact {
+                result(contactToDictionary(contact: contact))
+            } else {
+                result(SwiftContactsServicePlugin.FORM_OPERATION_CANCELED)
+            }
+            self.result = nil
+        }
+    }
+
+    func openExistingContact(contact: [String:Any], result: FlutterResult ) ->  [String:Any]? {
+         let store = CNContactStore()
+         do {
+            // Check to make sure dictionary has an identifier
+             guard let identifier = contact["identifier"] as? String else{
+                 result(SwiftContactsServicePlugin.FORM_COULD_NOT_BE_OPEN)
+                 return nil;
+             }
+            let backTitle = contact["backTitle"] as? String
+            
+             let keysToFetch = [CNContactFormatter.descriptorForRequiredKeys(for: .fullName),
+                                CNContactIdentifierKey,
+                                CNContactEmailAddressesKey,
+                                CNContactBirthdayKey,
+                                CNContactImageDataKey,
+                                CNContactPhoneNumbersKey,
+                                CNContactViewController.descriptorForRequiredKeys()
+                ] as! [CNKeyDescriptor]
+            let cnContact = try store.unifiedContact(withIdentifier: identifier, keysToFetch: keysToFetch)
+            let viewController = CNContactViewController(for: cnContact)
+
+            viewController.navigationItem.backBarButtonItem = UIBarButtonItem.init(title: backTitle == nil ? "Cancel" : backTitle, style: UIBarButtonItem.Style.plain, target: self, action: #selector(cancelContactForm))
+             viewController.delegate = self
+            DispatchQueue.main.async {
+                let navigation = UINavigationController .init(rootViewController: viewController)
+                var currentViewController = UIApplication.shared.keyWindow?.rootViewController
+                while let nextView = currentViewController?.presentedViewController {
+                    currentViewController = nextView
+                }
+                let activityIndicatorView = UIActivityIndicatorView.init(style: UIActivityIndicatorView.Style.gray)
+                activityIndicatorView.frame = (UIApplication.shared.keyWindow?.frame)!
+                activityIndicatorView.startAnimating()
+                activityIndicatorView.backgroundColor = UIColor.white
+                navigation.view.addSubview(activityIndicatorView)
+                currentViewController!.present(navigation, animated: true, completion: nil)
+                
+                DispatchQueue.main.asyncAfter(deadline: .now()+0.5 ){
+                    activityIndicatorView.removeFromSuperview()
+                }
+            }
+            return nil
+         } catch {
+            NSLog(error.localizedDescription)
+            result(SwiftContactsServicePlugin.FORM_COULD_NOT_BE_OPEN)
+            return nil
+         }
+     }
 
     func deleteContact(dictionary : [String:Any]) -> Bool{
         guard let identifier = dictionary["identifier"] as? String else{

@@ -56,12 +56,14 @@ class ContactsService {
   static Future<Iterable<Contact>> getContactsForEmail(String email,
       {bool withThumbnails = true,
         bool photoHighResolution = true,
-        bool orderByGivenName = true}) async {
+        bool orderByGivenName = true,
+        bool iOSLocalizedLabels = true}) async {
     Iterable contacts = await _channel.invokeMethod('getContactsForEmail',<String,dynamic>{
       'email': email,
       'withThumbnails': withThumbnails,
       'photoHighResolution': photoHighResolution,
-      'orderByGivenName': orderByGivenName
+      'orderByGivenName': orderByGivenName,
+      'iOSLocalizedLabels': iOSLocalizedLabels,
     });
     return contacts.map((m) => Contact.fromMap(m));
   }

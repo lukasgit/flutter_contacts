@@ -12,7 +12,7 @@ To use this plugin, add `contacts_service` as a [dependency in your `pubspec.yam
 For example:  
 ```yaml  
 dependencies:  
-    contacts_service: ^0.4.1
+    contacts_service: ^0.4.2
 ```  
   
 ## Permissions  
@@ -65,6 +65,15 @@ await ContactsService.deleteContact(contact);
 // Update a contact
 // The contact must have a valid identifier
 await ContactsService.updateContact(contact);
+
+// Usage of the native device form for creating a Contact
+// Throws a error if the Form could not be open or the Operation is canceled by the User
+await ContactsService.openContactForm();
+
+// Usage of the native device form for editing a Contact
+// The contact must have a valid identifier
+// Throws a error if the Form could not be open or the Operation is canceled by the User
+await ContactsService.openExistingContact(contact);
 
 ```  
 

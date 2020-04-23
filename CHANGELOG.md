@@ -1,3 +1,7 @@
+## [0.4.4] - April 23, 2020
+
+* Fixed swift function name
+
 ## [0.4.3] - April 22, 2020
 
 * Fixed getContactsForEmail with iOSLocalizedLabels (@pavanbuzz)

@@ -90,13 +90,18 @@ class ContactsService {
   static Future updateContact(Contact contact) =>
       _channel.invokeMethod('updateContact', Contact._toMap(contact));
 
-  static Future<Contact> openContactForm() async {
-    dynamic result = await _channel.invokeMethod('openContactForm');
+  static Future<Contact> openContactForm({bool iOSLocalizedLabels = true}) async {
+    dynamic result = await _channel.invokeMethod('openContactForm',<String,dynamic>{
+      'iOSLocalizedLabels': iOSLocalizedLabels,
+    });
    return _handleFormOperation(result);
   }
 
-  static Future<Contact> openExistingContact(Contact contact) async {
-   dynamic result = await _channel.invokeMethod('openExistingContact', Contact._toMap(contact));
+  static Future<Contact> openExistingContact(Contact contact, {bool iOSLocalizedLabels = true}) async {
+   dynamic result = await _channel.invokeMethod('openExistingContact',<String,dynamic>{
+     'contact': Contact._toMap(contact),
+     'iOSLocalizedLabels': iOSLocalizedLabels,
+   }, );
    return _handleFormOperation(result);
   }
 

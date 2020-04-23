@@ -74,11 +74,11 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin, CNContactViewC
             }
          case "openContactForm":
             self.result = result
-            openContactForm()
+            _ = openContactForm()
          case "openExistingContact":
-             let contact = call.arguments as! [String : Any]
-             self.result = result
-             openExistingContact(contact: contact, result: result)
+            let contact = call.arguments as! [String : Any]
+            self.result = result
+            _ = openExistingContact(contact: contact, result: result)
         default:
             result(FlutterMethodNotImplemented)
         }
@@ -444,7 +444,7 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin, CNContactViewC
         return contact
     }
 
-    func contactToDictionary(contact: CNContact, localizedLabels: Bool) -> [String:Any]{
+    func contactToDictionary(contact: CNContact, localizedLabels: Bool = true) -> [String:Any]{
 
         var result = [String:Any]()
 

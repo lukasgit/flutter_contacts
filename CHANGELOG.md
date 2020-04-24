@@ -1,6 +1,7 @@
 ## [0.4.4] - April 23, 2020
 
-* Fixed swift function name
+* Fixed swift function name (@lidongze91)
+* Added parameter iOSLocalizedLabels to openContactForm and openExistingContact (@sperochon)
 
 ## [0.4.3] - April 22, 2020
 

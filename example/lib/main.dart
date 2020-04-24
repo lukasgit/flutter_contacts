@@ -7,6 +7,10 @@ import 'package:permission_handler/permission_handler.dart';
 
 void main() => runApp(ContactsExampleApp());
 
+// iOS only: Localized labels language setting is equal to CFBundleDevelopmentRegion value (Info.plist) of the iOS project
+// Set iOSLocalizedLabels=false if you always want english labels whatever is the CFBundleDevelopmentRegion value.
+const iOSLocalizedLabels = false;
+
 class ContactsExampleApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -37,8 +41,9 @@ class _ContactListPageState extends State<ContactListPage> {
     PermissionStatus permissionStatus = await _getContactPermission();
     if (permissionStatus == PermissionStatus.granted) {
       // Load without thumbnails initially.
-      var contacts =
-          (await ContactsService.getContacts(withThumbnails: false)).toList();
+      var contacts = (await ContactsService.getContacts(
+              withThumbnails: false, iOSLocalizedLabels: iOSLocalizedLabels))
+          .toList();
 //      var contacts = (await ContactsService.getContactsForPhone("8554964652"))
 //          .toList();
       setState(() {
@@ -98,10 +103,11 @@ class _ContactListPageState extends State<ContactListPage> {
 
   _openContactForm() async {
     try {
-      var contact = await ContactsService.openContactForm();
+      var contact = await ContactsService.openContactForm(
+          iOSLocalizedLabels: iOSLocalizedLabels);
       refreshContacts();
-    } on FormOperationException catch(e) {
-      switch(e.errorCode) {
+    } on FormOperationException catch (e) {
+      switch (e.errorCode) {
         case FormOperationErrorCode.FORM_OPERATION_CANCELED:
         case FormOperationErrorCode.FORM_COULD_NOT_BE_OPEN:
         case FormOperationErrorCode.FORM_OPERATION_UNKNOWN_ERROR:
@@ -142,10 +148,10 @@ class _ContactListPageState extends State<ContactListPage> {
                   return ListTile(
                     onTap: () {
                       Navigator.of(context).push(MaterialPageRoute(
-                          builder: (BuildContext context) =>
-                              ContactDetailsPage(
+                          builder: (BuildContext context) => ContactDetailsPage(
                                 c,
-                                onContactDeviceSave: contactOnDeviceHasBeenUpdated,
+                                onContactDeviceSave:
+                                    contactOnDeviceHasBeenUpdated,
                               )));
                     },
                     leading: (c.avatar != null && c.avatar.length > 0)
@@ -164,21 +170,23 @@ class _ContactListPageState extends State<ContactListPage> {
 
   void contactOnDeviceHasBeenUpdated(Contact contact) {
     this.setState(() {
-     var id = _contacts.indexWhere((c) => c.identifier == contact.identifier);
-     _contacts[id] = contact;
+      var id = _contacts.indexWhere((c) => c.identifier == contact.identifier);
+      _contacts[id] = contact;
     });
   }
 }
 
 class ContactDetailsPage extends StatelessWidget {
-  ContactDetailsPage(this._contact, { this.onContactDeviceSave });
+  ContactDetailsPage(this._contact, {this.onContactDeviceSave});
 
   final Contact _contact;
   final Function(Contact) onContactDeviceSave;
 
   _openExistingContactOnDevice(BuildContext context) async {
     try {
-      var contact = await ContactsService.openExistingContact(_contact);
+      var contact = await ContactsService.openExistingContact(_contact,
+          iOSLocalizedLabels: iOSLocalizedLabels);
+      print(contact.emails.first.label);
       if (onContactDeviceSave != null) {
         onContactDeviceSave(contact);
       }
@@ -219,7 +227,8 @@ class ContactDetailsPage extends StatelessWidget {
             ),
           ),
           IconButton(
-              icon: Icon(Icons.edit), onPressed: () => _openExistingContactOnDevice(context)),
+              icon: Icon(Icons.edit),
+              onPressed: () => _openExistingContactOnDevice(context)),
         ],
       ),
       body: SafeArea(

@@ -6,6 +6,7 @@ import ContactsUI
 @available(iOS 9.0, *)
 public class SwiftContactsServicePlugin: NSObject, FlutterPlugin, CNContactViewControllerDelegate {
     private var result: FlutterResult? = nil
+    private var localizedLabels: Bool = true
     static let FORM_OPERATION_CANCELED: Int = 1
     static let FORM_COULD_NOT_BE_OPEN: Int = 2
     
@@ -73,10 +74,14 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin, CNContactViewC
                 result(FlutterError(code: "", message: "Failed to update contact, make sure it has a valid identifier", details: nil))
             }
          case "openContactForm":
+            let arguments = call.arguments as! [String:Any]
+            localizedLabels = arguments["iOSLocalizedLabels"] as! Bool
             self.result = result
             _ = openContactForm()
          case "openExistingContact":
-            let contact = call.arguments as! [String : Any]
+            let arguments = call.arguments as! [String : Any]
+            let contact = arguments["contact"] as! [String : Any]
+            localizedLabels = arguments["iOSLocalizedLabels"] as! Bool
             self.result = result
             _ = openExistingContact(contact: contact, result: result)
         default:
@@ -230,7 +235,7 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin, CNContactViewC
         viewController.dismiss(animated: true, completion: nil)
         if let result = self.result {
             if let contact = contact {
-                result(contactToDictionary(contact: contact))
+                result(contactToDictionary(contact: contact, localizedLabels: localizedLabels))
             } else {
                 result(SwiftContactsServicePlugin.FORM_OPERATION_CANCELED)
             }
@@ -444,7 +449,7 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin, CNContactViewC
         return contact
     }
 
-    func contactToDictionary(contact: CNContact, localizedLabels: Bool = true) -> [String:Any]{
+    func contactToDictionary(contact: CNContact, localizedLabels: Bool) -> [String:Any]{
 
         var result = [String:Any]()
 

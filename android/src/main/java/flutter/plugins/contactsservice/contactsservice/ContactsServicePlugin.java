@@ -1,12 +1,5 @@
 package flutter.plugins.contactsservice.contactsservice;
 
-import static android.provider.ContactsContract.CommonDataKinds;
-import static android.provider.ContactsContract.CommonDataKinds.Email;
-import static android.provider.ContactsContract.CommonDataKinds.Organization;
-import static android.provider.ContactsContract.CommonDataKinds.Phone;
-import static android.provider.ContactsContract.CommonDataKinds.StructuredName;
-import static android.provider.ContactsContract.CommonDataKinds.StructuredPostal;
-
 import android.annotation.TargetApi;
 import android.content.ContentProviderOperation;
 import android.content.ContentResolver;
@@ -21,9 +14,23 @@ import android.os.AsyncTask;
 import android.os.Build;
 import android.provider.BaseColumns;
 import android.provider.ContactsContract;
-import android.provider.ContactsContract.RawContacts;
 import android.text.TextUtils;
 import android.util.Log;
+
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+
 import io.flutter.embedding.engine.plugins.FlutterPlugin;
 import io.flutter.embedding.engine.plugins.activity.ActivityAware;
 import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding;
@@ -34,18 +41,14 @@ import io.flutter.plugin.common.MethodChannel.MethodCallHandler;
 import io.flutter.plugin.common.MethodChannel.Result;
 import io.flutter.plugin.common.PluginRegistry;
 import io.flutter.plugin.common.PluginRegistry.Registrar;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
+
+import static android.app.Activity.RESULT_CANCELED;
+import static android.provider.ContactsContract.CommonDataKinds;
+import static android.provider.ContactsContract.CommonDataKinds.Email;
+import static android.provider.ContactsContract.CommonDataKinds.Organization;
+import static android.provider.ContactsContract.CommonDataKinds.Phone;
+import static android.provider.ContactsContract.CommonDataKinds.StructuredName;
+import static android.provider.ContactsContract.CommonDataKinds.StructuredPostal;
 
 @TargetApi(Build.VERSION_CODES.ECLAIR)
 public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, ActivityAware {
@@ -95,10 +98,10 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
   public void onMethodCall(MethodCall call, Result result) {
     switch(call.method){
       case "getContacts": {
-        this.getContacts((String)call.argument("query"), (boolean)call.argument("withThumbnails"), (boolean)call.argument("photoHighResolution"), (boolean)call.argument("orderByGivenName"), result);
+        this.getContacts(call.method, (String)call.argument("query"), (boolean)call.argument("withThumbnails"), (boolean)call.argument("photoHighResolution"), (boolean)call.argument("orderByGivenName"), result);
         break;
       } case "getContactsForPhone": {
-        this.getContactsForPhone((String)call.argument("phone"), (boolean)call.argument("withThumbnails"), (boolean)call.argument("photoHighResolution"), (boolean)call.argument("orderByGivenName"), result);
+        this.getContactsForPhone(call.method, (String)call.argument("phone"), (boolean)call.argument("withThumbnails"), (boolean)call.argument("photoHighResolution"), (boolean)call.argument("orderByGivenName"), result);
         break;
       } case "getAvatar": {
         final Contact contact = Contact.fromMap((HashMap)call.argument("contact"));
@@ -145,6 +148,9 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
           result.success(FORM_COULD_NOT_BE_OPEN);
         }
         break;
+      } case "openDeviceContactPicker": {
+        openDeviceContactPicker(result);
+        break;
       } default: {
         result.notImplemented();
         break;
@@ -189,12 +195,12 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
 
 
   @TargetApi(Build.VERSION_CODES.ECLAIR)
-  private void getContacts(String query, boolean withThumbnails, boolean photoHighResolution, boolean orderByGivenName, Result result) {
-    new GetContactsTask(result, withThumbnails, photoHighResolution, orderByGivenName).executeOnExecutor(executor, query, false);
+  private void getContacts(String callMethod, String query, boolean withThumbnails, boolean photoHighResolution, boolean orderByGivenName, Result result) {
+    new GetContactsTask(callMethod, result, withThumbnails, photoHighResolution, orderByGivenName).executeOnExecutor(executor, query, false);
   }
 
-  private void getContactsForPhone(String phone, boolean withThumbnails, boolean photoHighResolution, boolean orderByGivenName, Result result) {
-    new GetContactsTask(result, withThumbnails, photoHighResolution, orderByGivenName).executeOnExecutor(executor, phone, true);
+  private void getContactsForPhone(String callMethod, String phone, boolean withThumbnails, boolean photoHighResolution, boolean orderByGivenName, Result result) {
+    new GetContactsTask(callMethod, result, withThumbnails, photoHighResolution, orderByGivenName).executeOnExecutor(executor, phone, true);
   }
 
   @Override
@@ -228,6 +234,7 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
   private class BaseContactsServiceDelegate implements PluginRegistry.ActivityResultListener {
     private static final int REQUEST_OPEN_CONTACT_FORM = 52941;
     private static final int REQUEST_OPEN_EXISTING_CONTACT = 52942;
+    private static final int REQUEST_OPEN_CONTACT_PICKER = 52943;
     private Result result;
 
     void setResult(Result result) {
@@ -235,7 +242,7 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
     }
 
     void finishWithResult(Object result) {
-      if(result != null) {
+      if(this.result != null) {
         this.result.success(result);
         this.result = null;
       }
@@ -251,9 +258,27 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
           finishWithResult(FORM_OPERATION_CANCELED);
         }
         return true;
-      } else {
-        finishWithResult(FORM_COULD_NOT_BE_OPEN);
       }
+
+      if (requestCode == REQUEST_OPEN_CONTACT_PICKER) {
+        if (resultCode == RESULT_CANCELED) {
+          finishWithResult(FORM_OPERATION_CANCELED);
+          return true;
+        }
+        Uri contactUri = intent.getData();
+        Cursor cursor = contentResolver.query(contactUri, null, null, null, null);
+        if (cursor.moveToFirst()) {
+          String id = contactUri.getLastPathSegment();
+          getContacts("openDeviceContactPicker", id, false, false, false, this.result);
+        } else {
+          Log.e(LOG_TAG, "onActivityResult - cursor.moveToFirst() returns false");
+          finishWithResult(FORM_OPERATION_CANCELED);
+        }
+        cursor.close();
+        return true;
+      }
+
+      finishWithResult(FORM_COULD_NOT_BE_OPEN);
       return false;
     }
 
@@ -284,6 +309,12 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
       }
     }
 
+    void openContactPicker() {
+        Intent intent = new Intent(Intent.ACTION_PICK);
+        intent.setType(ContactsContract.Contacts.CONTENT_TYPE);
+        startIntent(intent, REQUEST_OPEN_CONTACT_PICKER);
+    }
+
     void startIntent(Intent intent, int request) {
     }
 
@@ -310,7 +341,16 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
       return null;
     }
   }
-
+  
+    private void openDeviceContactPicker(Result result) {
+      if (delegate != null) {
+        delegate.setResult(result);
+        delegate.openContactPicker();
+      } else {
+        result.success(FORM_COULD_NOT_BE_OPEN);
+      }
+  }
+  
   private class ContactServiceDelegateOld extends BaseContactsServiceDelegate {
     private final PluginRegistry.Registrar registrar;
 
@@ -350,7 +390,11 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
     @Override
     void startIntent(Intent intent, int request) {
       if (this.activityPluginBinding != null) {
-        activityPluginBinding.getActivity().startActivityForResult(intent, request);
+        if (intent.resolveActivity(context.getPackageManager()) != null) {
+          activityPluginBinding.getActivity().startActivityForResult(intent, request);
+        } else {
+          finishWithResult(FORM_COULD_NOT_BE_OPEN);
+        }
       } else {
         context.startActivity(intent);
       }
@@ -360,12 +404,14 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
   @TargetApi(Build.VERSION_CODES.CUPCAKE)
   private class GetContactsTask extends AsyncTask<Object, Void, ArrayList<HashMap>> {
 
+    private String callMethod;
     private Result getContactResult;
     private boolean withThumbnails;
     private boolean photoHighResolution;
     private boolean orderByGivenName;
 
-    public GetContactsTask(Result result, boolean withThumbnails, boolean photoHighResolution, boolean orderByGivenName){
+    public GetContactsTask(String callMethod, Result result, boolean withThumbnails, boolean photoHighResolution, boolean orderByGivenName){
+      this.callMethod = callMethod;
       this.getContactResult = result;
       this.withThumbnails = withThumbnails;
       this.photoHighResolution = photoHighResolution;
@@ -375,10 +421,12 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
     @TargetApi(Build.VERSION_CODES.ECLAIR)
     protected ArrayList<HashMap> doInBackground(Object... params) {
       ArrayList<Contact> contacts;
-      if ((Boolean) params[1])
-        contacts = getContactsFrom(getCursorForPhone(((String) params[0])));
-      else
-        contacts = getContactsFrom(getCursor(((String) params[0])));
+      switch (callMethod) {
+        case "openDeviceContactPicker": contacts = getContactsFrom(getCursor(null, (String) params[0])); break;
+        case "getContacts": contacts = getContactsFrom(getCursor((String) params[0], null)); break;
+        case "getContactsForPhone": contacts = getContactsFrom(getCursorForPhone(((String) params[0]))); break;
+        default: return null;
+      }
 
       if (withThumbnails) {
         for(Contact c : contacts){
@@ -418,26 +466,33 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
     }
 
     protected void onPostExecute(ArrayList<HashMap> result) {
-      getContactResult.success(result);
+      if (result == null) {
+        getContactResult.notImplemented();
+      } else {
+        getContactResult.success(result);
+      }
     }
   }
 
 
-  private Cursor getCursor(String query) {
-    String selection = ContactsContract.Data.MIMETYPE + "=? OR " + ContactsContract.Data.MIMETYPE + "=? OR "
+  private Cursor getCursor(String query, String rawContactId) {
+    String selection = "(" + ContactsContract.Data.MIMETYPE + "=? OR " + ContactsContract.Data.MIMETYPE + "=? OR "
             + ContactsContract.Data.MIMETYPE + "=? OR " + ContactsContract.Data.MIMETYPE + "=? OR "
             + ContactsContract.Data.MIMETYPE + "=? OR " + ContactsContract.Data.MIMETYPE + "=? OR "
-            + ContactsContract.Data.MIMETYPE + "=? OR " + ContactsContract.RawContacts.ACCOUNT_TYPE + "=?";
-    String[] selectionArgs = new String[] { CommonDataKinds.Note.CONTENT_ITEM_TYPE, Email.CONTENT_ITEM_TYPE,
+            + ContactsContract.Data.MIMETYPE + "=? OR " + ContactsContract.RawContacts.ACCOUNT_TYPE + "=?" + ")";
+    ArrayList<String> selectionArgs = new ArrayList<>(Arrays.asList(CommonDataKinds.Note.CONTENT_ITEM_TYPE, Email.CONTENT_ITEM_TYPE,
             Phone.CONTENT_ITEM_TYPE, StructuredName.CONTENT_ITEM_TYPE, Organization.CONTENT_ITEM_TYPE,
-            StructuredPostal.CONTENT_ITEM_TYPE, CommonDataKinds.Event.CONTENT_ITEM_TYPE, ContactsContract.RawContacts.ACCOUNT_TYPE
-    };
-    if(query != null){
-      selectionArgs = new String[]{query + "%"};
+            StructuredPostal.CONTENT_ITEM_TYPE, CommonDataKinds.Event.CONTENT_ITEM_TYPE, ContactsContract.RawContacts.ACCOUNT_TYPE));
+    if (query != null) {
+      selectionArgs = new ArrayList<>();
+      selectionArgs.add(query + "%");
       selection = ContactsContract.Contacts.DISPLAY_NAME_PRIMARY + " LIKE ?";
     }
-
-    return contentResolver.query(ContactsContract.Data.CONTENT_URI, PROJECTION, selection, selectionArgs, null);
+    if (rawContactId != null) {
+      selectionArgs.add(rawContactId);
+      selection += " AND " + ContactsContract.Data.CONTACT_ID + " =?";
+    }
+    return contentResolver.query(ContactsContract.Data.CONTENT_URI, PROJECTION, selection, selectionArgs.toArray(new String[selectionArgs.size()]), null);
   }
 
   private Cursor getCursorForPhone(String phone) {
@@ -830,6 +885,9 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
       contentResolver.applyBatch(ContactsContract.AUTHORITY, ops);
       return true;
     } catch (Exception e) {
+      // Log exception
+      Log.e("TAG", "Exception encountered while inserting contact: " );
+      e.printStackTrace();
       return false;
     }
   }

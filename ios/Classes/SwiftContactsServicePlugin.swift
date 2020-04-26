@@ -4,17 +4,23 @@ import Contacts
 import ContactsUI
 
 @available(iOS 9.0, *)
-public class SwiftContactsServicePlugin: NSObject, FlutterPlugin, CNContactViewControllerDelegate {
+public class SwiftContactsServicePlugin: NSObject, FlutterPlugin, CNContactViewControllerDelegate, CNContactPickerDelegate {
     private var result: FlutterResult? = nil
     private var localizedLabels: Bool = true
+    private let rootViewController: UIViewController
     static let FORM_OPERATION_CANCELED: Int = 1
     static let FORM_COULD_NOT_BE_OPEN: Int = 2
     
     public static func register(with registrar: FlutterPluginRegistrar) {
         let channel = FlutterMethodChannel(name: "github.com/clovisnicolas/flutter_contacts", binaryMessenger: registrar.messenger())
-        let instance = SwiftContactsServicePlugin()
+        let rootViewController = UIApplication.shared.delegate!.window!!.rootViewController!;
+        let instance = SwiftContactsServicePlugin(rootViewController)
         registrar.addMethodCallDelegate(instance, channel: channel)
         instance.preLoadContactView()
+    }
+
+    init(_ rootViewController: UIViewController) {
+        self.rootViewController = rootViewController
     }
 
     public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
@@ -84,6 +90,9 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin, CNContactViewC
             localizedLabels = arguments["iOSLocalizedLabels"] as! Bool
             self.result = result
             _ = openExistingContact(contact: contact, result: result)
+        case "openDeviceContactPicker":
+            let arguments = call.arguments as! [String : Any]
+            openDeviceContactPicker(arguments: arguments, result: result);
         default:
             result(FlutterMethodNotImplemented)
         }
@@ -272,7 +281,7 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin, CNContactViewC
                 while let nextView = currentViewController?.presentedViewController {
                     currentViewController = nextView
                 }
-                let activityIndicatorView = UIActivityIndicatorView.init(activityIndicatorStyle: UIActivityIndicatorView.Style.gray)
+                let activityIndicatorView = UIActivityIndicatorView.init(style: UIActivityIndicatorView.Style.gray)
                 activityIndicatorView.frame = (UIApplication.shared.keyWindow?.frame)!
                 activityIndicatorView.startAnimating()
                 activityIndicatorView.backgroundColor = UIColor.white
@@ -290,6 +299,35 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin, CNContactViewC
             return nil
          }
      }
+     
+    func openDeviceContactPicker(arguments arguments: [String:Any], result: @escaping FlutterResult) {
+        localizedLabels = arguments["iOSLocalizedLabels"] as! Bool
+        self.result = result
+        
+        let contactPicker = CNContactPickerViewController()
+        contactPicker.delegate = self
+        //contactPicker!.displayedPropertyKeys = [CNContactPhoneNumbersKey];
+        DispatchQueue.main.async {
+            self.rootViewController.present(contactPicker, animated: true, completion: nil)
+        }
+    }
+
+    //MARK:- CNContactPickerDelegate Method
+
+    public func contactPicker(_ picker: CNContactPickerViewController, didSelect contact: CNContact) {
+        if let result = self.result {
+            result(contactToDictionary(contact: contact, localizedLabels: localizedLabels))
+            self.result = nil
+        }
+    }
+
+    public func contactPickerDidCancel(_ picker: CNContactPickerViewController) {
+        if let result = self.result {
+            result(SwiftContactsServicePlugin.FORM_OPERATION_CANCELED)
+            self.result = nil
+        }
+    }
+    
 
     func deleteContact(dictionary : [String:Any]) -> Bool{
         guard let identifier = dictionary["identifier"] as? String else{

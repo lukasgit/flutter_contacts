@@ -105,6 +105,23 @@ class ContactsService {
    return _handleFormOperation(result);
   }
 
+  // Displays the device/native contact picker dialog and returns the contact selected by the user
+  static Future<Contact> openDeviceContactPicker({bool iOSLocalizedLabels = true}) async {
+    dynamic result = await _channel.invokeMethod('openDeviceContactPicker',<String,dynamic>{
+      'iOSLocalizedLabels': iOSLocalizedLabels,
+    });
+    // result contains either :
+    // - an Iterable of contacts containing 0 or 1 contact
+    // - a FormOperationErrorCode value
+    if (result is Iterable) {
+      if (result.isEmpty) {
+        return null;
+      }
+      result = result.first;
+    }
+    return _handleFormOperation(result);
+  }
+
   static Contact _handleFormOperation(dynamic result) {
     if(result is int) {
       switch (result) {

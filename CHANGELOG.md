@@ -1,3 +1,7 @@
+## [0.4.5] - April 25, 2020
+
+Fix crashes where activity result coming back from another plugin and not handled.
+
 ## [0.4.4] - April 23, 2020
 
 * Fixed swift function name (@lidongze91)

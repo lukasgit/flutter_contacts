@@ -1,6 +1,11 @@
-## [0.4.5] - April 25, 2020
+## [0.4.5] - April 26, 2020
 
-Fix crashes where activity result coming back from another plugin and not handled.
+* Fixed crashing where activity result coming back from another plugin and not handled (@lidongze91)
+* Fixed swift syntax error in UIActivityIndicatorView.init (@sperochon)
+* Added new functionality openDeviceContactPicker (@sperochon)
+  * Function opens native device contact picker corresponding on each native platform (Android or iOS); user can then search and select a specific contact.
+  * Android: Intent.ACTION_PICK
+  * iOS: CNContactPickerViewController
 
 ## [0.4.4] - April 23, 2020
 

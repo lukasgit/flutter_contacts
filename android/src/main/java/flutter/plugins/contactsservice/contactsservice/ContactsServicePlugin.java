@@ -132,7 +132,7 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
         }
         break;
       } case "openExistingContact" :{
-        final Contact contact = Contact.fromMap((HashMap)call.arguments);
+        final Contact contact = Contact.fromMap(((HashMap)call.argument("contact")));
         if (delegate != null) {
           delegate.setResult(result);
           delegate.openExistingContact(contact);
@@ -297,6 +297,7 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
           finishWithResult(FORM_COULD_NOT_BE_OPEN);
         }
       } catch(Exception e) {
+        finishWithResult(FORM_COULD_NOT_BE_OPEN);
       }
     }
 

@@ -1,3 +1,7 @@
+## [0.4.6] - April 29, 2020
+
+* Fixed openExistingContact in Android and in example (@engylemure)
+
 ## [0.4.5] - April 26, 2020
 
 * Fixed crashing where activity result coming back from another plugin and not handled (@lidongze91)

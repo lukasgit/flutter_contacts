@@ -134,7 +134,6 @@ class ContactDetailsPage extends StatelessWidget {
     try {
       var contact = await ContactsService.openExistingContact(_contact,
           iOSLocalizedLabels: iOSLocalizedLabels);
-      print(contact.emails.first.label);
       if (onContactDeviceSave != null) {
         onContactDeviceSave(contact);
       }

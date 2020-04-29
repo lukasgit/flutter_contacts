@@ -132,7 +132,7 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
         }
         break;
       } case "openExistingContact" :{
-        final Contact contact = Contact.fromMap(((HashMap)call.argument("contact")));
+        final Contact contact = Contact.fromMap((HashMap)call.argument("contact"));
         if (delegate != null) {
           delegate.setResult(result);
           delegate.openExistingContact(contact);

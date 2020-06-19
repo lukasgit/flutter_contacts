@@ -1,5 +1,7 @@
 package flutter.plugins.contactsservice.contactsservice;
 
+import android.provider.ContactsContract;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 
@@ -14,9 +16,17 @@ public class Contact implements Comparable<Contact> {
 
     String identifier;
     String displayName, givenName, middleName, familyName, prefix, suffix, company, jobTitle, note, birthday, androidAccountType, androidAccountName;
+    String phoneticGivenName, phoneticMiddleName, phoneticFamilyName, phoneticName, nickname, department;
+
     ArrayList<Item> emails = new ArrayList<>();
+    ArrayList<Item> websites = new ArrayList<>();
+    ArrayList<Item> instantMessageAddresses = new ArrayList<>();
+    ArrayList<Item> relations = new ArrayList<>();
+    ArrayList<Item> dates = new ArrayList<>();
     ArrayList<Item> phones = new ArrayList<>();
     ArrayList<PostalAddress> postalAddresses = new ArrayList<>();
+    ArrayList<String> labels = new ArrayList<>();
+
     byte[] avatar = new byte[0];
 
     HashMap<String, Object> toMap() {
@@ -35,6 +45,12 @@ public class Contact implements Comparable<Contact> {
         contactMap.put("birthday", birthday);
         contactMap.put("androidAccountType", androidAccountType);
         contactMap.put("androidAccountName", androidAccountName);
+        contactMap.put("phoneticGivenName", phoneticGivenName);
+        contactMap.put("phoneticMiddleName", phoneticMiddleName);
+        contactMap.put("phoneticFamilyName", phoneticFamilyName);
+        contactMap.put("phoneticName", phoneticName);
+        contactMap.put("nickname", nickname);
+        contactMap.put("department", department);
 
         ArrayList<HashMap<String, String>> emailsMap = new ArrayList<>();
         for (Item email : emails) {
@@ -73,6 +89,12 @@ public class Contact implements Comparable<Contact> {
         contact.birthday = (String) map.get("birthday");
         contact.androidAccountType = (String) map.get("androidAccountType");
         contact.androidAccountName = (String) map.get("androidAccountName");
+        contact.phoneticGivenName = (String) map.get("phoneticGivenName");
+        contact.phoneticMiddleName = (String) map.get("phoneticMiddleName");
+        contact.phoneticFamilyName = (String) map.get("phoneticFamilyName");
+        contact.phoneticName = (String) map.get("phoneticName");
+        contact.nickname = (String) map.get("nickname");
+        contact.department = (String) map.get("department");
 
         ArrayList<HashMap> emails = (ArrayList<HashMap>) map.get("emails");
         if (emails != null) {
@@ -90,6 +112,36 @@ public class Contact implements Comparable<Contact> {
         if (postalAddresses != null) {
             for (HashMap postalAddress : postalAddresses) {
                 contact.postalAddresses.add(PostalAddress.fromMap(postalAddress));
+            }
+        }
+        ArrayList<HashMap> websites = (ArrayList<HashMap>) map.get("websites");
+        if (websites != null) {
+            for (HashMap website : websites) {
+                contact.websites.add(Item.fromMap(website));
+            }
+        }
+        ArrayList<HashMap> dates = (ArrayList<HashMap>) map.get("dates");
+        if (dates != null) {
+            for (HashMap date : dates) {
+                contact.dates.add(Item.fromMap(date));
+            }
+        }
+        ArrayList<HashMap> instantMessageAddresses = (ArrayList<HashMap>) map.get("instantMessageAddresses");
+        if (instantMessageAddresses != null) {
+            for (HashMap instantMessageAddress : instantMessageAddresses) {
+                contact.instantMessageAddresses.add(Item.fromMap(instantMessageAddress));
+            }
+        }
+        ArrayList<HashMap> relations = (ArrayList<HashMap>) map.get("relations");
+        if (relations != null) {
+            for (HashMap relation : relations) {
+                contact.relations.add(Item.fromMap(relation));
+            }
+        }
+        ArrayList<String> labels = (ArrayList<String>) map.get("labels");
+        if (labels != null) {
+            for (String label : labels) {
+                contact.labels.add(label);
             }
         }
         return contact;

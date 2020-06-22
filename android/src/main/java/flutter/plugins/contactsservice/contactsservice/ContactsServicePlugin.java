@@ -167,66 +167,59 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
         }
     }
 
-    private static final String[] PROJECTION =
-            {
-                    ContactsContract.Data.CONTACT_ID,
-                    ContactsContract.Profile.DISPLAY_NAME,
-                    ContactsContract.Contacts.Data.MIMETYPE,
-                    ContactsContract.RawContacts.ACCOUNT_TYPE,
-                    ContactsContract.RawContacts.ACCOUNT_NAME,
-                    StructuredName.DISPLAY_NAME,
-                    StructuredName.GIVEN_NAME,
-                    StructuredName.MIDDLE_NAME,
-                    StructuredName.FAMILY_NAME,
-                    StructuredName.PREFIX,
-                    StructuredName.SUFFIX,
-                    StructuredName.PHONETIC_GIVEN_NAME,
-                    StructuredName.PHONETIC_MIDDLE_NAME,
-                    StructuredName.PHONETIC_FAMILY_NAME,
-                    StructuredName.PHONETIC_NAME,
-                    CommonDataKinds.Note.NOTE,
-                    CommonDataKinds.Nickname.NAME,
-                    Phone._ID,
-                    Phone.NUMBER,
-                    Phone.TYPE,
-                    Phone.LABEL,
-                    Email._ID,
-                    Email.DATA,
-                    Email.ADDRESS,
-                    Email.TYPE,
-                    Email.LABEL,
-                    Organization.COMPANY,
-                    Organization.TITLE,
-                    Organization.DEPARTMENT,
-                    StructuredPostal._ID,
-                    StructuredPostal.FORMATTED_ADDRESS,
-                    StructuredPostal.TYPE,
-                    StructuredPostal.LABEL,
-                    StructuredPostal.STREET,
-                    StructuredPostal.POBOX,
-                    StructuredPostal.NEIGHBORHOOD,
-                    StructuredPostal.CITY,
-                    StructuredPostal.REGION,
-                    StructuredPostal.POSTCODE,
-                    StructuredPostal.COUNTRY,
-                    CommonDataKinds.Im._ID,
-                    CommonDataKinds.Im.DATA,
-                    CommonDataKinds.Im.LABEL,
-                    CommonDataKinds.Im.TYPE,
-                    CommonDataKinds.Im.PROTOCOL,
-                    CommonDataKinds.Im.CUSTOM_PROTOCOL,
-                    CommonDataKinds.Relation._ID,
-                    CommonDataKinds.Relation.NAME,
-                    CommonDataKinds.Relation.LABEL,
-                    CommonDataKinds.Relation.TYPE,
-                    CommonDataKinds.Event._ID,
-                    CommonDataKinds.Event.START_DATE,
-                    CommonDataKinds.Event.LABEL,
-                    CommonDataKinds.Event.TYPE,
-                    CommonDataKinds.Website._ID,
-                    CommonDataKinds.Website.URL,
-                    ContactsContract.Data.DATA1,
-            };
+    private static final String[] PROJECTION = {
+            ContactsContract.Data.CONTACT_ID,
+            ContactsContract.Profile.DISPLAY_NAME,
+            ContactsContract.Contacts.Data.MIMETYPE,
+            ContactsContract.RawContacts.ACCOUNT_TYPE,
+            ContactsContract.RawContacts.ACCOUNT_NAME,
+            StructuredName.DISPLAY_NAME,
+            StructuredName.GIVEN_NAME,
+            StructuredName.MIDDLE_NAME,
+            StructuredName.FAMILY_NAME,
+            StructuredName.PREFIX,
+            StructuredName.SUFFIX,
+            StructuredName.PHONETIC_GIVEN_NAME,
+            StructuredName.PHONETIC_MIDDLE_NAME,
+            StructuredName.PHONETIC_FAMILY_NAME,
+            StructuredName.PHONETIC_NAME,
+            CommonDataKinds.Note.NOTE,
+            CommonDataKinds.Nickname.NAME,
+            BaseColumns._ID,
+            Phone.NUMBER,
+            Phone.TYPE,
+            Phone.LABEL,
+            Email.DATA,
+            Email.ADDRESS,
+            Email.TYPE,
+            Email.LABEL,
+            Organization.COMPANY,
+            Organization.TITLE,
+            Organization.DEPARTMENT,
+            StructuredPostal.FORMATTED_ADDRESS,
+            StructuredPostal.TYPE,
+            StructuredPostal.LABEL,
+            StructuredPostal.STREET,
+            StructuredPostal.POBOX,
+            StructuredPostal.NEIGHBORHOOD,
+            StructuredPostal.CITY,
+            StructuredPostal.REGION,
+            StructuredPostal.POSTCODE,
+            StructuredPostal.COUNTRY,
+            CommonDataKinds.Im.DATA,
+            CommonDataKinds.Im.LABEL,
+            CommonDataKinds.Im.TYPE,
+            CommonDataKinds.Im.PROTOCOL,
+            CommonDataKinds.Im.CUSTOM_PROTOCOL,
+            CommonDataKinds.Relation.NAME,
+            CommonDataKinds.Relation.LABEL,
+            CommonDataKinds.Relation.TYPE,
+            CommonDataKinds.Event.START_DATE,
+            CommonDataKinds.Event.LABEL,
+            CommonDataKinds.Event.TYPE,
+            CommonDataKinds.Website.URL,
+            ContactsContract.Data.DATA1,
+    };
 
 
     @TargetApi(Build.VERSION_CODES.ECLAIR)
@@ -518,29 +511,22 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
 
 
     private Cursor getCursor(String query, String rawContactId) {
-        String selection = "(" + ContactsContract.Data.MIMETYPE + "=? OR " + ContactsContract.Data.MIMETYPE + "=? OR "
-                + ContactsContract.Data.MIMETYPE + "=? OR " + ContactsContract.Data.MIMETYPE + "=? OR "
-                + ContactsContract.Data.MIMETYPE + "=? OR " + ContactsContract.Data.MIMETYPE + "=? OR "
-                + ContactsContract.Data.MIMETYPE + "=? OR " + ContactsContract.Data.MIMETYPE + "=? OR "
-                + ContactsContract.Data.MIMETYPE + "=? OR " + ContactsContract.Data.MIMETYPE + "=? OR "
-                + ContactsContract.Data.MIMETYPE + "=? OR " + ContactsContract.Data.MIMETYPE + "=? OR "
-                + ContactsContract.Data.MIMETYPE + "=? OR "
-                + ContactsContract.RawContacts.ACCOUNT_TYPE + "=?" + ")";
+        String selection = ContactsContract.Data.MIMETYPE + " IN (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ";
         ArrayList<String> selectionArgs = new ArrayList<>(Arrays.asList(CommonDataKinds.Nickname.CONTENT_ITEM_TYPE,
                 CommonDataKinds.Note.CONTENT_ITEM_TYPE, Email.CONTENT_ITEM_TYPE,
                 Phone.CONTENT_ITEM_TYPE, StructuredName.CONTENT_ITEM_TYPE, Organization.CONTENT_ITEM_TYPE,
                 StructuredPostal.CONTENT_ITEM_TYPE, CommonDataKinds.Event.CONTENT_ITEM_TYPE, CommonDataKinds.Im.CONTENT_ITEM_TYPE,
                 CommonDataKinds.Relation.CONTENT_ITEM_TYPE, CommonDataKinds.Website.CONTENT_ITEM_TYPE, CommonDataKinds.SipAddress.CONTENT_ITEM_TYPE,
-                CommonDataKinds.GroupMembership.CONTENT_ITEM_TYPE,
-                ContactsContract.RawContacts.ACCOUNT_TYPE));
+                CommonDataKinds.GroupMembership.CONTENT_ITEM_TYPE));
+
         if (query != null) {
             selectionArgs = new ArrayList<>();
             selectionArgs.add(query + "%");
             selection = ContactsContract.Contacts.DISPLAY_NAME_PRIMARY + " LIKE ?";
         }
         if (rawContactId != null) {
+            selection += " AND " + ContactsContract.Data.CONTACT_ID + " = ?";
             selectionArgs.add(rawContactId);
-            selection += " AND " + ContactsContract.Data.CONTACT_ID + " =?";
         }
         return contentResolver.query(ContactsContract.Data.CONTENT_URI, PROJECTION, selection,
                 selectionArgs.toArray(new String[selectionArgs.size()]), null);
@@ -591,14 +577,13 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
             Contact contact = map.get(contactId);
 
             String mimeType = cursor.getString(cursor.getColumnIndex(ContactsContract.Data.MIMETYPE));
+            contact.identifier = contactId;
             contact.displayName = cursor.getString(cursor.getColumnIndex(ContactsContract.Contacts.DISPLAY_NAME));
             contact.androidAccountType = cursor.getString(cursor.getColumnIndex(ContactsContract.RawContacts.ACCOUNT_TYPE));
             contact.androidAccountName = cursor.getString(cursor.getColumnIndex(ContactsContract.RawContacts.ACCOUNT_NAME));
 
             //NAMES
-            if (mimeType.equals(CommonDataKinds.Nickname.CONTENT_ITEM_TYPE)) {
-                contact.nickname = cursor.getString(cursor.getColumnIndex(CommonDataKinds.Nickname.NAME));
-            } else if (mimeType.equals(CommonDataKinds.StructuredName.CONTENT_ITEM_TYPE)) {
+            if (mimeType.equals(CommonDataKinds.StructuredName.CONTENT_ITEM_TYPE)) {
                 contact.givenName = cursor.getString(cursor.getColumnIndex(StructuredName.GIVEN_NAME));
                 contact.middleName = cursor.getString(cursor.getColumnIndex(StructuredName.MIDDLE_NAME));
                 contact.familyName = cursor.getString(cursor.getColumnIndex(StructuredName.FAMILY_NAME));
@@ -608,6 +593,14 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
                 contact.phoneticMiddleName = cursor.getString(cursor.getColumnIndex(StructuredName.PHONETIC_MIDDLE_NAME));
                 contact.phoneticFamilyName = cursor.getString(cursor.getColumnIndex(StructuredName.PHONETIC_FAMILY_NAME));
                 contact.phoneticName = cursor.getString(cursor.getColumnIndex(StructuredName.PHONETIC_NAME));
+            }
+            //NICK NAME
+            else if (mimeType.equals(CommonDataKinds.Nickname.CONTENT_ITEM_TYPE)) {
+                contact.nickname = cursor.getString(cursor.getColumnIndex(CommonDataKinds.Nickname.NAME));
+            }
+            // SIP
+            else if (mimeType.equals(CommonDataKinds.SipAddress.CONTENT_ITEM_TYPE)) {
+                contact.sip = cursor.getString(cursor.getColumnIndex(CommonDataKinds.SipAddress.SIP_ADDRESS));
             }
             // NOTE
             else if (mimeType.equals(CommonDataKinds.Note.CONTENT_ITEM_TYPE)) {
@@ -619,7 +612,7 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
                 if (!TextUtils.isEmpty(phoneNumber)) {
                     int type = cursor.getInt(cursor.getColumnIndex(Phone.TYPE));
                     String label = Item.getPhoneLabel(type, cursor);
-                    contact.phones.add(new Item(cursor.getString(cursor.getColumnIndex(Phone._ID)), label, phoneNumber));
+                    contact.phones.add(new Item(cursor.getString(cursor.getColumnIndex(BaseColumns._ID)), label, phoneNumber));
                 }
             }
             //MAILS
@@ -627,7 +620,7 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
                 String email = cursor.getString(cursor.getColumnIndex(Email.ADDRESS));
                 int type = cursor.getInt(cursor.getColumnIndex(Email.TYPE));
                 if (!TextUtils.isEmpty(email)) {
-                    contact.emails.add(new Item(cursor.getString(cursor.getColumnIndex(Email._ID)), Item.getEmailLabel(type, cursor), email));
+                    contact.emails.add(new Item(cursor.getString(cursor.getColumnIndex(BaseColumns._ID)), Item.getEmailLabel(type, cursor), email));
                 }
             }
             //ORG
@@ -647,17 +640,17 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
                 if (eventType == CommonDataKinds.Event.TYPE_BIRTHDAY) {
                     contact.birthday = date;
                 } else {
-                    contact.dates.add(new Item(cursor.getString(cursor.getColumnIndex(CommonDataKinds.Event._ID)), Item.getDatesLabel(eventType, cursor),
+                    contact.dates.add(new Item(cursor.getString(cursor.getColumnIndex(BaseColumns._ID)), Item.getDatesLabel(eventType, cursor),
                             date));
                 }
             }
             //INSTANT MESSAGE ADDRESSES / Im
             else if (mimeType.equals(CommonDataKinds.Im.CONTENT_ITEM_TYPE)) {
                 String im = cursor.getString(cursor.getColumnIndex(CommonDataKinds.Im.DATA));
-                int type = cursor.getInt(cursor.getColumnIndex(CommonDataKinds.Im.PROTOCOL));
+                int protocol = cursor.getInt(cursor.getColumnIndex(CommonDataKinds.Im.PROTOCOL));
                 if (!TextUtils.isEmpty(im)) {
-                    contact.instantMessageAddresses.add(new Item(cursor.getString(cursor.getColumnIndex(CommonDataKinds.Im._ID)),
-                            Item.getInstantMessageAddressLabel(type, cursor), im));
+                    contact.instantMessageAddresses.add(new Item(cursor.getString(cursor.getColumnIndex(BaseColumns._ID)),
+                            Item.getInstantMessageAddressLabel(protocol, cursor), im));
                 }
             }
             //RELATIONS
@@ -665,15 +658,17 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
                 String relation = cursor.getString(cursor.getColumnIndex(CommonDataKinds.Relation.NAME));
                 int type = cursor.getInt(cursor.getColumnIndex(CommonDataKinds.Relation.TYPE));
                 if (!TextUtils.isEmpty(relation)) {
-                    contact.relations.add(new Item(cursor.getString(cursor.getColumnIndex(CommonDataKinds.Relation._ID)), Item.getRelationLabel(type,
+                    contact.relations.add(new Item(cursor.getString(cursor.getColumnIndex(BaseColumns._ID)), Item.getRelationLabel(type,
                             cursor), relation));
                 }
             }
             //WEBSITES
             else if (mimeType.equals(CommonDataKinds.Website.CONTENT_ITEM_TYPE)) {
                 String url = cursor.getString(cursor.getColumnIndex(CommonDataKinds.Website.URL));
+                int type = cursor.getInt(cursor.getColumnIndex(CommonDataKinds.Website.TYPE));
                 if (!TextUtils.isEmpty(url)) {
-                    contact.websites.add(new Item(cursor.getString(cursor.getColumnIndex(CommonDataKinds.Website._ID)), "other", url));
+                    contact.websites.add(new Item(cursor.getString(cursor.getColumnIndex(BaseColumns._ID)), Item.getWebsiteLabel(type,
+                            cursor), url));
                 }
             }
             //LABELS
@@ -682,7 +677,7 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
                 if (!TextUtils.isEmpty(groupId)) {
                     Uri uriGroup = ContactsContract.Groups.CONTENT_URI;
                     String groupParam[] = new String[]{ContactsContract.Groups.TITLE};
-                    String query = ContactsContract.Groups._ID + " = " + groupId;
+                    String query = BaseColumns._ID + " = " + groupId;
                     Cursor cursorGroupTitle = contentResolver.query(uriGroup, groupParam, query, null, null);
                     if (cursorGroupTitle != null && cursorGroupTitle.getCount() > 0) {
                         while (cursorGroupTitle.moveToNext()) {
@@ -746,6 +741,7 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
         protected void onPostExecute(final byte[] avatar) {
             result.success(avatar);
         }
+
     }
 
     private static byte[] loadContactPhotoHighRes(final String identifier,
@@ -779,6 +775,7 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
                 .withValue(ContactsContract.RawContacts.ACCOUNT_NAME, null);
         ops.add(op.build());
 
+        // Names
         op = ContentProviderOperation.newInsert(ContactsContract.Data.CONTENT_URI)
                 .withValueBackReference(ContactsContract.Data.RAW_CONTACT_ID, 0)
                 .withValue(ContactsContract.Data.MIMETYPE, CommonDataKinds.StructuredName.CONTENT_ITEM_TYPE)
@@ -786,20 +783,41 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
                 .withValue(StructuredName.MIDDLE_NAME, contact.middleName)
                 .withValue(StructuredName.FAMILY_NAME, contact.familyName)
                 .withValue(StructuredName.PREFIX, contact.prefix)
-                .withValue(StructuredName.SUFFIX, contact.suffix);
+                .withValue(StructuredName.SUFFIX, contact.suffix)
+                .withValue(StructuredName.PHONETIC_GIVEN_NAME, contact.phoneticGivenName)
+                .withValue(StructuredName.PHONETIC_MIDDLE_NAME, contact.phoneticMiddleName)
+                .withValue(StructuredName.PHONETIC_FAMILY_NAME, contact.phoneticFamilyName);
+
         ops.add(op.build());
 
+        // Note
         op = ContentProviderOperation.newInsert(ContactsContract.Data.CONTENT_URI)
                 .withValueBackReference(ContactsContract.Data.RAW_CONTACT_ID, 0)
                 .withValue(ContactsContract.Data.MIMETYPE, CommonDataKinds.Note.CONTENT_ITEM_TYPE)
                 .withValue(CommonDataKinds.Note.NOTE, contact.note);
         ops.add(op.build());
 
+        // Sip
+        op = ContentProviderOperation.newInsert(ContactsContract.Data.CONTENT_URI)
+                .withValueBackReference(ContactsContract.Data.RAW_CONTACT_ID, 0)
+                .withValue(ContactsContract.Data.MIMETYPE, CommonDataKinds.SipAddress.CONTENT_ITEM_TYPE)
+                .withValue(CommonDataKinds.SipAddress.SIP_ADDRESS, contact.sip);
+        ops.add(op.build());
+
+        // Nickname
+        op = ContentProviderOperation.newInsert(ContactsContract.Data.CONTENT_URI)
+                .withValueBackReference(ContactsContract.Data.RAW_CONTACT_ID, 0)
+                .withValue(ContactsContract.Data.MIMETYPE, CommonDataKinds.Nickname.CONTENT_ITEM_TYPE)
+                .withValue(CommonDataKinds.Nickname.NAME, contact.nickname);
+        ops.add(op.build());
+
+        // Organisation
         op = ContentProviderOperation.newInsert(ContactsContract.Data.CONTENT_URI)
                 .withValueBackReference(ContactsContract.Data.RAW_CONTACT_ID, 0)
                 .withValue(ContactsContract.Data.MIMETYPE, CommonDataKinds.Organization.CONTENT_ITEM_TYPE)
                 .withValue(Organization.COMPANY, contact.company)
-                .withValue(Organization.TITLE, contact.jobTitle);
+                .withValue(Organization.TITLE, contact.jobTitle)
+                .withValue(Organization.DEPARTMENT, contact.department);
         ops.add(op.build());
 
         //Photo
@@ -861,6 +879,50 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
                 .withValue(CommonDataKinds.Event.START_DATE, contact.birthday);
         ops.add(op.build());
 
+        // Other dates/events
+        for (Item date : contact.dates) {
+            op = ContentProviderOperation.newInsert(ContactsContract.Data.CONTENT_URI)
+                    .withValueBackReference(ContactsContract.Data.RAW_CONTACT_ID, 0)
+                    .withValue(ContactsContract.Data.MIMETYPE, CommonDataKinds.Event.CONTENT_ITEM_TYPE)
+                    .withValue(CommonDataKinds.Event.LABEL, date.label)
+                    .withValue(CommonDataKinds.Event.TYPE, Item.stringToDatesType(date.label))
+                    .withValue(CommonDataKinds.Event.START_DATE, date.value);
+            ops.add(op.build());
+        }
+
+        // Website
+        for (Item website : contact.websites) {
+            op = ContentProviderOperation.newInsert(ContactsContract.Data.CONTENT_URI)
+                    .withValueBackReference(ContactsContract.Data.RAW_CONTACT_ID, 0)
+                    .withValue(ContactsContract.Data.MIMETYPE, CommonDataKinds.Website.CONTENT_ITEM_TYPE)
+                    .withValue(CommonDataKinds.Website.LABEL, website.label)
+                    .withValue(CommonDataKinds.Website.TYPE, Item.stringToWebsiteType(website.label))
+                    .withValue(CommonDataKinds.Website.URL, website.value);
+            ops.add(op.build());
+        }
+
+        // Instant message address
+        for (Item im : contact.instantMessageAddresses) {
+            op = ContentProviderOperation.newInsert(ContactsContract.Data.CONTENT_URI)
+                    .withValueBackReference(ContactsContract.Data.RAW_CONTACT_ID, 0)
+                    .withValue(ContactsContract.Data.MIMETYPE, CommonDataKinds.Im.CONTENT_ITEM_TYPE)
+                    .withValue(CommonDataKinds.Im.PROTOCOL, Item.stringToInstantMessageAddressProtocol(im.label))
+                    .withValue(CommonDataKinds.Im.DATA, im.value);
+            ops.add(op.build());
+        }
+        // Relations
+        for (Item relation : contact.relations) {
+            op = ContentProviderOperation.newInsert(ContactsContract.Data.CONTENT_URI)
+                    .withValueBackReference(ContactsContract.Data.RAW_CONTACT_ID, 0)
+                    .withValue(ContactsContract.Data.MIMETYPE, CommonDataKinds.Relation.CONTENT_ITEM_TYPE)
+                    .withValue(CommonDataKinds.Relation.LABEL, relation.label)
+                    .withValue(CommonDataKinds.Relation.TYPE, Item.stringToRelationType(relation.label))
+                    .withValue(CommonDataKinds.Relation.NAME, relation.value);
+            ops.add(op.build());
+        }
+
+        //TODO. Labels if any
+
         try {
             contentResolver.applyBatch(ContactsContract.AUTHORITY, ops);
             return true;
@@ -887,30 +949,72 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
         ArrayList<ContentProviderOperation> ops = new ArrayList<>();
         ContentProviderOperation.Builder op;
 
-        // Drop all details about contact except name
+        // Drop all details about contact except names
+
+        // Organisation
         op = ContentProviderOperation.newDelete(ContactsContract.Data.CONTENT_URI)
                 .withSelection(ContactsContract.Data.CONTACT_ID + "=? AND " + ContactsContract.Data.MIMETYPE + "=?",
                         new String[]{String.valueOf(contact.identifier), ContactsContract.CommonDataKinds.Organization.CONTENT_ITEM_TYPE});
         ops.add(op.build());
 
+        // Nickname
         op = ContentProviderOperation.newDelete(ContactsContract.Data.CONTENT_URI)
                 .withSelection(ContactsContract.Data.CONTACT_ID + "=? AND " + ContactsContract.Data.MIMETYPE + "=?",
-                        new String[]{String.valueOf(contact.identifier), ContactsContract.CommonDataKinds.Phone.CONTENT_ITEM_TYPE});
+                        new String[]{String.valueOf(contact.identifier), ContactsContract.CommonDataKinds.Nickname.CONTENT_ITEM_TYPE});
         ops.add(op.build());
 
+        // Sip
         op = ContentProviderOperation.newDelete(ContactsContract.Data.CONTENT_URI)
                 .withSelection(ContactsContract.Data.CONTACT_ID + "=? AND " + ContactsContract.Data.MIMETYPE + "=?",
-                        new String[]{String.valueOf(contact.identifier), ContactsContract.CommonDataKinds.Email.CONTENT_ITEM_TYPE});
+                        new String[]{String.valueOf(contact.identifier), ContactsContract.CommonDataKinds.SipAddress.CONTENT_ITEM_TYPE});
         ops.add(op.build());
 
+        // Note
         op = ContentProviderOperation.newDelete(ContactsContract.Data.CONTENT_URI)
                 .withSelection(ContactsContract.Data.CONTACT_ID + "=? AND " + ContactsContract.Data.MIMETYPE + "=?",
                         new String[]{String.valueOf(contact.identifier), ContactsContract.CommonDataKinds.Note.CONTENT_ITEM_TYPE});
         ops.add(op.build());
 
+        // Phone
+        op = ContentProviderOperation.newDelete(ContactsContract.Data.CONTENT_URI)
+                .withSelection(ContactsContract.Data.CONTACT_ID + "=? AND " + ContactsContract.Data.MIMETYPE + "=?",
+                        new String[]{String.valueOf(contact.identifier), ContactsContract.CommonDataKinds.Phone.CONTENT_ITEM_TYPE});
+        ops.add(op.build());
+
+        // Email
+        op = ContentProviderOperation.newDelete(ContactsContract.Data.CONTENT_URI)
+                .withSelection(ContactsContract.Data.CONTACT_ID + "=? AND " + ContactsContract.Data.MIMETYPE + "=?",
+                        new String[]{String.valueOf(contact.identifier), ContactsContract.CommonDataKinds.Email.CONTENT_ITEM_TYPE});
+        ops.add(op.build());
+
+        // Postal address
         op = ContentProviderOperation.newDelete(ContactsContract.Data.CONTENT_URI)
                 .withSelection(ContactsContract.Data.CONTACT_ID + "=? AND " + ContactsContract.Data.MIMETYPE + "=?",
                         new String[]{String.valueOf(contact.identifier), ContactsContract.CommonDataKinds.StructuredPostal.CONTENT_ITEM_TYPE});
+        ops.add(op.build());
+
+        // Dates
+        op = ContentProviderOperation.newDelete(ContactsContract.Data.CONTENT_URI)
+                .withSelection(ContactsContract.Data.CONTACT_ID + "=? AND " + ContactsContract.Data.MIMETYPE + "=?",
+                        new String[]{String.valueOf(contact.identifier), ContactsContract.CommonDataKinds.Event.CONTENT_ITEM_TYPE});
+        ops.add(op.build());
+
+        // Instant message address
+        op = ContentProviderOperation.newDelete(ContactsContract.Data.CONTENT_URI)
+                .withSelection(ContactsContract.Data.CONTACT_ID + "=? AND " + ContactsContract.Data.MIMETYPE + "=?",
+                        new String[]{String.valueOf(contact.identifier), ContactsContract.CommonDataKinds.Im.CONTENT_ITEM_TYPE});
+        ops.add(op.build());
+
+        // Relation
+        op = ContentProviderOperation.newDelete(ContactsContract.Data.CONTENT_URI)
+                .withSelection(ContactsContract.Data.CONTACT_ID + "=? AND " + ContactsContract.Data.MIMETYPE + "=?",
+                        new String[]{String.valueOf(contact.identifier), ContactsContract.CommonDataKinds.Relation.CONTENT_ITEM_TYPE});
+        ops.add(op.build());
+
+        // Website
+        op = ContentProviderOperation.newDelete(ContactsContract.Data.CONTENT_URI)
+                .withSelection(ContactsContract.Data.CONTACT_ID + "=? AND " + ContactsContract.Data.MIMETYPE + "=?",
+                        new String[]{String.valueOf(contact.identifier), ContactsContract.CommonDataKinds.Website.CONTENT_ITEM_TYPE});
         ops.add(op.build());
 
         //Photo
@@ -927,22 +1031,42 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
                 .withValue(StructuredName.MIDDLE_NAME, contact.middleName)
                 .withValue(StructuredName.FAMILY_NAME, contact.familyName)
                 .withValue(StructuredName.PREFIX, contact.prefix)
-                .withValue(StructuredName.SUFFIX, contact.suffix);
+                .withValue(StructuredName.SUFFIX, contact.suffix)
+                .withValue(StructuredName.PHONETIC_GIVEN_NAME, contact.phoneticGivenName)
+                .withValue(StructuredName.PHONETIC_MIDDLE_NAME, contact.phoneticMiddleName)
+                .withValue(StructuredName.PHONETIC_FAMILY_NAME, contact.phoneticFamilyName);
         ops.add(op.build());
 
         // Insert data back into contact
+        // Organisation
         op = ContentProviderOperation.newInsert(ContactsContract.Data.CONTENT_URI)
                 .withValue(ContactsContract.Data.MIMETYPE, ContactsContract.CommonDataKinds.Organization.CONTENT_ITEM_TYPE)
                 .withValue(ContactsContract.Data.RAW_CONTACT_ID, contact.identifier)
                 .withValue(Organization.TYPE, Organization.TYPE_WORK)
                 .withValue(Organization.COMPANY, contact.company)
+                .withValue(Organization.DEPARTMENT, contact.department)
                 .withValue(Organization.TITLE, contact.jobTitle);
         ops.add(op.build());
 
+        // Note
         op = ContentProviderOperation.newInsert(ContactsContract.Data.CONTENT_URI)
                 .withValue(ContactsContract.Data.MIMETYPE, ContactsContract.CommonDataKinds.Note.CONTENT_ITEM_TYPE)
                 .withValue(ContactsContract.Data.RAW_CONTACT_ID, contact.identifier)
                 .withValue(CommonDataKinds.Note.NOTE, contact.note);
+        ops.add(op.build());
+
+        // Sip
+        op = ContentProviderOperation.newInsert(ContactsContract.Data.CONTENT_URI)
+                .withValue(ContactsContract.Data.MIMETYPE, ContactsContract.CommonDataKinds.Note.CONTENT_ITEM_TYPE)
+                .withValue(ContactsContract.Data.RAW_CONTACT_ID, contact.identifier)
+                .withValue(CommonDataKinds.SipAddress.SIP_ADDRESS, contact.sip);
+        ops.add(op.build());
+
+        // Nick name
+        op = ContentProviderOperation.newInsert(ContactsContract.Data.CONTENT_URI)
+                .withValue(ContactsContract.Data.MIMETYPE, ContactsContract.CommonDataKinds.Note.CONTENT_ITEM_TYPE)
+                .withValue(ContactsContract.Data.RAW_CONTACT_ID, contact.identifier)
+                .withValue(CommonDataKinds.Nickname.NAME, contact.nickname);
         ops.add(op.build());
 
         //Photo
@@ -954,6 +1078,7 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
         ops.add(op.build());
 
 
+        // Phone
         for (Item phone : contact.phones) {
             op = ContentProviderOperation.newInsert(ContactsContract.Data.CONTENT_URI)
                     .withValue(ContactsContract.Data.MIMETYPE, CommonDataKinds.Phone.CONTENT_ITEM_TYPE)
@@ -970,6 +1095,7 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
             ops.add(op.build());
         }
 
+        // Email
         for (Item email : contact.emails) {
             op = ContentProviderOperation.newInsert(ContactsContract.Data.CONTENT_URI)
                     .withValue(ContactsContract.Data.MIMETYPE, CommonDataKinds.Email.CONTENT_ITEM_TYPE)
@@ -979,6 +1105,7 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
             ops.add(op.build());
         }
 
+        // Postal address
         for (PostalAddress address : contact.postalAddresses) {
             op = ContentProviderOperation.newInsert(ContactsContract.Data.CONTENT_URI)
                     .withValue(ContactsContract.Data.MIMETYPE, CommonDataKinds.StructuredPostal.CONTENT_ITEM_TYPE)
@@ -991,6 +1118,54 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
                     .withValue(CommonDataKinds.StructuredPostal.COUNTRY, address.country);
             ops.add(op.build());
         }
+
+        // Website
+        for (Item website : contact.websites) {
+            op = ContentProviderOperation.newInsert(ContactsContract.Data.CONTENT_URI)
+                    .withValue(ContactsContract.Data.MIMETYPE, CommonDataKinds.Website.CONTENT_ITEM_TYPE)
+                    .withValue(ContactsContract.Data.RAW_CONTACT_ID, contact.identifier)
+                    .withValue(CommonDataKinds.Website.URL, website.value)
+                    .withValue(CommonDataKinds.Website.TYPE, Item.stringToWebsiteType(website.label));
+            ops.add(op.build());
+        }
+
+        // Date
+        op = ContentProviderOperation.newInsert(ContactsContract.Data.CONTENT_URI)
+                .withValue(ContactsContract.Data.MIMETYPE, CommonDataKinds.Event.CONTENT_ITEM_TYPE)
+                .withValue(ContactsContract.Data.RAW_CONTACT_ID, contact.identifier)
+                .withValue(CommonDataKinds.Event.START_DATE, contact.birthday)
+                .withValue(CommonDataKinds.Event.TYPE, Item.stringToDatesType("birthday"));
+        ops.add(op.build());
+        for (Item date : contact.dates) {
+            op = ContentProviderOperation.newInsert(ContactsContract.Data.CONTENT_URI)
+                    .withValue(ContactsContract.Data.MIMETYPE, CommonDataKinds.Event.CONTENT_ITEM_TYPE)
+                    .withValue(ContactsContract.Data.RAW_CONTACT_ID, contact.identifier)
+                    .withValue(CommonDataKinds.Event.START_DATE, date.value)
+                    .withValue(CommonDataKinds.Event.TYPE, Item.stringToDatesType(date.label));
+            ops.add(op.build());
+        }
+
+        // Instant message address
+        for (Item im : contact.instantMessageAddresses) {
+            op = ContentProviderOperation.newInsert(ContactsContract.Data.CONTENT_URI)
+                    .withValue(ContactsContract.Data.MIMETYPE, CommonDataKinds.Im.CONTENT_ITEM_TYPE)
+                    .withValue(ContactsContract.Data.RAW_CONTACT_ID, contact.identifier)
+                    .withValue(CommonDataKinds.Im.DATA, im.value)
+                    .withValue(CommonDataKinds.Im.PROTOCOL, Item.stringToInstantMessageAddressProtocol(im.label));
+            ops.add(op.build());
+        }
+
+        // Relation
+        for (Item relation : contact.relations) {
+            op = ContentProviderOperation.newInsert(ContactsContract.Data.CONTENT_URI)
+                    .withValue(ContactsContract.Data.MIMETYPE, CommonDataKinds.Relation.CONTENT_ITEM_TYPE)
+                    .withValue(ContactsContract.Data.RAW_CONTACT_ID, contact.identifier)
+                    .withValue(CommonDataKinds.Relation.NAME, relation.value)
+                    .withValue(CommonDataKinds.Relation.TYPE, Item.stringToRelationType(relation.label));
+            ops.add(op.build());
+        }
+
+        //TODO. Labels if any
 
         try {
             contentResolver.applyBatch(ContactsContract.AUTHORITY, ops);

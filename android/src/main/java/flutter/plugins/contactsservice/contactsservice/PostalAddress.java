@@ -80,7 +80,7 @@ public class PostalAddress {
                 case "work":
                     return CommonDataKinds.StructuredPostal.TYPE_WORK;
                 default:
-                    return CommonDataKinds.StructuredPostal.TYPE_OTHER;
+                    return StructuredPostal.TYPE_CUSTOM;
             }
         }
         return StructuredPostal.TYPE_OTHER;

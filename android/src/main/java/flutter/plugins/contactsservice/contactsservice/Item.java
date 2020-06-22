@@ -167,9 +167,34 @@ public class Item {
         }
     }
 
+    public static String getWebsiteLabel(int type, Cursor cursor) {
+        switch (type) {
+            case CommonDataKinds.Website.TYPE_HOMEPAGE:
+                return "home page";
+            case CommonDataKinds.Website.TYPE_BLOG:
+                return "blog";
+            case CommonDataKinds.Website.TYPE_PROFILE:
+                return "profile";
+            case CommonDataKinds.Website.TYPE_HOME:
+                return "home";
+            case CommonDataKinds.Website.TYPE_WORK:
+                return "work";
+            case CommonDataKinds.Website.TYPE_FTP:
+                return "ftp";
+            case CommonDataKinds.Website.TYPE_CUSTOM:
+                if (cursor.getString(cursor.getColumnIndex(CommonDataKinds.Website.LABEL)) != null) {
+                    return cursor.getString(cursor.getColumnIndex(CommonDataKinds.Website.LABEL));
+                } else {
+                    return "";
+                }
+            default:
+                return "other";
+        }
+    }
+
     public static int stringToPhoneType(String label) {
         if (label != null) {
-            switch (label) {
+            switch (label.toLowerCase()) {
                 case "home":
                     return CommonDataKinds.Phone.TYPE_HOME;
                 case "work":
@@ -197,7 +222,7 @@ public class Item {
 
     public static int stringToEmailType(String label) {
         if (label != null) {
-            switch (label) {
+            switch (label.toLowerCase()) {
                 case "home":
                     return CommonDataKinds.Email.TYPE_HOME;
                 case "work":
@@ -205,7 +230,7 @@ public class Item {
                 case "mobile":
                     return CommonDataKinds.Email.TYPE_MOBILE;
                 default:
-                    return CommonDataKinds.Email.TYPE_OTHER;
+                    return CommonDataKinds.Email.TYPE_CUSTOM;
             }
         }
         return CommonDataKinds.Email.TYPE_OTHER;
@@ -213,13 +238,13 @@ public class Item {
 
     public static int stringToDatesType(String label) {
         if (label != null) {
-            switch (label) {
+            switch (label.toLowerCase()) {
                 case "anniversary":
                     return CommonDataKinds.Event.TYPE_ANNIVERSARY;
                 case "birthday":
                     return CommonDataKinds.Event.TYPE_BIRTHDAY;
                 default:
-                    return CommonDataKinds.Event.TYPE_OTHER;
+                    return CommonDataKinds.Event.TYPE_CUSTOM;
             }
         }
         return CommonDataKinds.Email.TYPE_OTHER;
@@ -227,7 +252,7 @@ public class Item {
 
     public static int stringToRelationType(String label) {
         if (label != null) {
-            switch (label) {
+            switch (label.toLowerCase()) {
                 case "assistant":
                     return CommonDataKinds.Relation.TYPE_ASSISTANT;
                 case "brother":
@@ -255,32 +280,32 @@ public class Item {
                 case "spouse":
                     return CommonDataKinds.Relation.TYPE_SPOUSE;
                 default:
-                    return CommonDataKinds.Event.TYPE_OTHER;
+                    return CommonDataKinds.Event.TYPE_CUSTOM;
             }
         }
         return CommonDataKinds.Email.TYPE_OTHER;
     }
 
-    public static int stringToInstantMessageAddressType(String label) {
+    public static int stringToInstantMessageAddressProtocol(String label) {
         if (label != null) {
-            switch (label) {
-                case "AIM":
+            switch (label.toLowerCase()) {
+                case "aim":
                     return CommonDataKinds.Im.PROTOCOL_AIM;
-                case "Windows Live":
+                case "windows live":
                     return CommonDataKinds.Im.PROTOCOL_MSN;
-                case "Yahoo":
+                case "yahoo":
                     return CommonDataKinds.Im.PROTOCOL_YAHOO;
-                case "Skype":
+                case "skype":
                     return CommonDataKinds.Im.PROTOCOL_SKYPE;
-                case "QQ":
+                case "qq":
                     return CommonDataKinds.Im.PROTOCOL_QQ;
-                case "Hangouts":
+                case "hangouts":
                     return CommonDataKinds.Im.PROTOCOL_GOOGLE_TALK;
-                case "ICQ":
+                case "icq":
                     return CommonDataKinds.Im.PROTOCOL_ICQ;
-                case "Jabber":
+                case "jabber":
                     return CommonDataKinds.Im.PROTOCOL_JABBER;
-                case "Net Meeting":
+                case "net meeting":
                     return CommonDataKinds.Im.PROTOCOL_NETMEETING;
                 default:
                     return CommonDataKinds.Im.PROTOCOL_CUSTOM;
@@ -288,4 +313,29 @@ public class Item {
         }
         return CommonDataKinds.Im.PROTOCOL_CUSTOM;
     }
+
+    public static int stringToWebsiteType(String label) {
+        if (label != null) {
+            switch (label.toLowerCase()) {
+                case "home page":
+                    return CommonDataKinds.Website.TYPE_HOMEPAGE;
+                case "blog":
+                    return CommonDataKinds.Website.TYPE_BLOG;
+                case "profile":
+                    return CommonDataKinds.Website.TYPE_PROFILE;
+                case "home":
+                    return CommonDataKinds.Website.TYPE_HOME;
+                case "work":
+                    return CommonDataKinds.Website.TYPE_WORK;
+                case "ftp":
+                    return CommonDataKinds.Website.TYPE_FTP;
+                case "other":
+                    return CommonDataKinds.Website.TYPE_OTHER;
+                default:
+                    return CommonDataKinds.Website.TYPE_CUSTOM;
+            }
+        }
+        return CommonDataKinds.Website.TYPE_OTHER;
+    }
+
 }

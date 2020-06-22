@@ -16,7 +16,7 @@ public class Contact implements Comparable<Contact> {
 
     String identifier;
     String displayName, givenName, middleName, familyName, prefix, suffix, company, jobTitle, note, birthday, androidAccountType, androidAccountName;
-    String phoneticGivenName, phoneticMiddleName, phoneticFamilyName, phoneticName, nickname, department;
+    String sip, phoneticGivenName, phoneticMiddleName, phoneticFamilyName, phoneticName, nickname, department;
 
     ArrayList<Item> emails = new ArrayList<>();
     ArrayList<Item> websites = new ArrayList<>();
@@ -51,6 +51,7 @@ public class Contact implements Comparable<Contact> {
         contactMap.put("phoneticName", phoneticName);
         contactMap.put("nickname", nickname);
         contactMap.put("department", department);
+        contactMap.put("sip", sip);
 
         ArrayList<HashMap<String, String>> emailsMap = new ArrayList<>();
         for (Item email : emails) {
@@ -69,6 +70,31 @@ public class Contact implements Comparable<Contact> {
             addressesMap.add(address.toMap());
         }
         contactMap.put("postalAddresses", addressesMap);
+
+        ArrayList<HashMap<String, String>> websitesMap = new ArrayList<>();
+        for (Item website : websites) {
+            websitesMap.add(website.toMap());
+        }
+        contactMap.put("websites", websitesMap);
+
+        ArrayList<HashMap<String, String>> datesMap = new ArrayList<>();
+        for (Item date : dates) {
+            datesMap.add(date.toMap());
+        }
+        contactMap.put("dates", datesMap);
+
+        ArrayList<HashMap<String, String>> instantMessageAddressesMap = new ArrayList<>();
+        for (Item instantMessageAddress : instantMessageAddresses) {
+            instantMessageAddressesMap.add(instantMessageAddress.toMap());
+        }
+        contactMap.put("instantMessageAddresses", instantMessageAddressesMap);
+
+        ArrayList<HashMap<String, String>> relationsMap = new ArrayList<>();
+        for (Item relation : relations) {
+            relationsMap.add(relation.toMap());
+        }
+        contactMap.put("relations", relationsMap);
+        contactMap.put("labels", labels);
 
         return contactMap;
     }
@@ -89,6 +115,7 @@ public class Contact implements Comparable<Contact> {
         contact.birthday = (String) map.get("birthday");
         contact.androidAccountType = (String) map.get("androidAccountType");
         contact.androidAccountName = (String) map.get("androidAccountName");
+        contact.sip = (String) map.get("sip");
         contact.phoneticGivenName = (String) map.get("phoneticGivenName");
         contact.phoneticMiddleName = (String) map.get("phoneticMiddleName");
         contact.phoneticFamilyName = (String) map.get("phoneticFamilyName");
@@ -140,9 +167,7 @@ public class Contact implements Comparable<Contact> {
         }
         ArrayList<String> labels = (ArrayList<String>) map.get("labels");
         if (labels != null) {
-            for (String label : labels) {
-                contact.labels.add(label);
-            }
+            contact.labels.addAll(labels);
         }
         return contact;
     }

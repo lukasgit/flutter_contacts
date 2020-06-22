@@ -35,6 +35,8 @@ class _ContactListPageState extends State<ContactListPage> {
       ContactsService.getAvatar(contact).then((avatar) {
         if (avatar == null) return; // Don't redraw if no change.
         setState(() => contact.avatar = avatar);
+      }).catchError((error) {
+        print(error.toString());
       });
     }
   }
@@ -202,6 +204,18 @@ class ContactDetailsPage extends StatelessWidget {
               trailing: Text(_contact.suffix ?? ""),
             ),
             ListTile(
+              title: Text("Phonetic name"),
+              trailing: Text(_contact.phoneticGivenName ?? ""),
+            ),
+            ListTile(
+              title: Text("Phonetic middle name"),
+              trailing: Text(_contact.phoneticMiddleName ?? ""),
+            ),
+            ListTile(
+              title: Text("Phonetic family name"),
+              trailing: Text(_contact.phoneticFamilyName ?? ""),
+            ),
+            ListTile(
               title: Text("Birthday"),
               trailing: Text(_contact.birthday != null
                   ? DateFormat('dd-MM-yyyy').format(_contact.birthday)
@@ -216,14 +230,37 @@ class ContactDetailsPage extends StatelessWidget {
               trailing: Text(_contact.jobTitle ?? ""),
             ),
             ListTile(
+              title: Text("Department"),
+              trailing: Text(_contact.department ?? ""),
+            ),
+            ListTile(
+              title: Text("Nickname"),
+              trailing: Text(_contact.nickname ?? ""),
+            ),
+            ListTile(
+              title: Text("Sip"),
+              trailing: Text(_contact.sip ?? ""),
+            ),
+            ListTile(
+              title: Text("Note"),
+              trailing: Text(_contact.note ?? ""),
+            ),
+            ListTile(
               title: Text("Account Type"),
               trailing: Text((_contact.androidAccountType != null)
                   ? _contact.androidAccountType.toString()
                   : ""),
             ),
+            ListTile(
+                title: Text("Labels"),
+                trailing: Text(_contact.labels != null ?_contact.labels.join(", ") : "")),
             AddressesTile(_contact.postalAddresses),
             ItemsTile("Phones", _contact.phones),
-            ItemsTile("Emails", _contact.emails)
+            ItemsTile("Emails", _contact.emails),
+            ItemsTile("Dates", _contact.dates),
+            ItemsTile("Instant message addresses", _contact.instantMessageAddresses),
+            ItemsTile("Relations", _contact.relations),
+            ItemsTile("Websites", _contact.websites),
           ],
         ),
       ),
@@ -293,13 +330,13 @@ class ItemsTile extends StatelessWidget {
           children: _items
               .map(
                 (i) => Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  child: ListTile(
-                    title: Text(i.label ?? ""),
-                    trailing: Text(i.value ?? ""),
-                  ),
-                ),
-              )
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: ListTile(
+                title: Text(i.label ?? ""),
+                trailing: Text(i.value ?? ""),
+              ),
+            ),
+          )
               .toList(),
         ),
       ],

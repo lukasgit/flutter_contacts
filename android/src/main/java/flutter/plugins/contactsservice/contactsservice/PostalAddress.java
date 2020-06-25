@@ -65,6 +65,8 @@ public class PostalAddress {
                 return "home";
             case StructuredPostal.TYPE_WORK:
                 return "work";
+            case StructuredPostal.TYPE_OTHER:
+                return "other";
             case StructuredPostal.TYPE_CUSTOM:
                 final String label = cursor.getString(cursor.getColumnIndex(StructuredPostal.LABEL));
                 return label != null ? label : "";
@@ -79,6 +81,8 @@ public class PostalAddress {
                     return CommonDataKinds.StructuredPostal.TYPE_HOME;
                 case "work":
                     return CommonDataKinds.StructuredPostal.TYPE_WORK;
+                case "other":
+                    return StructuredPostal.TYPE_OTHER;
                 default:
                     return StructuredPostal.TYPE_CUSTOM;
             }

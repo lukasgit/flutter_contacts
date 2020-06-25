@@ -1,7 +1,5 @@
 package flutter.plugins.contactsservice.contactsservice;
 
-import android.provider.ContactsContract;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 

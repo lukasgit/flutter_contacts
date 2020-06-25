@@ -423,14 +423,15 @@ class Contact {
 }
 
 class PostalAddress {
-  PostalAddress({this.identifier, this.label, this.street, this.city, this.postcode, this.region, this.country});
+  PostalAddress({this.identifier, this.label, this.street, this.locality, this.city, this.postcode, this.region, this.country});
 
-  String identifier, label, street, city, postcode, region, country;
+  String identifier, label, street, locality, city, postcode, region, country;
 
   PostalAddress.fromMap(Map m) {
     identifier = m["identifier"];
     label = m["label"];
     street = m["street"];
+    locality = m["locality"];
     city = m["city"];
     postcode = m["postcode"];
     region = m["region"];
@@ -446,7 +447,8 @@ class PostalAddress {
         this.label == other.label &&
         this.postcode == other.postcode &&
         this.region == other.region &&
-        this.street == other.street;
+        this.street == other.street &&
+        this.locality == other.locality;
   }
 
   @override
@@ -455,6 +457,7 @@ class PostalAddress {
       this.identifier,
       this.label,
       this.street,
+      this.locality,
       this.city,
       this.country,
       this.region,
@@ -467,6 +470,7 @@ class PostalAddress {
         "identifier": address.identifier,
         "label": address.label,
         "street": address.street,
+        "locality": address.locality,
         "city": address.city,
         "postcode": address.postcode,
         "region": address.region,
@@ -484,6 +488,13 @@ class PostalAddress {
         finalString += ", " + this.street;
       } else {
         finalString += this.street;
+      }
+    }
+    if (this.locality != null) {
+      if (finalString.isNotEmpty) {
+        finalString += ", " + this.locality;
+      } else {
+        finalString += this.locality;
       }
     }
     if (this.city != null) {

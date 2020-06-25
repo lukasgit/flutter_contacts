@@ -229,6 +229,8 @@ public class Item {
                     return CommonDataKinds.Email.TYPE_WORK;
                 case "mobile":
                     return CommonDataKinds.Email.TYPE_MOBILE;
+                case "other":
+                    return CommonDataKinds.Email.TYPE_OTHER;
                 default:
                     return CommonDataKinds.Email.TYPE_CUSTOM;
             }
@@ -243,6 +245,8 @@ public class Item {
                     return CommonDataKinds.Event.TYPE_ANNIVERSARY;
                 case "birthday":
                     return CommonDataKinds.Event.TYPE_BIRTHDAY;
+                case "other":
+                    return CommonDataKinds.Event.TYPE_OTHER;
                 default:
                     return CommonDataKinds.Event.TYPE_CUSTOM;
             }

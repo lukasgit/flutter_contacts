@@ -12,13 +12,68 @@ class ContactsService {
 
   /// Fetches all contacts, or when specified, the contacts with a name
   /// matching [query]
-  static Future<Iterable<Contact>> getContacts({String query,
-    bool withThumbnails = true,
-    bool photoHighResolution = true,
-    bool orderByGivenName = true,
-    bool iOSLocalizedLabels = true}) async {
+  static Future<Iterable<Contact>> getContacts(
+      {String query,
+      bool withThumbnails = true,
+      bool photoHighResolution = true,
+      bool orderByGivenName = true,
+      bool iOSLocalizedLabels = true}) async {
     Iterable contacts = await _channel.invokeMethod('getContacts', <String, dynamic>{
       'query': query,
+      'withThumbnails': withThumbnails,
+      'photoHighResolution': photoHighResolution,
+      'orderByGivenName': orderByGivenName,
+      'iOSLocalizedLabels': iOSLocalizedLabels,
+    });
+    return contacts.map((m) => Contact.fromMap(m));
+  }
+
+  /// Fetches all contacts name for list screen, or when specified, the contacts with a name
+  /// matching [query]
+  static Future<Iterable<Contact>> getContactsSummary(
+      {String query,
+      bool withThumbnails = true,
+      bool photoHighResolution = false,
+      bool orderByGivenName = true,
+      bool iOSLocalizedLabels = true}) async {
+    Iterable contacts = await _channel.invokeMethod('getContactsSummary', <String, dynamic>{
+      'query': query,
+      'withThumbnails': withThumbnails,
+      'photoHighResolution': photoHighResolution,
+      'orderByGivenName': orderByGivenName,
+      'iOSLocalizedLabels': iOSLocalizedLabels,
+    });
+    return contacts.map((m) => Contact.fromSummaryMap(m));
+  }
+
+  /// Fetches all contacts name for list screen, or when specified, the contacts with a name
+  /// matching [query]
+  static Future<Iterable<Contact>> getIdentifiers(
+      {String query,
+        bool withThumbnails = false,
+        bool photoHighResolution = false,
+        bool orderByGivenName = true,
+        bool iOSLocalizedLabels = true}) async {
+    Iterable contacts = await _channel.invokeMethod('getIdentifiers', <String, dynamic>{
+      'query': query,
+      'withThumbnails': withThumbnails,
+      'photoHighResolution': photoHighResolution,
+      'orderByGivenName': orderByGivenName,
+      'iOSLocalizedLabels': iOSLocalizedLabels,
+    });
+    return contacts.map((m) => Contact.fromIdentifierMap(m));
+  }
+
+  /// Fetches all contacts name for list screen, or when specified, the contacts with a name
+  /// matching [query]
+  static Future<Iterable<Contact>> getContactsWithIdentifiers(
+      { List<String> identifiers,
+        bool withThumbnails = false,
+        bool photoHighResolution = false,
+        bool orderByGivenName = true,
+        bool iOSLocalizedLabels = true}) async {
+    Iterable contacts = await _channel.invokeMethod('getContactsWithIdentifiers', <String, dynamic>{
+      'identifiers': identifiers.join('|'),
       'withThumbnails': withThumbnails,
       'photoHighResolution': photoHighResolution,
       'orderByGivenName': orderByGivenName,
@@ -61,8 +116,7 @@ class ContactsService {
   /// Loads the avatar for the given contact and returns it. If the user does
   /// not have an avatar, then `null` is returned in that slot. Only implemented
   /// on Android.
-  static Future<Uint8List> getAvatar(final Contact contact, {final bool photoHighRes = true}) =>
-      _channel.invokeMethod('getAvatar', <String, dynamic>{
+  static Future<Uint8List> getAvatar(final Contact contact, {final bool photoHighRes = true}) => _channel.invokeMethod('getAvatar', <String, dynamic>{
         'contact': Contact._toMap(contact),
         'photoHighResolution': photoHighRes,
       });
@@ -140,36 +194,37 @@ class FormOperationException implements Exception {
 enum FormOperationErrorCode { FORM_OPERATION_CANCELED, FORM_COULD_NOT_BE_OPEN, FORM_OPERATION_UNKNOWN_ERROR }
 
 class Contact {
-  Contact({this.identifier,
-    this.displayName,
-    this.givenName,
-    this.middleName,
-    this.prefix,
-    this.suffix,
-    this.familyName,
-    this.company,
-    this.jobTitle,
-    this.emails,
-    this.phones,
-    this.postalAddresses,
-    this.avatar,
-    this.birthday,
-    this.androidAccountType,
-    this.androidAccountTypeRaw,
-    this.androidAccountName,
-    this.note,
-    this.sip,
-    this.phoneticGivenName,
-    this.phoneticMiddleName,
-    this.phoneticFamilyName,
-    this.phoneticName,
-    this.nickname,
-    this.department,
-    this.dates,
-    this.instantMessageAddresses,
-    this.relations,
-    this.websites,
-    this.labels});
+  Contact(
+      {this.identifier,
+      this.displayName,
+      this.givenName,
+      this.middleName,
+      this.prefix,
+      this.suffix,
+      this.familyName,
+      this.company,
+      this.jobTitle,
+      this.emails,
+      this.phones,
+      this.postalAddresses,
+      this.avatar,
+      this.birthday,
+      this.androidAccountType,
+      this.androidAccountTypeRaw,
+      this.androidAccountName,
+      this.note,
+      this.sip,
+      this.phoneticGivenName,
+      this.phoneticMiddleName,
+      this.phoneticFamilyName,
+      this.phoneticName,
+      this.nickname,
+      this.department,
+      this.dates,
+      this.instantMessageAddresses,
+      this.relations,
+      this.websites,
+      this.labels});
 
   String identifier, displayName, givenName, middleName, prefix, suffix, familyName, company, jobTitle;
   String note, sip, phoneticGivenName, phoneticMiddleName, phoneticFamilyName, phoneticName, nickname, department;
@@ -190,6 +245,20 @@ class Contact {
   String initials() {
     return ((this.givenName?.isNotEmpty == true ? this.givenName[0] : "") + (this.familyName?.isNotEmpty == true ? this.familyName[0] : ""))
         .toUpperCase();
+  }
+
+  Contact.fromSummaryMap(Map m) {
+    identifier = m["identifier"];
+    displayName = m["displayName"];
+    givenName = m["givenName"];
+    middleName = m["middleName"];
+    familyName = m["familyName"];
+    prefix = m["prefix"];
+    suffix = m["suffix"];
+  }
+
+  Contact.fromIdentifierMap(Map m) {
+    identifier = m["identifier"];
   }
 
   Contact.fromMap(Map m) {
@@ -263,11 +332,11 @@ class Contact {
       websites.add(Item._toMap(website));
     }
 
-    final birthday = contact.birthday == null ? null
-        : "${contact.birthday.year.toString()}-${contact.birthday.month.toString().padLeft(2, '0')}-${contact.birthday.day.toString().padLeft(
-        2, '0')}";
+    final birthday = contact.birthday == null
+        ? null
+        : "${contact.birthday.year.toString()}-${contact.birthday.month.toString().padLeft(2, '0')}-${contact.birthday.day.toString().padLeft(2, '0')}";
 
-    final map =  {
+    final map = {
       "identifier": contact.identifier,
       "displayName": contact.displayName,
       "givenName": contact.givenName,
@@ -307,8 +376,7 @@ class Contact {
   }
 
   /// The [+] operator fills in this contact's empty fields with the fields from [other]
-  operator +(Contact other) =>
-      Contact(
+  operator +(Contact other) => Contact(
         givenName: this.givenName ?? other.givenName,
         middleName: this.middleName ?? other.middleName,
         prefix: this.prefix ?? other.prefix,
@@ -325,7 +393,6 @@ class Contact {
             : this.postalAddresses.toSet().union(other.postalAddresses?.toSet() ?? Set()).toList(),
         avatar: this.avatar ?? other.avatar,
         birthday: this.birthday ?? other.birthday,
-
         note: this.note ?? other.note,
         sip: this.sip ?? other.sip,
         phoneticGivenName: this.phoneticGivenName ?? other.phoneticGivenName,
@@ -335,7 +402,9 @@ class Contact {
         nickname: this.nickname ?? other.nickname,
         department: this.department ?? other.department,
         dates: this.dates == null ? other.dates : this.dates.toSet().union(other.dates?.toSet() ?? Set()).toList(),
-        instantMessageAddresses: this.instantMessageAddresses == null ? other.instantMessageAddresses : this.instantMessageAddresses.toSet().union(other.instantMessageAddresses?.toSet() ?? Set()).toList(),
+        instantMessageAddresses: this.instantMessageAddresses == null
+            ? other.instantMessageAddresses
+            : this.instantMessageAddresses.toSet().union(other.instantMessageAddresses?.toSet() ?? Set()).toList(),
         relations: this.relations == null ? other.relations : this.relations.toSet().union(other.relations?.toSet() ?? Set()).toList(),
         websites: this.websites == null ? other.websites : this.websites.toSet().union(other.websites?.toSet() ?? Set()).toList(),
         labels: this.labels == null ? other.labels : this.labels.toSet().union(other.labels?.toSet() ?? Set()).toList(),
@@ -465,8 +534,7 @@ class PostalAddress {
     ].where((s) => s != null));
   }
 
-  static Map _toMap(PostalAddress address) =>
-      {
+  static Map _toMap(PostalAddress address) => {
         "identifier": address.identifier,
         "label": address.label,
         "street": address.street,

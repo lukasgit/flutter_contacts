@@ -177,4 +177,16 @@ public class Contact implements Comparable<Contact> {
             : (contact.givenName == null ? "" : contact.givenName.toLowerCase());
         return givenName1.compareTo(givenName2);
     }
+
+    HashMap<String, Object> toSummaryMap() {
+        HashMap<String, Object> contactMap = new HashMap<>();
+        contactMap.put("identifier", identifier);
+        contactMap.put("displayName", displayName);
+        contactMap.put("givenName", givenName);
+        contactMap.put("middleName", middleName);
+        contactMap.put("familyName", familyName);
+        contactMap.put("prefix", prefix);
+        contactMap.put("suffix", suffix);
+        return contactMap;
+    }
 }

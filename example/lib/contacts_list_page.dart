@@ -23,7 +23,7 @@ class _ContactListPageState extends State<ContactListPage> {
 
   Future<void> refreshContacts() async {
     // Load without thumbnails initially.
-    var contacts = (await ContactsService.getContacts(withThumbnails: false, iOSLocalizedLabels: iOSLocalizedLabels)).toList();
+    var contacts = (await ContactsService.getContacts()).toList();
 //      var contacts = (await ContactsService.getContactsForPhone("8554964652"))
 //          .toList();
     setState(() {
@@ -92,6 +92,7 @@ class _ContactListPageState extends State<ContactListPage> {
             ? ListView.builder(
                 itemCount: _contacts?.length ?? 0,
                 itemBuilder: (BuildContext context, int index) {
+
                   Contact c = _contacts?.elementAt(index);
                   return ListTile(
                     onTap: () {

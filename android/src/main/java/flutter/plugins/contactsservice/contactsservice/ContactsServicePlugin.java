@@ -24,10 +24,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -99,8 +98,13 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
     @Override
     public void onMethodCall(MethodCall call, Result result) {
         switch (call.method) {
+
+            case "getContactsWithIdentifiers":
+            case "getIdentifiers":
+            case "getContactsSummary":
             case "getContacts": {
-                this.getContacts(call.method, (String) call.argument("query"), (boolean) call.argument("withThumbnails"), (boolean) call.argument("photoHighResolution"), (boolean) call.argument("orderByGivenName"), result);
+                this.getContacts(call.method, (String) call.argument("query"), (boolean) call.argument("withThumbnails"), (boolean) call.argument(
+                        "photoHighResolution"), (boolean) call.argument("orderByGivenName"), (String) call.argument("identifiers"), result);
                 break;
             }
             case "getContactsForPhone": {
@@ -223,14 +227,37 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
             ContactsContract.Data.DATA1,
     };
 
+    private static final String[] SUMMARY_PROJECTION = {
+            ContactsContract.Data.CONTACT_ID,
+            ContactsContract.Contacts.DISPLAY_NAME,
+            ContactsContract.Contacts.Data.MIMETYPE,
+            StructuredName.DISPLAY_NAME,
+            StructuredName.GIVEN_NAME,
+            StructuredName.MIDDLE_NAME,
+            StructuredName.FAMILY_NAME,
+            StructuredName.PREFIX,
+            StructuredName.SUFFIX,
+    };
+
+    private static final String ORDER_BY_FIELD = (StructuredName.GIVEN_NAME + " COLLATE NOCASE ASC");
 
     @TargetApi(Build.VERSION_CODES.ECLAIR)
-    private void getContacts(String callMethod, String query, boolean withThumbnails, boolean photoHighResolution, boolean orderByGivenName, Result result) {
-        new GetContactsTask(callMethod, result, withThumbnails, photoHighResolution, orderByGivenName).executeOnExecutor(executor, query, false);
+    private void getContacts(String callMethod, String query, boolean withThumbnails, boolean photoHighResolution, boolean orderByGivenName,
+                             String identifiers, Result result) {
+        List<String> identifiersList = null;
+        if (identifiers != null) {
+            identifiersList = Arrays.asList(identifiers.split("\\|"));
+        }
+        new GetContactsTask(callMethod, result, withThumbnails, photoHighResolution, orderByGivenName, identifiersList).executeOnExecutor(executor, query, false);
+    }
+
+    @TargetApi(Build.VERSION_CODES.ECLAIR)
+    private void getIdentifiers(String callMethod, String query, boolean orderByGivenName, Result result) {
+        new GetContactsTask(callMethod, result, false, false, orderByGivenName, null).executeOnExecutor(executor, query);
     }
 
     private void getContactsForPhone(String callMethod, String phone, boolean withThumbnails, boolean photoHighResolution, boolean orderByGivenName, Result result) {
-        new GetContactsTask(callMethod, result, withThumbnails, photoHighResolution, orderByGivenName).executeOnExecutor(executor, phone, true);
+        new GetContactsTask(callMethod, result, withThumbnails, photoHighResolution, orderByGivenName, null).executeOnExecutor(executor, phone, true);
     }
 
     @Override
@@ -299,7 +326,7 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
                 Cursor cursor = contentResolver.query(contactUri, null, null, null, null);
                 if (cursor.moveToFirst()) {
                     String id = contactUri.getLastPathSegment();
-                    getContacts("openDeviceContactPicker", id, false, false, false, this.result);
+                    getContacts("openDeviceContactPicker", id, false, false, false, null, this.result);
                 } else {
                     Log.e(LOG_TAG, "onActivityResult - cursor.moveToFirst() returns false");
                     finishWithResult(FORM_OPERATION_CANCELED);
@@ -440,27 +467,39 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
         private boolean withThumbnails;
         private boolean photoHighResolution;
         private boolean orderByGivenName;
+        private List<String> identifiers;
 
-        public GetContactsTask(String callMethod, MethodChannel.Result result, boolean withThumbnails, boolean photoHighResolution, boolean orderByGivenName) {
+        public GetContactsTask(String callMethod, MethodChannel.Result result, boolean withThumbnails, boolean photoHighResolution,
+                               boolean orderByGivenName, List<String> identifiers) {
             this.callMethod = callMethod;
             this.getContactResult = result;
             this.withThumbnails = withThumbnails;
             this.photoHighResolution = photoHighResolution;
             this.orderByGivenName = orderByGivenName;
+            this.identifiers = identifiers;
         }
 
         @TargetApi(Build.VERSION_CODES.ECLAIR)
         protected ArrayList<HashMap> doInBackground(Object... params) {
             ArrayList<Contact> contacts;
             switch (callMethod) {
+                case "getContactsWithIdentifiers":
+                    contacts = getContactsFrom(getCursorForContactIdentifiers(identifiers, orderByGivenName));
+                    break;
                 case "openDeviceContactPicker":
-                    contacts = getContactsFrom(getCursor(null, (String) params[0]));
+                    contacts = getContactsFrom(getCursor(null, (String) params[0], orderByGivenName));
                     break;
                 case "getContacts":
-                    contacts = getContactsFrom(getCursor((String) params[0], null));
+                    contacts = getContactsFrom(getCursor((String) params[0], null, orderByGivenName));
                     break;
                 case "getContactsForPhone":
-                    contacts = getContactsFrom(getCursorForPhone(((String) params[0])));
+                    contacts = getContactsFrom(getCursorForPhone(((String) params[0]), orderByGivenName));
+                    break;
+                case "getContactsSummary":
+                    contacts = getContactsFrom(getCursorForSummary(((String) params[0]), orderByGivenName), true);
+                    break;
+                case "getIdentifiers":
+                    contacts = getContactIdentifiersFrom(getCursorForIdentifiers((String) params[0], orderByGivenName));
                     break;
                 default:
                     return null;
@@ -476,27 +515,21 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
                         // To stay backwards-compatible, return an empty byte array rather than `null`.
                         c.avatar = new byte[0];
                     }
-//          if ((Boolean) params[3])
-//              loadContactPhotoHighRes(c.identifier, (Boolean) params[3]);
-//          else
-//              setAvatarDataForContactIfAvailable(c);
                 }
             }
 
-            if (orderByGivenName) {
-                Comparator<Contact> compareByGivenName = new Comparator<Contact>() {
-                    @Override
-                    public int compare(Contact contactA, Contact contactB) {
-                        return contactA.compareTo(contactB);
-                    }
-                };
-                Collections.sort(contacts, compareByGivenName);
-            }
-
             //Transform the list of contacts to a list of Map
+
             ArrayList<HashMap> contactMaps = new ArrayList<>();
-            for (Contact c : contacts) {
-                contactMaps.add(c.toMap());
+
+            if (callMethod.equalsIgnoreCase("getContactsSummary")) {
+                for (Contact c : contacts) {
+                    contactMaps.add(c.toSummaryMap());
+                }
+            } else {
+                for (Contact c : contacts) {
+                    contactMaps.add(c.toMap());
+                }
             }
 
             return contactMaps;
@@ -511,8 +544,7 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
         }
     }
 
-
-    private Cursor getCursor(String query, String rawContactId) {
+    private Cursor getCursor(String query, String rawContactId, boolean orderByGivenName) {
         String selection = ContactsContract.Data.MIMETYPE + " IN (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ";
         ArrayList<String> selectionArgs = new ArrayList<>(Arrays.asList(CommonDataKinds.Nickname.CONTENT_ITEM_TYPE,
                 CommonDataKinds.Note.CONTENT_ITEM_TYPE, Email.CONTENT_ITEM_TYPE,
@@ -522,19 +554,52 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
                 CommonDataKinds.GroupMembership.CONTENT_ITEM_TYPE));
 
         if (query != null) {
-            selectionArgs = new ArrayList<>();
             selectionArgs.add(query + "%");
-            selection = ContactsContract.Contacts.DISPLAY_NAME_PRIMARY + " LIKE ?";
+            selection += (" AND " + ContactsContract.Contacts.DISPLAY_NAME + " LIKE ? ");
         }
+
         if (rawContactId != null) {
             selection += " AND " + ContactsContract.Data.CONTACT_ID + " = ?";
             selectionArgs.add(rawContactId);
+        }
+
+        if (orderByGivenName) {
+            return contentResolver.query(ContactsContract.Data.CONTENT_URI, PROJECTION, selection,
+                    selectionArgs.toArray(new String[selectionArgs.size()]), ORDER_BY_FIELD);
         }
         return contentResolver.query(ContactsContract.Data.CONTENT_URI, PROJECTION, selection,
                 selectionArgs.toArray(new String[selectionArgs.size()]), null);
     }
 
-    private Cursor getCursorForPhone(String phone) {
+    private Cursor getCursorForContactIdentifiers(List<String> identifiers, boolean orderByGivenName) {
+        String selection = ContactsContract.Data.MIMETYPE + " IN (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ";
+        ArrayList<String> selectionArgs = new ArrayList<>(Arrays.asList(CommonDataKinds.Nickname.CONTENT_ITEM_TYPE,
+                CommonDataKinds.Note.CONTENT_ITEM_TYPE, Email.CONTENT_ITEM_TYPE,
+                Phone.CONTENT_ITEM_TYPE, StructuredName.CONTENT_ITEM_TYPE, Organization.CONTENT_ITEM_TYPE,
+                StructuredPostal.CONTENT_ITEM_TYPE, CommonDataKinds.Event.CONTENT_ITEM_TYPE, CommonDataKinds.Im.CONTENT_ITEM_TYPE,
+                CommonDataKinds.Relation.CONTENT_ITEM_TYPE, CommonDataKinds.Website.CONTENT_ITEM_TYPE, CommonDataKinds.SipAddress.CONTENT_ITEM_TYPE,
+                CommonDataKinds.GroupMembership.CONTENT_ITEM_TYPE));
+
+        if (identifiers != null) {
+
+            String selectionString = "";
+
+            for (String i: identifiers) {
+                selectionString += "?,";
+            }
+            selection += (" AND " + ContactsContract.Data.CONTACT_ID + " IN (" + selectionString.substring(0, selectionString.length() - 1) + ")");
+            selectionArgs.addAll(identifiers);
+        }
+
+        if (orderByGivenName) {
+            return contentResolver.query(ContactsContract.Data.CONTENT_URI, PROJECTION, selection,
+                    selectionArgs.toArray(new String[selectionArgs.size()]), ORDER_BY_FIELD);
+        }
+        return contentResolver.query(ContactsContract.Data.CONTENT_URI, PROJECTION, selection,
+                selectionArgs.toArray(new String[selectionArgs.size()]), null);
+    }
+
+    private Cursor getCursorForPhone(String phone, boolean orderByGivenName) {
         if (phone.isEmpty()) {
             return null;
         }
@@ -554,10 +619,49 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
         if (!contactIds.isEmpty()) {
             String contactIdsListString = contactIds.toString().replace("[", "(").replace("]", ")");
             String contactSelection = ContactsContract.Data.CONTACT_ID + " IN " + contactIdsListString;
+            if (orderByGivenName) {
+                return contentResolver.query(ContactsContract.Data.CONTENT_URI, PROJECTION, contactSelection, null, ORDER_BY_FIELD);
+
+            }
             return contentResolver.query(ContactsContract.Data.CONTENT_URI, PROJECTION, contactSelection, null, null);
         }
 
         return null;
+    }
+
+    private Cursor getCursorForSummary(String query, boolean orderByGivenName) {
+        String selection = ContactsContract.Data.MIMETYPE + " = ?";
+        ArrayList<String> selectionArgsList = new ArrayList<>();
+        selectionArgsList.add(StructuredName.CONTENT_ITEM_TYPE);
+
+        if (query != null) {
+            selectionArgsList.add(query + "%");
+            selection += (" AND " + ContactsContract.Contacts.DISPLAY_NAME + " LIKE ?");
+        }
+        if (orderByGivenName) {
+            return contentResolver.query(ContactsContract.Data.CONTENT_URI, SUMMARY_PROJECTION, selection, selectionArgsList.toArray(new String[selectionArgsList.size()]),
+                    ORDER_BY_FIELD);
+        }
+        return contentResolver.query(ContactsContract.Data.CONTENT_URI, SUMMARY_PROJECTION, selection, selectionArgsList.toArray(new String[selectionArgsList.size()]), null);
+    }
+
+    private Cursor getCursorForIdentifiers(String query, boolean orderByGivenName) {
+        String selection = null;
+        String[] selectionArgs = null;
+
+        if (query != null) {
+            selectionArgs = new String[]{query + "%"};
+            selection = (ContactsContract.Contacts.DISPLAY_NAME + " LIKE ?");
+        }
+        String[] projection = new String[]{ContactsContract.Data.CONTACT_ID};
+        if (orderByGivenName) {
+            return contentResolver.query(ContactsContract.Data.CONTENT_URI, projection, selection, selectionArgs, ORDER_BY_FIELD);
+        }
+        return contentResolver.query(ContactsContract.Data.CONTENT_URI, projection, selection, selectionArgs, null);
+    }
+
+    private ArrayList<Contact> getContactsFrom(Cursor cursor) {
+        return getContactsFrom(cursor, false);
     }
 
     /**
@@ -566,7 +670,7 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
      * @param cursor
      * @return the list of contacts
      */
-    private ArrayList<Contact> getContactsFrom(Cursor cursor) {
+    private ArrayList<Contact> getContactsFrom(Cursor cursor, boolean summaryFields) {
         HashMap<String, Contact> map = new LinkedHashMap<>();
 
         while (cursor != null && cursor.moveToNext()) {
@@ -578,11 +682,9 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
             }
             Contact contact = map.get(contactId);
 
-            String mimeType = cursor.getString(cursor.getColumnIndex(ContactsContract.Data.MIMETYPE));
             contact.identifier = contactId;
             contact.displayName = cursor.getString(cursor.getColumnIndex(ContactsContract.Contacts.DISPLAY_NAME));
-            contact.androidAccountType = cursor.getString(cursor.getColumnIndex(ContactsContract.RawContacts.ACCOUNT_TYPE));
-            contact.androidAccountName = cursor.getString(cursor.getColumnIndex(ContactsContract.RawContacts.ACCOUNT_NAME));
+            String mimeType = cursor.getString(cursor.getColumnIndex(ContactsContract.Data.MIMETYPE));
 
             //NAMES
             if (mimeType.equals(CommonDataKinds.StructuredName.CONTENT_ITEM_TYPE)) {
@@ -591,98 +693,128 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
                 contact.familyName = cursor.getString(cursor.getColumnIndex(StructuredName.FAMILY_NAME));
                 contact.prefix = cursor.getString(cursor.getColumnIndex(StructuredName.PREFIX));
                 contact.suffix = cursor.getString(cursor.getColumnIndex(StructuredName.SUFFIX));
-                contact.phoneticGivenName = cursor.getString(cursor.getColumnIndex(StructuredName.PHONETIC_GIVEN_NAME));
-                contact.phoneticMiddleName = cursor.getString(cursor.getColumnIndex(StructuredName.PHONETIC_MIDDLE_NAME));
-                contact.phoneticFamilyName = cursor.getString(cursor.getColumnIndex(StructuredName.PHONETIC_FAMILY_NAME));
-                contact.phoneticName = cursor.getString(cursor.getColumnIndex(StructuredName.PHONETIC_NAME));
             }
-            //NICK NAME
-            else if (mimeType.equals(CommonDataKinds.Nickname.CONTENT_ITEM_TYPE)) {
-                contact.nickname = cursor.getString(cursor.getColumnIndex(CommonDataKinds.Nickname.NAME));
-            }
-            // SIP
-            else if (mimeType.equals(CommonDataKinds.SipAddress.CONTENT_ITEM_TYPE)) {
-                contact.sip = cursor.getString(cursor.getColumnIndex(CommonDataKinds.SipAddress.SIP_ADDRESS));
-            }
-            // NOTE
-            else if (mimeType.equals(CommonDataKinds.Note.CONTENT_ITEM_TYPE)) {
-                contact.note = cursor.getString(cursor.getColumnIndex(CommonDataKinds.Note.NOTE));
-            }
-            //PHONES
-            else if (mimeType.equals(CommonDataKinds.Phone.CONTENT_ITEM_TYPE)) {
-                String phoneNumber = cursor.getString(cursor.getColumnIndex(Phone.NUMBER));
-                if (!TextUtils.isEmpty(phoneNumber)) {
-                    int type = cursor.getInt(cursor.getColumnIndex(Phone.TYPE));
-                    String label = Item.getPhoneLabel(type, cursor);
-                    contact.phones.add(new Item(cursor.getString(cursor.getColumnIndex(BaseColumns._ID)), label, phoneNumber));
+
+            if (!summaryFields) {
+                contact.androidAccountType = cursor.getString(cursor.getColumnIndex(ContactsContract.RawContacts.ACCOUNT_TYPE));
+                contact.androidAccountName = cursor.getString(cursor.getColumnIndex(ContactsContract.RawContacts.ACCOUNT_NAME));
+
+                if (mimeType.equals(CommonDataKinds.StructuredName.CONTENT_ITEM_TYPE)) {
+                    contact.phoneticGivenName = cursor.getString(cursor.getColumnIndex(StructuredName.PHONETIC_GIVEN_NAME));
+                    contact.phoneticMiddleName = cursor.getString(cursor.getColumnIndex(StructuredName.PHONETIC_MIDDLE_NAME));
+                    contact.phoneticFamilyName = cursor.getString(cursor.getColumnIndex(StructuredName.PHONETIC_FAMILY_NAME));
+                    contact.phoneticName = cursor.getString(cursor.getColumnIndex(StructuredName.PHONETIC_NAME));
                 }
-            }
-            //MAILS
-            else if (mimeType.equals(CommonDataKinds.Email.CONTENT_ITEM_TYPE)) {
-                String email = cursor.getString(cursor.getColumnIndex(Email.ADDRESS));
-                int type = cursor.getInt(cursor.getColumnIndex(Email.TYPE));
-                if (!TextUtils.isEmpty(email)) {
-                    contact.emails.add(new Item(cursor.getString(cursor.getColumnIndex(BaseColumns._ID)), Item.getEmailLabel(type, cursor), email));
+                //NICK NAME
+                if (mimeType.equals(CommonDataKinds.Nickname.CONTENT_ITEM_TYPE)) {
+                    contact.nickname = cursor.getString(cursor.getColumnIndex(CommonDataKinds.Nickname.NAME));
                 }
-            }
-            //ORG
-            else if (mimeType.equals(CommonDataKinds.Organization.CONTENT_ITEM_TYPE)) {
-                contact.company = cursor.getString(cursor.getColumnIndex(Organization.COMPANY));
-                contact.jobTitle = cursor.getString(cursor.getColumnIndex(Organization.TITLE));
-                contact.department = cursor.getString(cursor.getColumnIndex(Organization.DEPARTMENT));
-            }
-            //ADDRESSES
-            else if (mimeType.equals(CommonDataKinds.StructuredPostal.CONTENT_ITEM_TYPE)) {
-                contact.postalAddresses.add(new PostalAddress(cursor));
-            }
-            // BIRTHDAY/EVENTS(DATES)
-            else if (mimeType.equals(CommonDataKinds.Event.CONTENT_ITEM_TYPE)) {
-                String date = cursor.getString(cursor.getColumnIndex(CommonDataKinds.Event.START_DATE));
-                int eventType = cursor.getInt(cursor.getColumnIndex(CommonDataKinds.Event.TYPE));
-                if (eventType == CommonDataKinds.Event.TYPE_BIRTHDAY) {
-                    contact.birthday = date;
-                } else {
-                    contact.dates.add(new Item(cursor.getString(cursor.getColumnIndex(BaseColumns._ID)), Item.getDatesLabel(eventType, cursor),
-                            date));
+                // SIP
+                else if (mimeType.equals(CommonDataKinds.SipAddress.CONTENT_ITEM_TYPE)) {
+                    contact.sip = cursor.getString(cursor.getColumnIndex(CommonDataKinds.SipAddress.SIP_ADDRESS));
                 }
-            }
-            //INSTANT MESSAGE ADDRESSES / Im
-            else if (mimeType.equals(CommonDataKinds.Im.CONTENT_ITEM_TYPE)) {
-                String im = cursor.getString(cursor.getColumnIndex(CommonDataKinds.Im.DATA));
-                int protocol = cursor.getInt(cursor.getColumnIndex(CommonDataKinds.Im.PROTOCOL));
-                if (!TextUtils.isEmpty(im)) {
-                    contact.instantMessageAddresses.add(new Item(cursor.getString(cursor.getColumnIndex(BaseColumns._ID)),
-                            Item.getInstantMessageAddressLabel(protocol, cursor), im));
+                // NOTE
+                else if (mimeType.equals(CommonDataKinds.Note.CONTENT_ITEM_TYPE)) {
+                    contact.note = cursor.getString(cursor.getColumnIndex(CommonDataKinds.Note.NOTE));
                 }
-            }
-            //RELATIONS
-            else if (mimeType.equals(CommonDataKinds.Relation.CONTENT_ITEM_TYPE)) {
-                String relation = cursor.getString(cursor.getColumnIndex(CommonDataKinds.Relation.NAME));
-                int type = cursor.getInt(cursor.getColumnIndex(CommonDataKinds.Relation.TYPE));
-                if (!TextUtils.isEmpty(relation)) {
-                    contact.relations.add(new Item(cursor.getString(cursor.getColumnIndex(BaseColumns._ID)), Item.getRelationLabel(type,
-                            cursor), relation));
+                //PHONES
+                else if (mimeType.equals(CommonDataKinds.Phone.CONTENT_ITEM_TYPE)) {
+                    String phoneNumber = cursor.getString(cursor.getColumnIndex(Phone.NUMBER));
+                    if (!TextUtils.isEmpty(phoneNumber)) {
+                        int type = cursor.getInt(cursor.getColumnIndex(Phone.TYPE));
+                        String label = Item.getPhoneLabel(type, cursor);
+                        contact.phones.add(new Item(cursor.getString(cursor.getColumnIndex(BaseColumns._ID)), label, phoneNumber));
+                    }
                 }
-            }
-            //WEBSITES
-            else if (mimeType.equals(CommonDataKinds.Website.CONTENT_ITEM_TYPE)) {
-                String url = cursor.getString(cursor.getColumnIndex(CommonDataKinds.Website.URL));
-                int type = cursor.getInt(cursor.getColumnIndex(CommonDataKinds.Website.TYPE));
-                if (!TextUtils.isEmpty(url)) {
-                    contact.websites.add(new Item(cursor.getString(cursor.getColumnIndex(BaseColumns._ID)), Item.getWebsiteLabel(type,
-                            cursor), url));
+                //MAILS
+                else if (mimeType.equals(CommonDataKinds.Email.CONTENT_ITEM_TYPE)) {
+                    String email = cursor.getString(cursor.getColumnIndex(Email.ADDRESS));
+                    int type = cursor.getInt(cursor.getColumnIndex(Email.TYPE));
+                    if (!TextUtils.isEmpty(email)) {
+                        contact.emails.add(new Item(cursor.getString(cursor.getColumnIndex(BaseColumns._ID)), Item.getEmailLabel(type, cursor), email));
+                    }
                 }
-            }
-            //LABELS
-            else if (mimeType.equals(CommonDataKinds.GroupMembership.CONTENT_ITEM_TYPE)) {
-                String groupId = cursor.getString(cursor.getColumnIndex(CommonDataKinds.GroupMembership.DATA1));
-                if (!TextUtils.isEmpty(groupId)) {
-                    ArrayList<String> groupTitle = getLabelGroupTitle(groupId);
-                    if (groupTitle.size() > 0) {
-                        contact.labels.addAll(groupTitle);
+                //ORG
+                else if (mimeType.equals(CommonDataKinds.Organization.CONTENT_ITEM_TYPE)) {
+                    contact.company = cursor.getString(cursor.getColumnIndex(Organization.COMPANY));
+                    contact.jobTitle = cursor.getString(cursor.getColumnIndex(Organization.TITLE));
+                    contact.department = cursor.getString(cursor.getColumnIndex(Organization.DEPARTMENT));
+                }
+                //ADDRESSES
+                else if (mimeType.equals(CommonDataKinds.StructuredPostal.CONTENT_ITEM_TYPE)) {
+                    contact.postalAddresses.add(new PostalAddress(cursor));
+                }
+                // BIRTHDAY/EVENTS(DATES)
+                else if (mimeType.equals(CommonDataKinds.Event.CONTENT_ITEM_TYPE)) {
+                    String date = cursor.getString(cursor.getColumnIndex(CommonDataKinds.Event.START_DATE));
+                    int eventType = cursor.getInt(cursor.getColumnIndex(CommonDataKinds.Event.TYPE));
+                    if (eventType == CommonDataKinds.Event.TYPE_BIRTHDAY) {
+                        contact.birthday = date;
+                    } else {
+                        contact.dates.add(new Item(cursor.getString(cursor.getColumnIndex(BaseColumns._ID)), Item.getDatesLabel(eventType, cursor),
+                                date));
+                    }
+                }
+                //INSTANT MESSAGE ADDRESSES / Im
+                else if (mimeType.equals(CommonDataKinds.Im.CONTENT_ITEM_TYPE)) {
+                    String im = cursor.getString(cursor.getColumnIndex(CommonDataKinds.Im.DATA));
+                    int protocol = cursor.getInt(cursor.getColumnIndex(CommonDataKinds.Im.PROTOCOL));
+                    if (!TextUtils.isEmpty(im)) {
+                        contact.instantMessageAddresses.add(new Item(cursor.getString(cursor.getColumnIndex(BaseColumns._ID)),
+                                Item.getInstantMessageAddressLabel(protocol, cursor), im));
+                    }
+                }
+                //RELATIONS
+                else if (mimeType.equals(CommonDataKinds.Relation.CONTENT_ITEM_TYPE)) {
+                    String relation = cursor.getString(cursor.getColumnIndex(CommonDataKinds.Relation.NAME));
+                    int type = cursor.getInt(cursor.getColumnIndex(CommonDataKinds.Relation.TYPE));
+                    if (!TextUtils.isEmpty(relation)) {
+                        contact.relations.add(new Item(cursor.getString(cursor.getColumnIndex(BaseColumns._ID)), Item.getRelationLabel(type,
+                                cursor), relation));
+                    }
+                }
+                //WEBSITES
+                else if (mimeType.equals(CommonDataKinds.Website.CONTENT_ITEM_TYPE)) {
+                    String url = cursor.getString(cursor.getColumnIndex(CommonDataKinds.Website.URL));
+                    int type = cursor.getInt(cursor.getColumnIndex(CommonDataKinds.Website.TYPE));
+                    if (!TextUtils.isEmpty(url)) {
+                        contact.websites.add(new Item(cursor.getString(cursor.getColumnIndex(BaseColumns._ID)), Item.getWebsiteLabel(type,
+                                cursor), url));
+                    }
+                }
+                //LABELS
+                else if (mimeType.equals(CommonDataKinds.GroupMembership.CONTENT_ITEM_TYPE)) {
+                    String groupId = cursor.getString(cursor.getColumnIndex(CommonDataKinds.GroupMembership.DATA1));
+                    if (!TextUtils.isEmpty(groupId)) {
+                        ArrayList<String> groupTitle = getLabelGroupTitle(groupId);
+                        if (groupTitle.size() > 0) {
+                            contact.labels.addAll(groupTitle);
+                        }
                     }
                 }
             }
+        }
+
+        if (cursor != null) {
+            cursor.close();
+        }
+
+        return new ArrayList<>(map.values());
+    }
+
+    private ArrayList<Contact> getContactIdentifiersFrom(Cursor cursor) {
+        HashMap<String, Contact> map = new LinkedHashMap<>();
+
+        while (cursor != null && cursor.moveToNext()) {
+            int columnIndex = cursor.getColumnIndex(ContactsContract.Data.CONTACT_ID);
+            String contactId = cursor.getString(columnIndex);
+
+            if (!map.containsKey(contactId)) {
+                map.put(contactId, new Contact(contactId));
+            }
+            Contact contact = map.get(contactId);
+
+            contact.identifier = contactId;
         }
 
         if (cursor != null) {

@@ -239,7 +239,7 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
             StructuredName.SUFFIX,
     };
 
-    private static final String ORDER_BY_FIELD = (StructuredName.GIVEN_NAME + " COLLATE NOCASE ASC");
+    private static final String ORDER_BY_FIELD = (ContactsContract.Contacts.DISPLAY_NAME + " COLLATE NOCASE ASC");
 
     @TargetApi(Build.VERSION_CODES.ECLAIR)
     private void getContacts(String callMethod, String query, boolean withThumbnails, boolean photoHighResolution, boolean orderByGivenName,

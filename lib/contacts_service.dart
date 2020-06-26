@@ -66,13 +66,13 @@ class ContactsService {
 
   /// Fetches all contacts name for list screen, or when specified, the contacts with a name
   /// matching [query]
-  static Future<Iterable<Contact>> getContactsWithIdentifiers(
+  static Future<Iterable<Contact>> getContactsByIdentifiers(
       { List<String> identifiers,
         bool withThumbnails = false,
         bool photoHighResolution = false,
         bool orderByGivenName = true,
         bool iOSLocalizedLabels = true}) async {
-    Iterable contacts = await _channel.invokeMethod('getContactsWithIdentifiers', <String, dynamic>{
+    Iterable contacts = await _channel.invokeMethod('getContactsByIdentifiers', <String, dynamic>{
       'identifiers': identifiers.join('|'),
       'withThumbnails': withThumbnails,
       'photoHighResolution': photoHighResolution,

@@ -98,8 +98,7 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
     @Override
     public void onMethodCall(MethodCall call, Result result) {
         switch (call.method) {
-
-            case "getContactsWithIdentifiers":
+            case "getContactsByIdentifiers":
             case "getIdentifiers":
             case "getContactsSummary":
             case "getContacts": {
@@ -249,11 +248,6 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
             identifiersList = Arrays.asList(identifiers.split("\\|"));
         }
         new GetContactsTask(callMethod, result, withThumbnails, photoHighResolution, orderByGivenName, identifiersList).executeOnExecutor(executor, query, false);
-    }
-
-    @TargetApi(Build.VERSION_CODES.ECLAIR)
-    private void getIdentifiers(String callMethod, String query, boolean orderByGivenName, Result result) {
-        new GetContactsTask(callMethod, result, false, false, orderByGivenName, null).executeOnExecutor(executor, query);
     }
 
     private void getContactsForPhone(String callMethod, String phone, boolean withThumbnails, boolean photoHighResolution, boolean orderByGivenName, Result result) {
@@ -483,7 +477,7 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
         protected ArrayList<HashMap> doInBackground(Object... params) {
             ArrayList<Contact> contacts;
             switch (callMethod) {
-                case "getContactsWithIdentifiers":
+                case "getContactsByIdentifiers":
                     contacts = getContactsFrom(getCursorForContactIdentifiers(identifiers, orderByGivenName));
                     break;
                 case "openDeviceContactPicker":

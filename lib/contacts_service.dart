@@ -48,7 +48,7 @@ class ContactsService {
 
   /// Fetches all contacts name for list screen, or when specified, the contacts with a name
   /// matching [query]
-  static Future<Iterable<Contact>> getIdentifiers(
+  static Future<Iterable<String>> getIdentifiers(
       {String query,
         bool withThumbnails = false,
         bool photoHighResolution = false,
@@ -61,7 +61,11 @@ class ContactsService {
       'orderByGivenName': orderByGivenName,
       'iOSLocalizedLabels': iOSLocalizedLabels,
     });
-    return contacts.map((m) => Contact.fromIdentifierMap(m));
+    if (contacts != null && contacts.length > 0) {
+      var first = contacts.first;
+      return first["identifiers"];
+    }
+    return List<String>();
   }
 
   /// Fetches all contacts name for list screen, or when specified, the contacts with a name

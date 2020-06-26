@@ -493,8 +493,12 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
                     contacts = getContactsFrom(getCursorForSummary(((String) params[0]), orderByGivenName), true);
                     break;
                 case "getIdentifiers":
-                    contacts = getContactIdentifiersFrom(getCursorForIdentifiers((String) params[0], orderByGivenName));
-                    break;
+                    ArrayList<String> contactList = getContactIdentifiersFrom(getCursorForIdentifiers((String) params[0], orderByGivenName));
+                    ArrayList<HashMap> mapList = new ArrayList<>();
+                    HashMap map = new HashMap();
+                    map.put("identifiers", contactList);
+                    mapList.add(map);
+                    return mapList;
                 default:
                     return null;
             }
@@ -520,7 +524,7 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
                 for (Contact c : contacts) {
                     contactMaps.add(c.toSummaryMap());
                 }
-            } else {
+            }else {
                 for (Contact c : contacts) {
                     contactMaps.add(c.toMap());
                 }
@@ -796,26 +800,26 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
         return new ArrayList<>(map.values());
     }
 
-    private ArrayList<Contact> getContactIdentifiersFrom(Cursor cursor) {
-        HashMap<String, Contact> map = new LinkedHashMap<>();
-
+    private ArrayList<String> getContactIdentifiersFrom(Cursor cursor) {
+//        HashMap<String, Contact> map = new LinkedHashMap<>();
+        ArrayList<String> result = new ArrayList<>();
         while (cursor != null && cursor.moveToNext()) {
             int columnIndex = cursor.getColumnIndex(ContactsContract.Data.CONTACT_ID);
-            String contactId = cursor.getString(columnIndex);
-
-            if (!map.containsKey(contactId)) {
-                map.put(contactId, new Contact(contactId));
-            }
-            Contact contact = map.get(contactId);
-
-            contact.identifier = contactId;
+//            String contactId = cursor.getString(columnIndex);
+//            if (!map.containsKey(contactId)) {
+//                map.put(contactId, new Contact(contactId));
+//            }
+//            Contact contact = map.get(contactId);
+//
+//            contact.identifier = contactId;
+            result.add(cursor.getString(columnIndex));
         }
 
         if (cursor != null) {
             cursor.close();
         }
-
-        return new ArrayList<>(map.values());
+        return result;
+//        return new ArrayList<>(map.values());
     }
 
     private void setAvatarDataForContactIfAvailable(Contact contact) {

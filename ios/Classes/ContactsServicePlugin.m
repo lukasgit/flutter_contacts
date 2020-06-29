@@ -3,6 +3,10 @@
 
 @implementation ContactsServicePlugin
 + (void)registerWithRegistrar:(NSObject<FlutterPluginRegistrar>*)registrar {
-  [SwiftContactsServicePlugin registerWithRegistrar:registrar];
+    if (@available(iOS 9.0, *)) {
+        [SwiftContactsServicePlugin registerWithRegistrar:registrar];
+    } else {
+        // Fallback on earlier versions
+    }
 }
 @end

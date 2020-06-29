@@ -24,8 +24,6 @@ class _ContactListPageState extends State<ContactListPage> {
   Future<void> refreshContacts() async {
     // Load without thumbnails initially.
     var contacts = (await ContactsService.getContacts()).toList();
-//      var contacts = (await ContactsService.getContactsForPhone("8554964652"))
-//          .toList();
     setState(() {
       _contacts = contacts;
     });
@@ -180,7 +178,7 @@ class ContactDetailsPage extends StatelessWidget {
           children: <Widget>[
             ListTile(
               title: Text("Identifier"),
-              trailing: Text(_contact.identifier ?? ""),
+              subtitle: Text(_contact.identifier ?? ""),
             ),
             ListTile(
               title: Text("Name"),
@@ -279,7 +277,7 @@ class AddressesTile extends StatelessWidget {
                       children: <Widget>[
                         ListTile(
                           title: Text("Identifier"),
-                          trailing: Text(a.identifier ?? ""),
+                          subtitle: Text(a.identifier ?? ""),
                         ),
                         ListTile(
                           title: Text("Street"),

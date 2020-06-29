@@ -23,19 +23,27 @@ class _ContactListPageState extends State<ContactListPage> {
 
   Future<void> refreshContacts() async {
     // Load without thumbnails initially.
+//    var ids = (await ContactsService.getIdentifiers());
+//    var contacts = (await ContactsService.getContactsByIdentifiers(identifiers: ids)).toList();
+//    var contacts = (await ContactsService.getContactsSummary()).toList();
     var contacts = (await ContactsService.getContacts()).toList();
+
     setState(() {
       _contacts = contacts;
     });
 
     // Lazy load thumbnails after rendering initial contacts.
     for (final contact in contacts) {
-      ContactsService.getAvatar(contact).then((avatar) {
-        if (avatar == null) return; // Don't redraw if no change.
-        setState(() => contact.avatar = avatar);
-      }).catchError((error) {
-        print(error.toString());
-      });
+      if (contact.avatar == null) {
+        ContactsService.getAvatar(contact).then((avatar) {
+          if (avatar == null) return; // Don't redraw if no change.
+          setState(() => contact.avatar = avatar);
+        }).catchError((error) {
+          print(error.toString());
+        });
+      } else {
+        setState(() => contact.avatar);
+      }
     }
   }
 
@@ -61,6 +69,13 @@ class _ContactListPageState extends State<ContactListPage> {
           print(e.errorCode);
       }
     }
+  }
+
+  void contactOnDeviceHasBeenUpdated(Contact contact) {
+    this.setState(() {
+      var id = _contacts.indexWhere((c) => c.identifier == contact.identifier);
+      _contacts[id] = contact;
+    });
   }
 
   @override
@@ -112,13 +127,6 @@ class _ContactListPageState extends State<ContactListPage> {
               ),
       ),
     );
-  }
-
-  void contactOnDeviceHasBeenUpdated(Contact contact) {
-    this.setState(() {
-      var id = _contacts.indexWhere((c) => c.identifier == contact.identifier);
-      _contacts[id] = contact;
-    });
   }
 }
 

@@ -63,7 +63,7 @@ class ContactsService {
     });
     if (contacts != null && contacts.length > 0) {
       var first = contacts.first;
-      return first["identifiers"];
+      return (first['identifiers'] as List)?.map((item) => item as String)?.toList();
     }
     return List<String>();
   }
@@ -72,7 +72,7 @@ class ContactsService {
   /// matching [query]
   static Future<Iterable<Contact>> getContactsByIdentifiers(
       { List<String> identifiers,
-        bool withThumbnails = false,
+        bool withThumbnails = true,
         bool photoHighResolution = false,
         bool orderByGivenName = true,
         bool iOSLocalizedLabels = true}) async {
@@ -259,6 +259,11 @@ class Contact {
     familyName = m["familyName"];
     prefix = m["prefix"];
     suffix = m["suffix"];
+    try {
+      avatar = m["avatar"];
+    } catch (e) {
+      avatar = Uint8List(0);
+    }
   }
 
   Contact.fromIdentifierMap(Map m) {

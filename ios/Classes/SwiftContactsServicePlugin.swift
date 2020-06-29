@@ -122,18 +122,26 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin, CNContactViewC
 
     func getIdentifiers(orderByGivenName: Bool = true) -> [[String:Any]] {
         var result = [[String:Any]]()
-        let keys = [CNContactIdentifierKey] as [Any]
+        let keys = [CNContactIdentifierKey as CNKeyDescriptor] as [CNKeyDescriptor]
         let store = CNContactStore()
         do {
-            let fetchRequest = CNContactFetchRequest(keysToFetch: keys as! [CNKeyDescriptor])
-            if (orderByGivenName) {
-                fetchRequest.sortOrder = CNContactSortOrder.givenName
-            }
-            let allContacts = try store.unifiedContacts(matching: fetchRequest.predicate!, keysToFetch: keys as! [CNKeyDescriptor])
             var contactIdentifiers = [String]()
-            for contact in allContacts {
-                contactIdentifiers.append(contact.identifier)
+
+            var allContainers: [CNContainer] = []
+            allContainers = try store.containers(matching: nil)
+            for container in allContainers {
+                let fetchRequest = CNContactFetchRequest(keysToFetch: keys)
+                fetchRequest.predicate = CNContact.predicateForContactsInContainer(withIdentifier: container.identifier)
+                if (orderByGivenName) {
+                    fetchRequest.sortOrder = CNContactSortOrder.givenName
+                }
+                let allContacts = try store.unifiedContacts(matching: fetchRequest.predicate!, keysToFetch: keys)
+                for contact in allContacts {
+                    contactIdentifiers.append(contact.identifier)
+                }
+
             }
+            
             let map = ["identifiers" : contactIdentifiers]
             result.append(map)
         } catch let error as NSError {

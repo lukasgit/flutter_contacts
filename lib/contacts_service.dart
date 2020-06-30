@@ -50,10 +50,10 @@ class ContactsService {
   /// matching [query]
   static Future<Iterable<String>> getIdentifiers(
       {String query,
-        bool withThumbnails = false,
-        bool photoHighResolution = false,
-        bool orderByGivenName = true,
-        bool iOSLocalizedLabels = true}) async {
+      bool withThumbnails = false,
+      bool photoHighResolution = false,
+      bool orderByGivenName = true,
+      bool iOSLocalizedLabels = true}) async {
     Iterable contacts = await _channel.invokeMethod('getIdentifiers', <String, dynamic>{
       'query': query,
       'withThumbnails': withThumbnails,
@@ -71,11 +71,11 @@ class ContactsService {
   /// Fetches all contacts name for list screen, or when specified, the contacts with a name
   /// matching [query]
   static Future<Iterable<Contact>> getContactsByIdentifiers(
-      { List<String> identifiers,
-        bool withThumbnails = true,
-        bool photoHighResolution = false,
-        bool orderByGivenName = true,
-        bool iOSLocalizedLabels = true}) async {
+      {List<String> identifiers,
+      bool withThumbnails = true,
+      bool photoHighResolution = false,
+      bool orderByGivenName = true,
+      bool iOSLocalizedLabels = true}) async {
     Iterable contacts = await _channel.invokeMethod('getContactsByIdentifiers', <String, dynamic>{
       'identifiers': identifiers.join('|'),
       'withThumbnails': withThumbnails,
@@ -343,41 +343,76 @@ class Contact {
 
     final birthday = contact.birthday == null
         ? null
-        : "${contact.birthday.year.toString()}-${contact.birthday.month.toString().padLeft(2, '0')}-${contact.birthday.day.toString().padLeft(2, '0')}";
+        : "--${contact.birthday.month.toString().padLeft(2, '0')}-${contact.birthday.day.toString().padLeft(2, '0')}";
 
-    final map = {
-      "identifier": contact.identifier,
-      "displayName": contact.displayName,
-      "givenName": contact.givenName,
-      "middleName": contact.middleName,
-      "familyName": contact.familyName,
-      "prefix": contact.prefix,
-      "suffix": contact.suffix,
-      "company": contact.company,
-      "jobTitle": contact.jobTitle,
-      "androidAccountType": contact.androidAccountTypeRaw,
-      "androidAccountName": contact.androidAccountName,
-      "emails": emails,
-      "phones": phones,
-      "postalAddresses": postalAddresses,
-      "avatar": contact.avatar,
-      "birthday": birthday,
-      "note": contact.note,
-      "sip": contact.sip,
-      "phoneticGivenName": contact.phoneticGivenName,
-      "phoneticMiddleName": contact.phoneticMiddleName,
-      "phoneticFamilyName": contact.phoneticFamilyName,
-      "phoneticName": contact.phoneticName,
-      "nickname": contact.nickname,
-      "dates": dates,
-      "department": contact.department,
-      "instantMessageAddresses": instantMessageAddresses,
-      "relations": relations,
-      "websites": websites,
-      "labels": contact.labels,
-    };
+    if (contact.identifier == null) {
+      final map = {
+        "displayName": contact.displayName,
+        "givenName": contact.givenName,
+        "middleName": contact.middleName,
+        "familyName": contact.familyName,
+        "prefix": contact.prefix,
+        "suffix": contact.suffix,
+        "company": contact.company,
+        "jobTitle": contact.jobTitle,
+        "androidAccountType": contact.androidAccountTypeRaw,
+        "androidAccountName": contact.androidAccountName,
+        "emails": emails,
+        "phones": phones,
+        "postalAddresses": postalAddresses,
+        "avatar": contact.avatar,
+        "birthday": birthday,
+        "note": contact.note,
+        "sip": contact.sip,
+        "phoneticGivenName": contact.phoneticGivenName,
+        "phoneticMiddleName": contact.phoneticMiddleName,
+        "phoneticFamilyName": contact.phoneticFamilyName,
+        "phoneticName": contact.phoneticName,
+        "nickname": contact.nickname,
+        "dates": dates,
+        "department": contact.department,
+        "instantMessageAddresses": instantMessageAddresses,
+        "relations": relations,
+        "websites": websites,
+        "labels": contact.labels,
+      };
 
-    return map;
+      return map;
+    } else {
+      final map = {
+        "identifier": contact.identifier,
+        "displayName": contact.displayName,
+        "givenName": contact.givenName,
+        "middleName": contact.middleName,
+        "familyName": contact.familyName,
+        "prefix": contact.prefix,
+        "suffix": contact.suffix,
+        "company": contact.company,
+        "jobTitle": contact.jobTitle,
+        "androidAccountType": contact.androidAccountTypeRaw,
+        "androidAccountName": contact.androidAccountName,
+        "emails": emails,
+        "phones": phones,
+        "postalAddresses": postalAddresses,
+        "avatar": contact.avatar,
+        "birthday": birthday,
+        "note": contact.note,
+        "sip": contact.sip,
+        "phoneticGivenName": contact.phoneticGivenName,
+        "phoneticMiddleName": contact.phoneticMiddleName,
+        "phoneticFamilyName": contact.phoneticFamilyName,
+        "phoneticName": contact.phoneticName,
+        "nickname": contact.nickname,
+        "dates": dates,
+        "department": contact.department,
+        "instantMessageAddresses": instantMessageAddresses,
+        "relations": relations,
+        "websites": websites,
+        "labels": contact.labels,
+      };
+      return map;
+    }
+
   }
 
   Map toMap() {
@@ -543,16 +578,30 @@ class PostalAddress {
     ].where((s) => s != null));
   }
 
-  static Map _toMap(PostalAddress address) => {
-        "identifier": address.identifier,
-        "label": address.label,
-        "street": address.street,
-        "locality": address.locality,
-        "city": address.city,
-        "postcode": address.postcode,
-        "region": address.region,
-        "country": address.country
+  static Map _toMap(PostalAddress address) {
+    if (address.identifier == null) {
+      return {
+        "label": address.label ?? "",
+        "street": address.street ?? "",
+        "locality": address.locality ?? "",
+        "city": address.city ?? "",
+        "postcode": address.postcode ?? "",
+        "region": address.region ?? "",
+        "country": address.country ?? ""
       };
+    } else {
+      return {
+        "identifier": address.identifier,
+        "label": address.label ?? "",
+        "street": address.street ?? "",
+        "locality": address.locality ?? "",
+        "city": address.city ?? "",
+        "postcode": address.postcode ?? "",
+        "region": address.region ?? "",
+        "country": address.country ?? ""
+      };
+    }
+  }
 
   @override
   String toString() {
@@ -650,7 +699,13 @@ class Item {
   @override
   int get hashCode => hash3(identifier ?? "", label ?? "", value ?? "");
 
-  static Map _toMap(Item i) => {"identifier": i.identifier, "label": i.label, "value": i.value};
+  static Map _toMap(Item i) {
+    if (i.identifier == null) {
+      return {"label": i.label ?? "", "value": i.value ?? ""};
+    } else {
+      return {"identifier": i.identifier, "label": i.label ?? "", "value": i.value ?? ""};
+    }
+  }
 }
 
 enum AndroidAccountType { facebook, google, whatsapp, other }

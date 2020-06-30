@@ -557,13 +557,18 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin, CNContactViewC
         contact.organizationName = dictionary["company"] as? String ?? ""
         contact.jobTitle = dictionary["jobTitle"] as? String ?? ""
         contact.nickname = dictionary["nickname"] as? String ?? ""
+        contact.phoneticGivenName = dictionary["phoneticGivenName"] as? String ?? ""
+        contact.phoneticMiddleName = dictionary["phoneticMiddleName"] as? String ?? ""
+        contact.phoneticFamilyName = dictionary["phoneticFamilyName"] as? String ?? ""
+        contact.departmentName = dictionary["department"] as? String ?? ""
+        contact.note = dictionary["note"] as? String ?? ""
 
         if let avatarData = (dictionary["avatar"] as? FlutterStandardTypedData)?.data {
             contact.imageData = avatarData
         }
-
+        
         //Phone numbers
-        if let phoneNumbers = dictionary["phones"] as? [[String:String]]{
+        if let phoneNumbers = dictionary["phones"] as? [[String: String]]{
             for phone in phoneNumbers where phone["value"] != nil {
                 contact.phoneNumbers.append(CNLabeledValue(label:getPhoneLabel(label:phone["label"]),value:CNPhoneNumber(stringValue:phone["value"]!)))
             }
@@ -582,6 +587,22 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin, CNContactViewC
             for postalAddress in postalAddresses{
                 let newAddress = CNMutablePostalAddress()
                 newAddress.street = postalAddress["street"] ?? ""
+                if #available(iOS 10.3, *) {
+                    newAddress.subLocality = postalAddress["locality"] ?? ""
+                } else {
+                    var street = ""
+                    if let s = postalAddress["street"] {
+                        street = s
+                    }
+                    if let l = postalAddress["locality"] {
+                        if street.isEmpty {
+                            street = l
+                        } else {
+                            street = "\(street)\n\(l)"
+                        }
+                    }
+                    newAddress.street = street
+                }
                 newAddress.city = postalAddress["city"] ?? ""
                 newAddress.postalCode = postalAddress["postcode"] ?? ""
                 newAddress.country = postalAddress["country"] ?? ""
@@ -592,11 +613,79 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin, CNContactViewC
         }
 
         //BIRTHDAY
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+
         if let birthday = dictionary["birthday"] as? String {
-            let formatter = DateFormatter()
-            formatter.dateFormat = "yyyy-MM-dd"
-            let date = formatter.date(from: birthday)!
-            contact.birthday = Calendar.current.dateComponents([.year, .month, .day], from: date)
+            let birthComponents = birthday.split(separator: "-")
+            if birthComponents.count == 3 {
+                var d = DateComponents()
+                d.year = Int(birthComponents[0])
+                d.month = Int(birthComponents[1])
+                d.day = Int(birthComponents[2])
+                contact.birthday = d
+            } else if birthComponents.count == 2 {
+                var d = DateComponents()
+                d.month = Int(birthComponents[0])
+                d.day = Int(birthComponents[1])
+                contact.birthday = d
+            }
+        }
+        
+        //Relations
+        if let relations = dictionary["relations"] as? [[String:String]]{
+            for relation in relations where nil != relation["value"] {
+                let relationLabel = relation["label"] ?? ""
+                contact.contactRelations.append(CNLabeledValue(label:getRelationsLabel(label: relationLabel), value:CNContactRelation(name: relation["value"]! as String)))
+            }
+        }
+        
+        //Instant message address
+        if let instantMessageAddresses = dictionary["instantMessageAddresses"] as? [[String:String]]{
+            for im in instantMessageAddresses where nil != im["value"] {
+                let imLabel = im["label"] ?? ""
+                contact.instantMessageAddresses.append(CNLabeledValue(label:getInstantMessageLabel(label: imLabel), value:CNInstantMessageAddress(username: im["value"]! as String, service: im["label"]! as String)))
+            }
+        }
+
+        //Dates
+        if let dates = dictionary["dates"] as? [[String:String]]{
+            for date in dates where nil != date["value"] {
+                let dateLabel = date["label"] ?? ""
+                let dateValue = date["value"] ?? ""
+
+                let dateComponents = dateValue.split(separator: "-")
+                if dateComponents.count == 3 {
+                    var d = DateComponents()
+                    d.year = Int(dateComponents[0])
+                    d.month = Int(dateComponents[1])
+                    d.day = Int(dateComponents[2])
+                    contact.dates.append(CNLabeledValue(label: getDatesLabel(label: dateLabel), value: d as NSDateComponents))
+                } else if dateComponents.count == 2 {
+                    var d = DateComponents()
+                    d.month = Int(dateComponents[0])
+                    d.day = Int(dateComponents[1])
+                    contact.dates.append(CNLabeledValue(label: getDatesLabel(label: dateLabel), value: d as NSDateComponents))
+                }
+            }
+        }
+        
+        //Social profile
+        if let profiles = dictionary["socialProfiles"] as? [[String:String]]{
+            for profile in profiles where nil != profile["value"] {
+                let label = profile["label"] ?? ""
+                let userName = profile["value"] ?? ""
+                contact.socialProfiles.append(CNLabeledValue(label:getSocialProfileLabel(label: label), value:CNSocialProfile(urlString: getSocialProfileUrl(label: label, userName: userName), username: userName, userIdentifier: "", service: getSocialProfileLabel(label: label))))
+            }
+        }
+        
+        //Websites
+        if let websites = dictionary["websites"] as? [[String:String]]{
+            for website in websites where nil != website["value"] {
+                let label = website["label"] ?? ""
+                let url = website["value"] ?? ""
+                contact.urlAddresses.append(CNLabeledValue(label:getWebsitesLabel(label: label), value:url as NSString))
+            }
         }
 
         return contact
@@ -731,8 +820,9 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin, CNContactViewC
             var relationDictionary = [String:String]()
             relationDictionary["identifier"] = relation.identifier
             relationDictionary["value"] = String(relation.value.name)
+            relationDictionary["label"] = "other"
             if let label = relation.label{
-                relationDictionary["label"] = localizedLabels ? CNLabeledValue<NSString>.localizedString(forLabel: label) : label;
+                relationDictionary["label"] = localizedLabels ? CNLabeledValue<NSString>.localizedString(forLabel: label) : getRawRelationsLabel(label: label);
             }
             relations.append(relationDictionary)
         }
@@ -745,7 +835,7 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin, CNContactViewC
             imDictionary["identifier"] = im.identifier
             imDictionary["value"] = String(im.value.username)
             if let label = im.label{
-                imDictionary["label"] = localizedLabels ? CNLabeledValue<NSString>.localizedString(forLabel: label) : label;
+                imDictionary["label"] = localizedLabels ? CNLabeledValue<NSString>.localizedString(forLabel: label) : getRawInstantMessageLabel(label: label);
             }
             instantMessageAddresses.append(imDictionary)
         }
@@ -758,7 +848,7 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin, CNContactViewC
             profileDictionary["identifier"] = profile.identifier
             profileDictionary["value"] = String(profile.value.username)
             if let label = profile.label{
-                profileDictionary["label"] = localizedLabels ? CNLabeledValue<NSString>.localizedString(forLabel: label) : label;
+                profileDictionary["label"] = localizedLabels ? CNLabeledValue<NSString>.localizedString(forLabel: label) : getRawSocialProfileLabel(label: label);
             }
             profiles.append(profileDictionary)
         }
@@ -778,7 +868,7 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin, CNContactViewC
             }
             
             if let label = date.label{
-                dateDictionary["label"] = localizedLabels ? CNLabeledValue<NSString>.localizedString(forLabel: label) : label;
+                dateDictionary["label"] = localizedLabels ? CNLabeledValue<NSString>.localizedString(forLabel: label) : getRawDatesLabel(label: label);
             }
             dates.append(dateDictionary)
         }
@@ -792,7 +882,7 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin, CNContactViewC
             websiteDictionary["value"] = String(website.value)
             websiteDictionary["label"] = "other"
             if let label = website.label{
-                websiteDictionary["label"] = localizedLabels ? CNLabeledValue<NSString>.localizedString(forLabel: label) : label;
+                websiteDictionary["label"] = localizedLabels ? CNLabeledValue<NSString>.localizedString(forLabel: label) : getRawWebsitesLabel(label: label);
             }
             websites.append(websiteDictionary)
         }
@@ -829,12 +919,16 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin, CNContactViewC
     func getInstantMessageLabel(label: String?) -> String {
         let labelValue = label ?? ""
         switch(labelValue.lowercased()){
-            case "main": return CNLabelPhoneNumberMain
-            case "mobile": return CNLabelPhoneNumberMobile
-            case "iphone": return CNLabelPhoneNumberiPhone
-            case "work": return CNLabelWork
-            case "home": return CNLabelHome
-            case "other": return CNLabelOther
+            case "aim": return CNInstantMessageServiceAIM
+            case "facebook": return CNInstantMessageServiceFacebook
+            case "gadu gadu": return CNInstantMessageServiceGaduGadu
+            case "google talk": return CNInstantMessageServiceGoogleTalk
+            case "icq": return CNInstantMessageServiceICQ
+            case "jabber": return CNInstantMessageServiceJabber
+            case "msn": return CNInstantMessageServiceMSN
+            case "qq": return CNInstantMessageServiceQQ
+            case "skype": return CNInstantMessageServiceSkype
+            case "yahoo": return CNInstantMessageServiceYahoo
             default: return labelValue
         }
     }
@@ -842,8 +936,32 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin, CNContactViewC
     func getRelationsLabel(label: String?) -> String {
         let labelValue = label ?? ""
         switch(labelValue.lowercased()){
-        
-            default: return labelValue
+            case "assistant": return CNLabelContactRelationAssistant
+            case "manager": return CNLabelContactRelationManager
+            case "brother": return CNLabelContactRelationBrother
+            case "sister": return CNLabelContactRelationSister
+            case "friend": return CNLabelContactRelationFriend
+            case "spouse": return CNLabelContactRelationSpouse
+            case "partner": return CNLabelContactRelationPartner
+            case "parent": return CNLabelContactRelationParent
+            case "mother": return CNLabelContactRelationMother
+            case "father": return CNLabelContactRelationFather
+            case "child": return CNLabelContactRelationChild
+            default:
+                if #available(iOS 11.0, *) {
+                    switch labelValue.lowercased() {
+                        case "daughter": return CNLabelContactRelationDaughter
+                        case "son": return CNLabelContactRelationSon
+                        default: return labelValue
+                    }
+                }
+                if #available(iOS 13.0, *) {
+                    switch labelValue.lowercased() {
+                        //TODO. add all iOS 13 cases
+                        default: return labelValue
+                    }
+                }
+                return labelValue
         }
     }
     
@@ -863,6 +981,21 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin, CNContactViewC
         }
     }
     
+    func getSocialProfileUrl(label: String?, userName: String?) -> String {
+        let labelValue = label ?? ""
+        let userName = userName ?? ""
+
+        switch(labelValue.lowercased()){
+            case "flickr": return "http://flickr.com/\(userName)"
+            case "facebook": return "http://facebook.com/\(userName)"
+            case "linkedin": return "http://linkedin.com/\(userName)"
+            case "myspace": return "http://myspace.com/\(userName)"
+            case "sina weibo": return "http://weibo.com/n/\(userName)"
+            case "twitter": return "https://twitter.com/\(userName)"
+            default: return "x-apple:\(userName)"
+        }
+    }
+    
     func getDatesLabel(label: String?) -> String {
         let labelValue = label ?? ""
         switch(labelValue.lowercased()){
@@ -875,7 +1008,7 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin, CNContactViewC
     func getWebsitesLabel(label: String?) -> String {
         let labelValue = label ?? ""
         switch(labelValue.lowercased()){
-            case "home page": return CNLabelURLAddressHomePage
+            case "homepage": return CNLabelURLAddressHomePage
             case "work": return CNLabelWork
             case "home": return CNLabelHome
             case "other": return CNLabelOther
@@ -926,8 +1059,33 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin, CNContactViewC
     func getRawRelationsLabel(label: String?) -> String {
         let labelValue = label ?? ""
         switch(labelValue.lowercased()){
-            
-            default: return labelValue
+            case CNLabelContactRelationAssistant: return "assistant"
+            case CNLabelContactRelationManager: return "manager"
+            case CNLabelContactRelationBrother: return "brother"
+            case CNLabelContactRelationSister: return "sister"
+            case CNLabelContactRelationFriend: return "friend"
+            case CNLabelContactRelationSpouse: return "spouse"
+            case CNLabelContactRelationPartner: return "partner"
+            case CNLabelContactRelationParent: return "parent"
+            case CNLabelContactRelationMother: return "mother"
+            case CNLabelContactRelationFather: return "father"
+            case CNLabelContactRelationChild: return "child"
+            default:
+                if #available(iOS 11.0, *) {
+                    switch(labelValue.lowercased()){
+                        case CNLabelContactRelationDaughter: return "daughter"
+                        case CNLabelContactRelationSon: return "son"
+                        default: return labelValue
+                    }
+                }
+                if #available(iOS 13.0, *) {
+                    switch labelValue.lowercased() {
+                        //TODO. add all iOS 13 cases
+                    default:
+                        return labelValue
+                    }
+                }
+                return labelValue
         }
     }
     
@@ -960,7 +1118,7 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin, CNContactViewC
     func getRawWebsitesLabel(label: String?) -> String {
         let labelValue = label ?? ""
         switch(labelValue.lowercased()){
-            case CNLabelURLAddressHomePage.lowercased(): return "home page"
+            case CNLabelURLAddressHomePage.lowercased(): return "homepage"
             case CNLabelWork.lowercased(): return "work"
             case CNLabelHome.lowercased(): return "home"
             case CNLabelOther.lowercased(): return "other"

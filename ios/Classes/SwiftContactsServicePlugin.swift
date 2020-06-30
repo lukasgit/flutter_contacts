@@ -179,7 +179,6 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin, CNContactViewC
                 CNContactPhoneticMiddleNameKey as CNKeyDescriptor,
                 CNContactPhoneticFamilyNameKey as CNKeyDescriptor,
                 CNContactNonGregorianBirthdayKey as CNKeyDescriptor,
-                CNContactNoteKey as CNKeyDescriptor,
                 CNContactTypeKey as CNKeyDescriptor,
                 CNContactDatesKey as CNKeyDescriptor,
                 CNContactUrlAddressesKey as CNKeyDescriptor,
@@ -188,6 +187,10 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin, CNContactViewC
                 CNContactInstantMessageAddressesKey as CNKeyDescriptor
         ] as [CNKeyDescriptor]
 
+        if SwiftContactsServicePlugin.noteEntitlementEnabled {
+            keys.append(CNContactNoteKey as CNKeyDescriptor)
+        }
+        
         var contactIdentifiers: [String]?
         if (methodName == SwiftContactsServicePlugin.getContactsSummaryMethod) {
             keys = [CNContactFormatter.descriptorForRequiredKeys(for: .fullName) as CNKeyDescriptor,
@@ -239,14 +242,18 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin, CNContactViewC
                     }
                 }
                 var allContacts = [CNContact]()
-                do{
+                do {
                     allContacts = try store.unifiedContacts(matching: fetchRequest.predicate!, keysToFetch: keys)
                 } catch let error as NSError {
-                    print(error.code)
+                    print(" Error in getContact: \(error.code), \(error.localizedDescription)")
                     if (error.code == 102) {// iOS13, the note entitilement is introduced. Need to remove note as the entitlemnt is not yet aprroved or appended with plist
                         SwiftContactsServicePlugin.noteEntitlementEnabled = false
                         keys = keys.filter { !$0.isEqual(CNContactNoteKey) }
-                        allContacts = try store.unifiedContacts(matching: fetchRequest.predicate!, keysToFetch: keys)
+                        do {
+                            allContacts = try store.unifiedContacts(matching: fetchRequest.predicate!, keysToFetch: keys)
+                        } catch let error as NSError {
+                            print(" Error after removing note key in getContact: \(error.code), \(error.localizedDescription)")
+                        }
                     }
                 }
                 
@@ -439,7 +446,6 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin, CNContactViewC
         }
     }
     
-
     func deleteContact(dictionary : [String:Any]) -> Bool{
         guard let identifier = dictionary["identifier"] as? String else{
             return false;
@@ -468,69 +474,44 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin, CNContactViewC
         }
 
         let store = CNContactStore()
-        let keys = [CNContactFormatter.descriptorForRequiredKeys(for: .fullName),
-                    CNContactEmailAddressesKey,
-                    CNContactPhoneNumbersKey,
-                    CNContactFamilyNameKey,
-                    CNContactGivenNameKey,
-                    CNContactMiddleNameKey,
-                    CNContactNamePrefixKey,
-                    CNContactNameSuffixKey,
-                    CNContactPostalAddressesKey,
-                    CNContactOrganizationNameKey,
-                    CNContactImageDataKey,
-                    CNContactJobTitleKey,
-                    CNContactNicknameKey,
-            ] as [Any]
+        
+        var keys = [CNContactFormatter.descriptorForRequiredKeys(for: .fullName) as CNKeyDescriptor,
+                CNContactEmailAddressesKey as CNKeyDescriptor,
+                CNContactPhoneNumbersKey as CNKeyDescriptor,
+                CNContactFamilyNameKey as CNKeyDescriptor,
+                CNContactGivenNameKey as CNKeyDescriptor,
+                CNContactMiddleNameKey as CNKeyDescriptor,
+                CNContactNamePrefixKey as CNKeyDescriptor,
+                CNContactNameSuffixKey as CNKeyDescriptor,
+                CNContactPostalAddressesKey as CNKeyDescriptor,
+                CNContactOrganizationNameKey as CNKeyDescriptor,
+                CNContactJobTitleKey as CNKeyDescriptor,
+                CNContactDepartmentNameKey as CNKeyDescriptor,
+                CNContactBirthdayKey as CNKeyDescriptor,
+                CNContactNicknameKey as CNKeyDescriptor,
+                CNContactPreviousFamilyNameKey as CNKeyDescriptor,
+                CNContactPhoneticGivenNameKey as CNKeyDescriptor,
+                CNContactPhoneticMiddleNameKey as CNKeyDescriptor,
+                CNContactPhoneticFamilyNameKey as CNKeyDescriptor,
+                CNContactNonGregorianBirthdayKey as CNKeyDescriptor,
+                CNContactTypeKey as CNKeyDescriptor,
+                CNContactDatesKey as CNKeyDescriptor,
+                CNContactUrlAddressesKey as CNKeyDescriptor,
+                CNContactRelationsKey as CNKeyDescriptor,
+                CNContactSocialProfilesKey as CNKeyDescriptor,
+                CNContactInstantMessageAddressesKey as CNKeyDescriptor,
+                CNContactImageDataKey as CNKeyDescriptor,
+        ] as [CNKeyDescriptor]
+
+        if SwiftContactsServicePlugin.noteEntitlementEnabled {
+            keys.append(CNContactNoteKey as CNKeyDescriptor)
+        }
+        
         do {
             // Check if the contact exists
-            if let contact = try store.unifiedContact(withIdentifier: identifier, keysToFetch: keys as! [CNKeyDescriptor]).mutableCopy() as? CNMutableContact{
+            if let contact = try store.unifiedContact(withIdentifier: identifier, keysToFetch: keys).mutableCopy() as? CNMutableContact{
 
-                /// Update the contact that was retrieved from the store
-                //Simple fields
-                contact.givenName = dictionary["givenName"] as? String ?? ""
-                contact.familyName = dictionary["familyName"] as? String ?? ""
-                contact.middleName = dictionary["middleName"] as? String ?? ""
-                contact.namePrefix = dictionary["prefix"] as? String ?? ""
-                contact.nameSuffix = dictionary["suffix"] as? String ?? ""
-                contact.organizationName = dictionary["company"] as? String ?? ""
-                contact.jobTitle = dictionary["jobTitle"] as? String ?? ""
-                contact.imageData = (dictionary["avatar"] as? FlutterStandardTypedData)?.data
-
-                //Phone numbers
-                if let phoneNumbers = dictionary["phones"] as? [[String:String]]{
-                    var updatedPhoneNumbers = [CNLabeledValue<CNPhoneNumber>]()
-                    for phone in phoneNumbers where phone["value"] != nil {
-                        updatedPhoneNumbers.append(CNLabeledValue(label:getPhoneLabel(label: phone["label"]),value:CNPhoneNumber(stringValue: phone["value"]!)))
-                    }
-                    contact.phoneNumbers = updatedPhoneNumbers
-                }
-
-                //Emails
-                if let emails = dictionary["emails"] as? [[String:String]]{
-                    var updatedEmails = [CNLabeledValue<NSString>]()
-                    for email in emails where nil != email["value"] {
-                        let emailLabel = email["label"] ?? ""
-                        updatedEmails.append(CNLabeledValue(label: getCommonLabel(label: emailLabel), value: email["value"]! as NSString))
-                    }
-                    contact.emailAddresses = updatedEmails
-                }
-
-                //Postal addresses
-                if let postalAddresses = dictionary["postalAddresses"] as? [[String:String]]{
-                    var updatedPostalAddresses = [CNLabeledValue<CNPostalAddress>]()
-                    for postalAddress in postalAddresses{
-                        let newAddress = CNMutablePostalAddress()
-                        newAddress.street = postalAddress["street"] ?? ""
-                        newAddress.city = postalAddress["city"] ?? ""
-                        newAddress.postalCode = postalAddress["postcode"] ?? ""
-                        newAddress.country = postalAddress["country"] ?? ""
-                        newAddress.state = postalAddress["region"] ?? ""
-                        let label = postalAddress["label"] ?? ""
-                        updatedPostalAddresses.append(CNLabeledValue(label: getCommonLabel(label: label), value: newAddress))
-                    }
-                    contact.postalAddresses = updatedPostalAddresses
-                }
+                setDictionaryToContact(dictionary: dictionary, contact: contact)
 
                 // Attempt to update the contact
                 let request = CNSaveRequest()
@@ -538,9 +519,28 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin, CNContactViewC
                 try store.execute(request)
             }
         }
-        catch {
-            print(error.localizedDescription)
-            return false;
+        catch let error as NSError {
+            print("\(error.code), \(error.localizedDescription)")
+            if (error.code == 102) {// iOS13, the note entitilement is introduced. Need to remove note as the entitlemnt is not yet aprroved or appended with plist
+                SwiftContactsServicePlugin.noteEntitlementEnabled = false
+                keys = keys.filter { !$0.isEqual(CNContactNoteKey) }
+                do {
+                    if let contact = try store.unifiedContact(withIdentifier: identifier, keysToFetch: keys).mutableCopy() as? CNMutableContact{
+
+                        setDictionaryToContact(dictionary: dictionary, contact: contact)
+
+                        // Attempt to update the contact
+                        let request = CNSaveRequest()
+                        request.update(contact)
+                        try store.execute(request)
+                    }
+                } catch let error as NSError {
+                    print("\(error.code), \(error.localizedDescription)")
+                    return false;
+                }
+            } else {
+                return false;
+            }
         }
         return true;
     }
@@ -548,6 +548,12 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin, CNContactViewC
     func dictionaryToContact(dictionary : [String:Any]) -> CNMutableContact{
         let contact = CNMutableContact()
 
+        setDictionaryToContact(dictionary: dictionary, contact: contact)
+
+        return contact
+    }
+    
+    func setDictionaryToContact(dictionary: [String:Any], contact: CNMutableContact) {
         //Simple fields
         contact.givenName = dictionary["givenName"] as? String ?? ""
         contact.familyName = dictionary["familyName"] as? String ?? ""
@@ -561,29 +567,39 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin, CNContactViewC
         contact.phoneticMiddleName = dictionary["phoneticMiddleName"] as? String ?? ""
         contact.phoneticFamilyName = dictionary["phoneticFamilyName"] as? String ?? ""
         contact.departmentName = dictionary["department"] as? String ?? ""
-        contact.note = dictionary["note"] as? String ?? ""
-
-        if let avatarData = (dictionary["avatar"] as? FlutterStandardTypedData)?.data {
-            contact.imageData = avatarData
+        
+        if SwiftContactsServicePlugin.noteEntitlementEnabled {
+            contact.note = dictionary["note"] as? String ?? ""
         }
+
+        contact.imageData = (dictionary["avatar"] as? FlutterStandardTypedData)?.data
         
         //Phone numbers
-        if let phoneNumbers = dictionary["phones"] as? [[String: String]]{
+        if let phoneNumbers = dictionary["phones"] as? [[String:String]]{
+            var updatedPhoneNumbers = [CNLabeledValue<CNPhoneNumber>]()
             for phone in phoneNumbers where phone["value"] != nil {
-                contact.phoneNumbers.append(CNLabeledValue(label:getPhoneLabel(label:phone["label"]),value:CNPhoneNumber(stringValue:phone["value"]!)))
+                updatedPhoneNumbers.append(CNLabeledValue(label:getPhoneLabel(label: phone["label"]),value:CNPhoneNumber(stringValue: phone["value"]!)))
+//                contact.phoneNumbers.append(CNLabeledValue(label:getPhoneLabel(label:phone["label"]),value:CNPhoneNumber(stringValue:phone["value"]!)))
             }
+            contact.phoneNumbers = updatedPhoneNumbers
         }
 
+        
         //Emails
         if let emails = dictionary["emails"] as? [[String:String]]{
+            var updatedEmails = [CNLabeledValue<NSString>]()
             for email in emails where nil != email["value"] {
                 let emailLabel = email["label"] ?? ""
-                contact.emailAddresses.append(CNLabeledValue(label:getCommonLabel(label: emailLabel), value:email["value"]! as NSString))
+                updatedEmails.append(CNLabeledValue(label: getCommonLabel(label: emailLabel), value: email["value"]! as NSString))
+//                contact.emailAddresses.append(CNLabeledValue(label:getCommonLabel(label: emailLabel), value:email["value"]! as NSString))
             }
+            contact.emailAddresses = updatedEmails
         }
 
         //Postal addresses
         if let postalAddresses = dictionary["postalAddresses"] as? [[String:String]]{
+            var updatedPostalAddresses = [CNLabeledValue<CNPostalAddress>]()
+
             for postalAddress in postalAddresses{
                 let newAddress = CNMutablePostalAddress()
                 newAddress.street = postalAddress["street"] ?? ""
@@ -608,8 +624,10 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin, CNContactViewC
                 newAddress.country = postalAddress["country"] ?? ""
                 newAddress.state = postalAddress["region"] ?? ""
                 let label = postalAddress["label"] ?? ""
-                contact.postalAddresses.append(CNLabeledValue(label: getCommonLabel(label: label), value: newAddress))
+//                contact.postalAddresses.append(CNLabeledValue(label: getCommonLabel(label: label), value: newAddress))
+                updatedPostalAddresses.append(CNLabeledValue(label: getCommonLabel(label: label), value: newAddress))
             }
+            contact.postalAddresses = updatedPostalAddresses
         }
 
         //BIRTHDAY
@@ -634,23 +652,33 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin, CNContactViewC
         
         //Relations
         if let relations = dictionary["relations"] as? [[String:String]]{
+            var updatedRelations = [CNLabeledValue<CNContactRelation>]()
+
             for relation in relations where nil != relation["value"] {
                 let relationLabel = relation["label"] ?? ""
-                contact.contactRelations.append(CNLabeledValue(label:getRelationsLabel(label: relationLabel), value:CNContactRelation(name: relation["value"]! as String)))
+//                contact.contactRelations.append(CNLabeledValue(label:getRelationsLabel(label: relationLabel), value:CNContactRelation(name: relation["value"]! as String)))
+                updatedRelations.append(CNLabeledValue(label:getRelationsLabel(label: relationLabel), value:CNContactRelation(name: relation["value"]! as String)))
             }
+            contact.contactRelations = updatedRelations
         }
         
         //Instant message address
         if let instantMessageAddresses = dictionary["instantMessageAddresses"] as? [[String:String]]{
+            var updatedIms = [CNLabeledValue<CNInstantMessageAddress>]()
+
             for im in instantMessageAddresses where nil != im["value"] {
                 let imLabel = im["label"] ?? ""
-                contact.instantMessageAddresses.append(CNLabeledValue(label:getInstantMessageLabel(label: imLabel), value:CNInstantMessageAddress(username: im["value"]! as String, service: im["label"]! as String)))
+//                contact.instantMessageAddresses.append(CNLabeledValue(label:getInstantMessageLabel(label: imLabel), value:CNInstantMessageAddress(username: im["value"]! as String, service: im["label"]! as String)))
+                updatedIms.append(CNLabeledValue(label:getInstantMessageLabel(label: imLabel), value:CNInstantMessageAddress(username: im["value"]! as String, service: im["label"]! as String)))
             }
+            contact.instantMessageAddresses = updatedIms
         }
 
         //Dates
         if let dates = dictionary["dates"] as? [[String:String]]{
+            var updatedDates = [CNLabeledValue<NSDateComponents>]()
             for date in dates where nil != date["value"] {
+
                 let dateLabel = date["label"] ?? ""
                 let dateValue = date["value"] ?? ""
 
@@ -660,35 +688,43 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin, CNContactViewC
                     d.year = Int(dateComponents[0])
                     d.month = Int(dateComponents[1])
                     d.day = Int(dateComponents[2])
-                    contact.dates.append(CNLabeledValue(label: getDatesLabel(label: dateLabel), value: d as NSDateComponents))
+//                    contact.dates.append(CNLabeledValue(label: getDatesLabel(label: dateLabel), value: d as NSDateComponents))
+                    updatedDates.append(CNLabeledValue(label: getDatesLabel(label: dateLabel), value: d as NSDateComponents))
                 } else if dateComponents.count == 2 {
                     var d = DateComponents()
                     d.month = Int(dateComponents[0])
                     d.day = Int(dateComponents[1])
-                    contact.dates.append(CNLabeledValue(label: getDatesLabel(label: dateLabel), value: d as NSDateComponents))
+//                    contact.dates.append(CNLabeledValue(label: getDatesLabel(label: dateLabel), value: d as NSDateComponents))
+                    updatedDates.append(CNLabeledValue(label: getDatesLabel(label: dateLabel), value: d as NSDateComponents))
                 }
             }
+            contact.dates = updatedDates
         }
         
         //Social profile
         if let profiles = dictionary["socialProfiles"] as? [[String:String]]{
+            var updatedProfiles = [CNLabeledValue<CNSocialProfile>]()
+
             for profile in profiles where nil != profile["value"] {
                 let label = profile["label"] ?? ""
                 let userName = profile["value"] ?? ""
-                contact.socialProfiles.append(CNLabeledValue(label:getSocialProfileLabel(label: label), value:CNSocialProfile(urlString: getSocialProfileUrl(label: label, userName: userName), username: userName, userIdentifier: "", service: getSocialProfileLabel(label: label))))
+//                contact.socialProfiles.append(CNLabeledValue(label:getSocialProfileLabel(label: label), value:CNSocialProfile(urlString: getSocialProfileUrl(label: label, userName: userName), username: userName, userIdentifier: "", service: getSocialProfileLabel(label: label))))
+                updatedProfiles.append(CNLabeledValue(label:getSocialProfileLabel(label: label), value:CNSocialProfile(urlString: getSocialProfileUrl(label: label, userName: userName), username: userName, userIdentifier: "", service: getSocialProfileLabel(label: label))))
             }
+            contact.socialProfiles = updatedProfiles
         }
         
         //Websites
         if let websites = dictionary["websites"] as? [[String:String]]{
+            var updatedWebsites = [CNLabeledValue<NSString>]()
             for website in websites where nil != website["value"] {
                 let label = website["label"] ?? ""
                 let url = website["value"] ?? ""
-                contact.urlAddresses.append(CNLabeledValue(label:getWebsitesLabel(label: label), value:url as NSString))
+//                contact.urlAddresses.append(CNLabeledValue(label:getWebsitesLabel(label: label), value:url as NSString))
+                updatedWebsites.append(CNLabeledValue(label:getWebsitesLabel(label: label), value:url as NSString))
             }
+            contact.urlAddresses = updatedWebsites
         }
-
-        return contact
     }
     
     func contactToSummaryDictionary(contact: CNContact) -> [String:Any]{

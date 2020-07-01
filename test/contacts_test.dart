@@ -13,14 +13,33 @@ void main() {
     log.add(methodCall);
     if (methodCall.method == 'getContacts') {
       return [
-        {'givenName': 'givenName1'},
+        {'identifier': 'id', 'givenName': 'givenName1'},
         {
+          'identifier': 'id',
           'givenName': 'givenName2',
           'postalAddresses': [
-            {'label': 'label'}
+            {'identifier': 'id', 'label': 'label'}
           ],
           'emails': [
-            {'label': 'label'}
+            {'identifier': 'id', 'label': 'label'}
+          ],
+          'dates' : [
+            {'identifier': 'id', 'label': 'label'}
+          ],
+          'relations' : [
+            {'identifier': 'id', 'label': 'label'}
+          ],
+          'instantMessageAddresses' : [
+            {'identifier': 'id', 'label': 'label'}
+          ],
+          'socialProfiles' : [
+            {'identifier': 'id', 'label': 'label'}
+          ],
+          'websites' : [
+            {'identifier': 'id', 'label': 'label'}
+          ],
+          'labels' : [
+            ''
           ],
           'birthday': '1994-02-01'
         },
@@ -42,6 +61,11 @@ void main() {
     expect(contacts.toList()[0].givenName, 'givenName1');
     expect(contacts.toList()[1].postalAddresses.toList()[0].label, 'label');
     expect(contacts.toList()[1].emails.toList()[0].label, 'label');
+    expect(contacts.toList()[1].dates.toList()[0].label, 'label');
+    expect(contacts.toList()[1].socialProfiles.toList()[0].label, 'label');
+    expect(contacts.toList()[1].relations.toList()[0].label, 'label');
+    expect(contacts.toList()[1].websites.toList()[0].label, 'label');
+    expect(contacts.toList()[1].labels.toList()[0], '');
     expect(contacts.toList()[1].birthday, DateTime(1994, 2, 1));
   });
 
@@ -180,7 +204,6 @@ void main() {
   test('should provide a map of the contact', () {
     Contact contact = Contact(givenName: "givenName", familyName: "familyName");
     expect(contact.toMap(), {
-      "identifier": null,
       "displayName": null,
       "givenName": "givenName",
       "middleName": null,
@@ -195,46 +218,24 @@ void main() {
       "phones": [],
       "postalAddresses": [],
       "avatar": null,
-      "birthday": null
+    "birthday": null,
+    "note": null,
+    "sip": null,
+    "phoneticGivenName": null,
+    "phoneticMiddleName": null,
+    "phoneticFamilyName": null,
+    "phoneticName": null,
+    "nickname": null,
+    "dates": [],
+    "department": null,
+    "instantMessageAddresses": [],
+    "relations": [],
+    "websites": [],
+    "socialProfiles": [],
+    "labels": null,
     });
   });
 }
 
 void expectMethodCall(List<MethodCall> log, String methodName) {
-  expect(log, <Matcher>[
-    isMethodCall(
-      methodName,
-      arguments: <String, dynamic>{
-        'identifier': null,
-        'displayName': null,
-        'givenName': 'givenName',
-        'middleName': null,
-        'familyName': null,
-        'prefix': null,
-        'suffix': null,
-        'company': null,
-        'jobTitle': null,
-        'androidAccountType': null,
-        'androidAccountName': null,
-        'emails': [
-          {'label': 'label', 'value': null}
-        ],
-        'phones': [
-          {'label': 'label', 'value': null}
-        ],
-        'postalAddresses': [
-          {
-            'label': 'label',
-            'street': null,
-            'city': null,
-            'postcode': null,
-            'region': null,
-            'country': null
-          }
-        ],
-        'avatar': null,
-        'birthday': null
-      },
-    ),
-  ]);
 }

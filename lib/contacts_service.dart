@@ -228,6 +228,7 @@ class Contact {
       this.instantMessageAddresses,
       this.relations,
       this.websites,
+      this.socialProfiles,
       this.labels});
 
   String identifier, displayName, givenName, middleName, prefix, suffix, familyName, company, jobTitle;
@@ -241,6 +242,7 @@ class Contact {
   Iterable<Item> instantMessageAddresses = [];
   Iterable<Item> relations = [];
   Iterable<Item> websites = [];
+  Iterable<Item> socialProfiles = [];
   Iterable<String> labels = [];
 
   Uint8List avatar;
@@ -298,6 +300,7 @@ class Contact {
     instantMessageAddresses = (m["instantMessageAddresses"] as Iterable)?.map((m) => Item.fromMap(m));
     relations = (m["relations"] as Iterable)?.map((m) => Item.fromMap(m));
     websites = (m["websites"] as Iterable)?.map((m) => Item.fromMap(m));
+    socialProfiles = (m["socialProfiles"] as Iterable)?.map((m) => Item.fromMap(m));
     labels = m["labels"]?.cast<String>();
     try {
       avatar = m["avatar"];
@@ -340,10 +343,13 @@ class Contact {
     for (Item website in contact.websites ?? []) {
       websites.add(Item._toMap(website));
     }
+    var socialProfiles = [];
+    for (Item socialProfile in contact.socialProfiles ?? []) {
+      socialProfiles.add(Item._toMap(socialProfile));
+    }
 
-    final birthday = contact.birthday == null
-        ? null
-        : "--${contact.birthday.month.toString().padLeft(2, '0')}-${contact.birthday.day.toString().padLeft(2, '0')}";
+    final birthday =
+        contact.birthday == null ? null : "--${contact.birthday.month.toString().padLeft(2, '0')}-${contact.birthday.day.toString().padLeft(2, '0')}";
 
     if (contact.identifier == null) {
       final map = {
@@ -374,6 +380,7 @@ class Contact {
         "instantMessageAddresses": instantMessageAddresses,
         "relations": relations,
         "websites": websites,
+        "socialProfiles": socialProfiles,
         "labels": contact.labels,
       };
 
@@ -407,12 +414,12 @@ class Contact {
         "department": contact.department,
         "instantMessageAddresses": instantMessageAddresses,
         "relations": relations,
+        "socialProfiles": socialProfiles,
         "websites": websites,
         "labels": contact.labels,
       };
       return map;
     }
-
   }
 
   Map toMap() {
@@ -451,6 +458,8 @@ class Contact {
             : this.instantMessageAddresses.toSet().union(other.instantMessageAddresses?.toSet() ?? Set()).toList(),
         relations: this.relations == null ? other.relations : this.relations.toSet().union(other.relations?.toSet() ?? Set()).toList(),
         websites: this.websites == null ? other.websites : this.websites.toSet().union(other.websites?.toSet() ?? Set()).toList(),
+        socialProfiles:
+            this.socialProfiles == null ? other.socialProfiles : this.socialProfiles.toSet().union(other.socialProfiles?.toSet() ?? Set()).toList(),
         labels: this.labels == null ? other.labels : this.labels.toSet().union(other.labels?.toSet() ?? Set()).toList(),
       );
 
@@ -487,6 +496,7 @@ class Contact {
         DeepCollectionEquality.unordered().equals(this.instantMessageAddresses, other.instantMessageAddresses) &&
         DeepCollectionEquality.unordered().equals(this.relations, other.relations) &&
         DeepCollectionEquality.unordered().equals(this.websites, other.websites) &&
+        DeepCollectionEquality.unordered().equals(this.socialProfiles, other.socialProfiles) &&
         DeepCollectionEquality.unordered().equals(this.labels, other.labels);
   }
 

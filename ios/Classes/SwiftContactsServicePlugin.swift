@@ -18,11 +18,11 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin, CNContactViewC
         registrar.addMethodCallDelegate(instance, channel: channel)
         instance.preLoadContactView()
     }
-
+    
     init(_ rootViewController: UIViewController) {
         self.rootViewController = rootViewController
     }
-
+    
     public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
         switch call.method {
         case "getContacts":
@@ -30,6 +30,10 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin, CNContactViewC
             result(getContacts(query: (arguments["query"] as? String), withThumbnails: arguments["withThumbnails"] as! Bool,
                                photoHighResolution: arguments["photoHighResolution"] as! Bool, phoneQuery:  false, orderByGivenName: arguments["orderByGivenName"] as! Bool,
                                localizedLabels: arguments["iOSLocalizedLabels"] as! Bool ))
+        case "getPhoneNumberContacts":
+            result(getPhoneContacts(query: nil, withThumbnails: false,
+                                    photoHighResolution: false, phoneQuery:  false, orderByGivenName: false,
+                                    localizedLabels: false))
         case "getContactsForPhone":
             let arguments = call.arguments as! [String:Any]
             result(
@@ -57,7 +61,7 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin, CNContactViewC
             )
         case "addContact":
             let contact = dictionaryToContact(dictionary: call.arguments as! [String : Any])
-
+            
             let addResult = addContact(contact: contact)
             if (addResult == "") {
                 result(nil)
@@ -79,12 +83,12 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin, CNContactViewC
             else {
                 result(FlutterError(code: "", message: "Failed to update contact, make sure it has a valid identifier", details: nil))
             }
-         case "openContactForm":
+        case "openContactForm":
             let arguments = call.arguments as! [String:Any]
             localizedLabels = arguments["iOSLocalizedLabels"] as! Bool
             self.result = result
             _ = openContactForm()
-         case "openExistingContact":
+        case "openExistingContact":
             let arguments = call.arguments as! [String : Any]
             let contact = arguments["contact"] as! [String : Any]
             localizedLabels = arguments["iOSLocalizedLabels"] as! Bool
@@ -97,12 +101,12 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin, CNContactViewC
             result(FlutterMethodNotImplemented)
         }
     }
-
+    
     func getContacts(query : String?, withThumbnails: Bool, photoHighResolution: Bool, phoneQuery: Bool, emailQuery: Bool = false, orderByGivenName: Bool, localizedLabels: Bool) -> [[String:Any]]{
-
+        
         var contacts : [CNContact] = []
         var result = [[String:Any]]()
-
+        
         //Create the store, keys & fetch request
         let store = CNContactStore()
         var keys = [CNContactFormatter.descriptorForRequiredKeys(for: .fullName),
@@ -117,7 +121,7 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin, CNContactViewC
                     CNContactOrganizationNameKey,
                     CNContactJobTitleKey,
                     CNContactBirthdayKey] as [Any]
-
+        
         if(withThumbnails){
             if(photoHighResolution){
                 keys.append(CNContactImageDataKey)
@@ -125,68 +129,150 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin, CNContactViewC
                 keys.append(CNContactThumbnailImageDataKey)
             }
         }
-
-        let fetchRequest = CNContactFetchRequest(keysToFetch: keys as! [CNKeyDescriptor])
-        // Set the predicate if there is a query
-        if query != nil && !phoneQuery && !emailQuery {
-            fetchRequest.predicate = CNContact.predicateForContacts(matchingName: query!)
-        }
-
-        if #available(iOS 11, *) {
-            if query != nil && phoneQuery {
-                let phoneNumberPredicate = CNPhoneNumber(stringValue: query!)
-                fetchRequest.predicate = CNContact.predicateForContacts(matching: phoneNumberPredicate)
-            } else if query != nil && emailQuery {
-                fetchRequest.predicate = CNContact.predicateForContacts(matchingEmailAddress: query!)
-            }
-        }
-
+        
         // Fetch contacts
-        do{
-            try store.enumerateContacts(with: fetchRequest, usingBlock: { (contact, stop) -> Void in
-
-                if phoneQuery {
-                    if #available(iOS 11, *) {
-                        contacts.append(contact)
-                    } else if query != nil && self.has(contact: contact, phone: query!){
-                        contacts.append(contact)
-                    }
-                } else if emailQuery {
-                    if #available(iOS 11, *) {
-                        contacts.append(contact)
-                    } else if query != nil && (contact.emailAddresses.contains { $0.value.caseInsensitiveCompare(query!) == .orderedSame}) {
-                        contacts.append(contact)
-                    }
-                } else {
-                    contacts.append(contact)
+        do {
+            var allContainers: [CNContainer] = []
+            allContainers = try store.containers(matching: nil)
+            for container in allContainers {
+                let fetchRequest = CNContactFetchRequest(keysToFetch: keys as! [CNKeyDescriptor])
+                fetchRequest.predicate = CNContact.predicateForContactsInContainer(withIdentifier: container.identifier)
+                
+                // Set the predicate if there is a query
+                if query != nil && !phoneQuery && !emailQuery {
+                    fetchRequest.predicate = CNContact.predicateForContacts(matchingName: query!)
                 }
-
-            })
+                
+                if #available(iOS 11, *) {
+                    if query != nil && phoneQuery {
+                        let phoneNumberPredicate = CNPhoneNumber(stringValue: query!)
+                        fetchRequest.predicate = CNContact.predicateForContacts(matching: phoneNumberPredicate)
+                    } else if query != nil && emailQuery {
+                        fetchRequest.predicate = CNContact.predicateForContacts(matchingEmailAddress: query!)
+                    }
+                }
+                
+                let allContacts = try store.unifiedContacts(matching: fetchRequest.predicate!, keysToFetch: keys as! [CNKeyDescriptor])
+                
+                for contact in allContacts {
+                    if phoneQuery {
+                        if #available(iOS 11, *) {
+                            contacts.append(contact)
+                        } else if query != nil && self.has(contact: contact, phone: query!){
+                            contacts.append(contact)
+                        }
+                    } else if emailQuery {
+                        if #available(iOS 11, *) {
+                            contacts.append(contact)
+                        } else if query != nil && (contact.emailAddresses.contains { $0.value.caseInsensitiveCompare(query!) == .orderedSame}) {
+                            contacts.append(contact)
+                        }
+                    } else {
+                        contacts.append(contact)
+                    }
+                }
+            }
         }
         catch let error as NSError {
             print(error.localizedDescription)
             return result
         }
-
+        
         if (orderByGivenName) {
             contacts = contacts.sorted { (contactA, contactB) -> Bool in
                 contactA.givenName.lowercased() < contactB.givenName.lowercased()
             }
         }
-
+        
         // Transform the CNContacts into dictionaries
         for contact : CNContact in contacts{
             result.append(contactToDictionary(contact: contact, localizedLabels: localizedLabels))
         }
-
+        
         return result
     }
-
+    
+    func getPhoneContacts(query : String?, withThumbnails: Bool, photoHighResolution: Bool, phoneQuery: Bool, emailQuery: Bool = false, orderByGivenName: Bool, localizedLabels: Bool) -> [[String:Any]]{
+        
+        var contacts : [CNContact] = []
+        var result = [[String:Any]]()
+        
+        //Create the store, keys & fetch request
+        let store = CNContactStore()
+        var keys = [CNContactFormatter.descriptorForRequiredKeys(for: .fullName),
+                    CNContactEmailAddressesKey,
+                    CNContactPhoneNumbersKey,
+                    CNContactFamilyNameKey,
+                    CNContactGivenNameKey,
+                    CNContactMiddleNameKey,
+                    CNContactNamePrefixKey,
+                    CNContactNameSuffixKey,
+                    CNContactPostalAddressesKey,
+                    CNContactOrganizationNameKey,
+                    CNContactJobTitleKey,
+                    CNContactBirthdayKey] as [Any]
+        
+        if(withThumbnails){
+            if(photoHighResolution){
+                keys.append(CNContactImageDataKey)
+            } else {
+                keys.append(CNContactThumbnailImageDataKey)
+            }
+        }
+        
+        // Fetch contacts
+        do {
+            var allContainers: [CNContainer] = []
+            allContainers = try store.containers(matching: nil)
+            for container in allContainers {
+                let fetchRequest = CNContactFetchRequest(keysToFetch: keys as! [CNKeyDescriptor])
+                fetchRequest.predicate = CNContact.predicateForContactsInContainer(withIdentifier: container.identifier)
+                
+                // Set the predicate if there is a query
+                if query != nil && !phoneQuery && !emailQuery {
+                    fetchRequest.predicate = CNContact.predicateForContacts(matchingName: query!)
+                }
+                
+                if #available(iOS 11, *) {
+                    if query != nil && phoneQuery {
+                        let phoneNumberPredicate = CNPhoneNumber(stringValue: query!)
+                        fetchRequest.predicate = CNContact.predicateForContacts(matching: phoneNumberPredicate)
+                    } else if query != nil && emailQuery {
+                        fetchRequest.predicate = CNContact.predicateForContacts(matchingEmailAddress: query!)
+                    }
+                }
+                
+                let allContacts = try store.unifiedContacts(matching: fetchRequest.predicate!, keysToFetch: keys as! [CNKeyDescriptor])
+                
+                for contact in allContacts {
+                    if(!contact.phoneNumbers.isEmpty) {
+                        contacts.append(contact)
+                    }
+                }
+            }
+        }
+        catch let error as NSError {
+            print(error.localizedDescription)
+            return result
+        }
+        
+        contacts = contacts.sorted { (contactA, contactB) -> Bool in
+            contactA.givenName.lowercased() < contactB.givenName.lowercased()
+        }
+        
+        // Transform the CNContacts into dictionaries
+        for contact : CNContact in contacts{
+            result.append(contactToDictionary(contact: contact, localizedLabels: localizedLabels))
+        }
+        
+        return result
+    }
+    
     private func has(contact: CNContact, phone: String) -> Bool {
         if (!contact.phoneNumbers.isEmpty) {
             let phoneNumberToCompareAgainst = phone.components(separatedBy: NSCharacterSet.decimalDigits.inverted).joined(separator: "")
             for phoneNumber in contact.phoneNumbers {
-
+                
                 if let phoneNumberStruct = phoneNumber.value as CNPhoneNumber? {
                     let phoneNumberString = phoneNumberStruct.stringValue
                     let phoneNumberToCompare = phoneNumberString.components(separatedBy: NSCharacterSet.decimalDigits.inverted).joined(separator: "")
@@ -198,7 +284,7 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin, CNContactViewC
         }
         return false
     }
-
+    
     func addContact(contact : CNMutableContact) -> String {
         let store = CNContactStore()
         do {
@@ -211,14 +297,14 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin, CNContactViewC
         }
         return ""
     }
-
+    
     func openContactForm() -> [String:Any]? {
         let contact = CNMutableContact.init()
         let controller = CNContactViewController.init(forNewContact:contact)
         controller.delegate = self
         DispatchQueue.main.async {
-         let navigation = UINavigationController .init(rootViewController: controller)
-         let viewController : UIViewController? = UIApplication.shared.delegate?.window??.rootViewController
+            let navigation = UINavigationController .init(rootViewController: controller)
+            let viewController : UIViewController? = UIApplication.shared.delegate?.window??.rootViewController
             viewController?.present(navigation, animated:true, completion: nil)
         }
         return nil
@@ -251,30 +337,30 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin, CNContactViewC
             self.result = nil
         }
     }
-
+    
     func openExistingContact(contact: [String:Any], result: FlutterResult ) ->  [String:Any]? {
-         let store = CNContactStore()
-         do {
+        let store = CNContactStore()
+        do {
             // Check to make sure dictionary has an identifier
-             guard let identifier = contact["identifier"] as? String else{
-                 result(SwiftContactsServicePlugin.FORM_COULD_NOT_BE_OPEN)
-                 return nil;
-             }
+            guard let identifier = contact["identifier"] as? String else{
+                result(SwiftContactsServicePlugin.FORM_COULD_NOT_BE_OPEN)
+                return nil;
+            }
             let backTitle = contact["backTitle"] as? String
             
-             let keysToFetch = [CNContactFormatter.descriptorForRequiredKeys(for: .fullName),
-                                CNContactIdentifierKey,
-                                CNContactEmailAddressesKey,
-                                CNContactBirthdayKey,
-                                CNContactImageDataKey,
-                                CNContactPhoneNumbersKey,
-                                CNContactViewController.descriptorForRequiredKeys()
+            let keysToFetch = [CNContactFormatter.descriptorForRequiredKeys(for: .fullName),
+                               CNContactIdentifierKey,
+                               CNContactEmailAddressesKey,
+                               CNContactBirthdayKey,
+                               CNContactImageDataKey,
+                               CNContactPhoneNumbersKey,
+                               CNContactViewController.descriptorForRequiredKeys()
                 ] as! [CNKeyDescriptor]
             let cnContact = try store.unifiedContact(withIdentifier: identifier, keysToFetch: keysToFetch)
             let viewController = CNContactViewController(for: cnContact)
-
+            
             viewController.navigationItem.backBarButtonItem = UIBarButtonItem.init(title: backTitle == nil ? "Cancel" : backTitle, style: UIBarButtonItem.Style.plain, target: self, action: #selector(cancelContactForm))
-             viewController.delegate = self
+            viewController.delegate = self
             DispatchQueue.main.async {
                 let navigation = UINavigationController .init(rootViewController: viewController)
                 var currentViewController = UIApplication.shared.keyWindow?.rootViewController
@@ -293,13 +379,13 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin, CNContactViewC
                 }
             }
             return nil
-         } catch {
+        } catch {
             NSLog(error.localizedDescription)
             result(SwiftContactsServicePlugin.FORM_COULD_NOT_BE_OPEN)
             return nil
-         }
-     }
-     
+        }
+    }
+    
     func openDeviceContactPicker(arguments arguments: [String:Any], result: @escaping FlutterResult) {
         localizedLabels = arguments["iOSLocalizedLabels"] as! Bool
         self.result = result
@@ -311,16 +397,16 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin, CNContactViewC
             self.rootViewController.present(contactPicker, animated: true, completion: nil)
         }
     }
-
+    
     //MARK:- CNContactPickerDelegate Method
-
+    
     public func contactPicker(_ picker: CNContactPickerViewController, didSelect contact: CNContact) {
         if let result = self.result {
             result(contactToDictionary(contact: contact, localizedLabels: localizedLabels))
             self.result = nil
         }
     }
-
+    
     public func contactPickerDidCancel(_ picker: CNContactPickerViewController) {
         if let result = self.result {
             result(SwiftContactsServicePlugin.FORM_OPERATION_CANCELED)
@@ -328,7 +414,7 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin, CNContactViewC
         }
     }
     
-
+    
     func deleteContact(dictionary : [String:Any]) -> Bool{
         guard let identifier = dictionary["identifier"] as? String else{
             return false;
@@ -348,14 +434,14 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin, CNContactViewC
         }
         return true;
     }
-
+    
     func updateContact(dictionary : [String:Any]) -> Bool{
-
+        
         // Check to make sure dictionary has an identifier
         guard let identifier = dictionary["identifier"] as? String else{
             return false;
         }
-
+        
         let store = CNContactStore()
         let keys = [CNContactFormatter.descriptorForRequiredKeys(for: .fullName),
                     CNContactEmailAddressesKey,
@@ -372,7 +458,7 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin, CNContactViewC
         do {
             // Check if the contact exists
             if let contact = try store.unifiedContact(withIdentifier: identifier, keysToFetch: keys as! [CNKeyDescriptor]).mutableCopy() as? CNMutableContact{
-
+                
                 /// Update the contact that was retrieved from the store
                 //Simple fields
                 contact.givenName = dictionary["givenName"] as? String ?? ""
@@ -383,7 +469,7 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin, CNContactViewC
                 contact.organizationName = dictionary["company"] as? String ?? ""
                 contact.jobTitle = dictionary["jobTitle"] as? String ?? ""
                 contact.imageData = (dictionary["avatar"] as? FlutterStandardTypedData)?.data
-
+                
                 //Phone numbers
                 if let phoneNumbers = dictionary["phones"] as? [[String:String]]{
                     var updatedPhoneNumbers = [CNLabeledValue<CNPhoneNumber>]()
@@ -392,7 +478,7 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin, CNContactViewC
                     }
                     contact.phoneNumbers = updatedPhoneNumbers
                 }
-
+                
                 //Emails
                 if let emails = dictionary["emails"] as? [[String:String]]{
                     var updatedEmails = [CNLabeledValue<NSString>]()
@@ -402,7 +488,7 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin, CNContactViewC
                     }
                     contact.emailAddresses = updatedEmails
                 }
-
+                
                 //Postal addresses
                 if let postalAddresses = dictionary["postalAddresses"] as? [[String:String]]{
                     var updatedPostalAddresses = [CNLabeledValue<CNPostalAddress>]()
@@ -418,7 +504,7 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin, CNContactViewC
                     }
                     contact.postalAddresses = updatedPostalAddresses
                 }
-
+                
                 // Attempt to update the contact
                 let request = CNSaveRequest()
                 request.update(contact)
@@ -431,10 +517,10 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin, CNContactViewC
         }
         return true;
     }
-
+    
     func dictionaryToContact(dictionary : [String:Any]) -> CNMutableContact{
         let contact = CNMutableContact()
-
+        
         //Simple fields
         contact.givenName = dictionary["givenName"] as? String ?? ""
         contact.familyName = dictionary["familyName"] as? String ?? ""
@@ -446,14 +532,14 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin, CNContactViewC
         if let avatarData = (dictionary["avatar"] as? FlutterStandardTypedData)?.data {
             contact.imageData = avatarData
         }
-
+        
         //Phone numbers
         if let phoneNumbers = dictionary["phones"] as? [[String:String]]{
             for phone in phoneNumbers where phone["value"] != nil {
                 contact.phoneNumbers.append(CNLabeledValue(label:getPhoneLabel(label:phone["label"]),value:CNPhoneNumber(stringValue:phone["value"]!)))
             }
         }
-
+        
         //Emails
         if let emails = dictionary["emails"] as? [[String:String]]{
             for email in emails where nil != email["value"] {
@@ -461,7 +547,7 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin, CNContactViewC
                 contact.emailAddresses.append(CNLabeledValue(label:getCommonLabel(label: emailLabel), value:email["value"]! as NSString))
             }
         }
-
+        
         //Postal addresses
         if let postalAddresses = dictionary["postalAddresses"] as? [[String:String]]{
             for postalAddress in postalAddresses{
@@ -475,7 +561,7 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin, CNContactViewC
                 contact.postalAddresses.append(CNLabeledValue(label: getCommonLabel(label: label), value: newAddress))
             }
         }
-
+        
         //BIRTHDAY
         if let birthday = dictionary["birthday"] as? String {
             let formatter = DateFormatter()
@@ -483,14 +569,14 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin, CNContactViewC
             let date = formatter.date(from: birthday)!
             contact.birthday = Calendar.current.dateComponents([.year, .month, .day], from: date)
         }
-
+        
         return contact
     }
-
+    
     func contactToDictionary(contact: CNContact, localizedLabels: Bool) -> [String:Any]{
-
+        
         var result = [String:Any]()
-
+        
         //Simple fields
         result["identifier"] = contact.identifier
         result["displayName"] = CNContactFormatter.string(from: contact, style: CNContactFormatterStyle.fullName)
@@ -511,7 +597,7 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin, CNContactViewC
                 result["avatar"] = FlutterStandardTypedData(bytes: avatarData)
             }
         }
-
+        
         //Phone numbers
         var phoneNumbers = [[String:String]]()
         for phone in contact.phoneNumbers{
@@ -524,7 +610,7 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin, CNContactViewC
             phoneNumbers.append(phoneDictionary)
         }
         result["phones"] = phoneNumbers
-
+        
         //Emails
         var emailAddresses = [[String:String]]()
         for email in contact.emailAddresses{
@@ -537,7 +623,7 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin, CNContactViewC
             emailAddresses.append(emailDictionary)
         }
         result["emails"] = emailAddresses
-
+        
         //Postal addresses
         var postalAddresses = [[String:String]]()
         for address in contact.postalAddresses{
@@ -551,11 +637,11 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin, CNContactViewC
             addressDictionary["postcode"] = address.value.postalCode
             addressDictionary["region"] = address.value.state
             addressDictionary["country"] = address.value.country
-
+            
             postalAddresses.append(addressDictionary)
         }
         result["postalAddresses"] = postalAddresses
-
+        
         //BIRTHDAY
         if let birthday : Date = contact.birthday?.date {
             let formatter = DateFormatter()
@@ -563,10 +649,10 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin, CNContactViewC
             formatter.dateFormat = year == 1 ? "--MM-dd" : "yyyy-MM-dd";
             result["birthday"] = formatter.string(from: birthday)
         }
-
+        
         return result
     }
-
+    
     func getPhoneLabel(label: String?) -> String{
         let labelValue = label ?? ""
         switch(labelValue){
@@ -579,7 +665,7 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin, CNContactViewC
         default: return labelValue
         }
     }
-
+    
     func getCommonLabel(label:String?) -> String{
         let labelValue = label ?? ""
         switch(labelValue){
@@ -589,28 +675,28 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin, CNContactViewC
         default: return labelValue
         }
     }
-
+    
     func getRawPhoneLabel(_ label: String?) -> String{
         let labelValue = label ?? ""
         switch(labelValue){
-            case CNLabelPhoneNumberMain: return "main"
-            case CNLabelPhoneNumberMobile: return "mobile"
-            case CNLabelPhoneNumberiPhone: return "iPhone"
-            case CNLabelWork: return "work"
-            case CNLabelHome: return "home"
-            case CNLabelOther: return "other"
-            default: return labelValue
+        case CNLabelPhoneNumberMain: return "main"
+        case CNLabelPhoneNumberMobile: return "mobile"
+        case CNLabelPhoneNumberiPhone: return "iPhone"
+        case CNLabelWork: return "work"
+        case CNLabelHome: return "home"
+        case CNLabelOther: return "other"
+        default: return labelValue
         }
     }
-
+    
     func getRawCommonLabel(_ label: String?) -> String{
         let labelValue = label ?? ""
         switch(labelValue){
-            case CNLabelWork: return "work"
-            case CNLabelHome: return "home"
-            case CNLabelOther: return "other"
-            default: return labelValue
+        case CNLabelWork: return "work"
+        case CNLabelHome: return "home"
+        case CNLabelOther: return "other"
+        default: return labelValue
         }
     }
-
+    
 }

@@ -1,8 +1,7 @@
+import 'package:contacts_service/contacts_service.dart';
+import 'package:contacts_service_example/main.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:contacts_service_example/main.dart';
-
-import 'package:contacts_service/contacts_service.dart';
 import 'package:intl/intl.dart';
 
 class ContactListPage extends StatefulWidget {
@@ -21,22 +20,9 @@ class _ContactListPageState extends State<ContactListPage> {
 
   Future<void> refreshContacts() async {
     // Load without thumbnails initially.
-    var contacts = (await ContactsService.getContacts(
-            withThumbnails: false, iOSLocalizedLabels: iOSLocalizedLabels))
-        .toList();
-//      var contacts = (await ContactsService.getContactsForPhone("8554964652"))
-//          .toList();
-    setState(() {
-      _contacts = contacts;
-    });
-
-    // Lazy load thumbnails after rendering initial contacts.
-    for (final contact in contacts) {
-      ContactsService.getAvatar(contact).then((avatar) {
-        if (avatar == null) return; // Don't redraw if no change.
-        setState(() => contact.avatar = avatar);
-      });
-    }
+    var contacts = (await ContactsService.getPhoneNumberContacts()).toList();
+    _contacts = contacts;
+    setState(() {});
   }
 
   void updateContact() async {
@@ -89,25 +75,47 @@ class _ContactListPageState extends State<ContactListPage> {
       ),
       body: SafeArea(
         child: _contacts != null
-            ? ListView.builder(
-                itemCount: _contacts?.length ?? 0,
-                itemBuilder: (BuildContext context, int index) {
-                  Contact c = _contacts?.elementAt(index);
-                  return ListTile(
-                    onTap: () {
-                      Navigator.of(context).push(MaterialPageRoute(
-                          builder: (BuildContext context) => ContactDetailsPage(
-                                c,
-                                onContactDeviceSave:
-                                    contactOnDeviceHasBeenUpdated,
-                              )));
-                    },
-                    leading: (c.avatar != null && c.avatar.length > 0)
-                        ? CircleAvatar(backgroundImage: MemoryImage(c.avatar))
-                        : CircleAvatar(child: Text(c.initials())),
-                    title: Text(c.displayName ?? ""),
-                  );
-                },
+            ? Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: <Widget>[
+                  Container(
+                    padding: EdgeInsets.symmetric(
+                      vertical: 16.0,
+                    ),
+                    child: Text(
+                      'Total Count : ' + _contacts.length.toString(),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                  Expanded(
+                    child: ListView.builder(
+                      shrinkWrap: true,
+                      primary: false,
+                      physics: BouncingScrollPhysics(),
+                      itemCount: _contacts?.length ?? 0,
+                      itemBuilder: (BuildContext context, int index) {
+                        Contact c = _contacts?.elementAt(index);
+                        return ListTile(
+                          onTap: () {
+                            Navigator.of(context).push(MaterialPageRoute(
+                                builder: (BuildContext context) =>
+                                    ContactDetailsPage(
+                                      c,
+                                      onContactDeviceSave:
+                                          contactOnDeviceHasBeenUpdated,
+                                    )));
+                          },
+                          leading: (c.avatar != null && c.avatar.length > 0)
+                              ? CircleAvatar(
+                                  backgroundImage: MemoryImage(c.avatar))
+                              : CircleAvatar(child: Text(c.initials())),
+                          title: Text(c.displayName ?? ""),
+                        );
+                      },
+                    ),
+                  ),
+                ],
               )
             : Center(
                 child: CircularProgressIndicator(),

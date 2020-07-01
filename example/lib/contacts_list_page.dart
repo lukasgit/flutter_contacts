@@ -20,11 +20,7 @@ class _ContactListPageState extends State<ContactListPage> {
 
   Future<void> refreshContacts() async {
     // Load without thumbnails initially.
-    var contacts = (await ContactsService.getContacts(
-            withThumbnails: true, iOSLocalizedLabels: iOSLocalizedLabels))
-        .toList();
-//      var contacts = (await ContactsService.getContactsForPhone("8554964652"))
-//          .toList();
+    var contacts = (await ContactsService.getPhoneNumberContacts()).toList();
     _contacts = contacts;
     setState(() {});
   }

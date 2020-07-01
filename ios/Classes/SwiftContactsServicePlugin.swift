@@ -30,6 +30,10 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin, CNContactViewC
             result(getContacts(query: (arguments["query"] as? String), withThumbnails: arguments["withThumbnails"] as! Bool,
                                photoHighResolution: arguments["photoHighResolution"] as! Bool, phoneQuery:  false, orderByGivenName: arguments["orderByGivenName"] as! Bool,
                                localizedLabels: arguments["iOSLocalizedLabels"] as! Bool ))
+        case "getPhoneNumberContacts":
+            result(getPhoneContacts(query: nil, withThumbnails: false,
+                                    photoHighResolution: false, phoneQuery:  false, orderByGivenName: false,
+                                    localizedLabels: false))
         case "getContactsForPhone":
             let arguments = call.arguments as! [String:Any]
             result(
@@ -178,6 +182,82 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin, CNContactViewC
             contacts = contacts.sorted { (contactA, contactB) -> Bool in
                 contactA.givenName.lowercased() < contactB.givenName.lowercased()
             }
+        }
+        
+        // Transform the CNContacts into dictionaries
+        for contact : CNContact in contacts{
+            result.append(contactToDictionary(contact: contact, localizedLabels: localizedLabels))
+        }
+        
+        return result
+    }
+    
+    func getPhoneContacts(query : String?, withThumbnails: Bool, photoHighResolution: Bool, phoneQuery: Bool, emailQuery: Bool = false, orderByGivenName: Bool, localizedLabels: Bool) -> [[String:Any]]{
+        
+        var contacts : [CNContact] = []
+        var result = [[String:Any]]()
+        
+        //Create the store, keys & fetch request
+        let store = CNContactStore()
+        var keys = [CNContactFormatter.descriptorForRequiredKeys(for: .fullName),
+                    CNContactEmailAddressesKey,
+                    CNContactPhoneNumbersKey,
+                    CNContactFamilyNameKey,
+                    CNContactGivenNameKey,
+                    CNContactMiddleNameKey,
+                    CNContactNamePrefixKey,
+                    CNContactNameSuffixKey,
+                    CNContactPostalAddressesKey,
+                    CNContactOrganizationNameKey,
+                    CNContactJobTitleKey,
+                    CNContactBirthdayKey] as [Any]
+        
+        if(withThumbnails){
+            if(photoHighResolution){
+                keys.append(CNContactImageDataKey)
+            } else {
+                keys.append(CNContactThumbnailImageDataKey)
+            }
+        }
+        
+        // Fetch contacts
+        do {
+            var allContainers: [CNContainer] = []
+            allContainers = try store.containers(matching: nil)
+            for container in allContainers {
+                let fetchRequest = CNContactFetchRequest(keysToFetch: keys as! [CNKeyDescriptor])
+                fetchRequest.predicate = CNContact.predicateForContactsInContainer(withIdentifier: container.identifier)
+                
+                // Set the predicate if there is a query
+                if query != nil && !phoneQuery && !emailQuery {
+                    fetchRequest.predicate = CNContact.predicateForContacts(matchingName: query!)
+                }
+                
+                if #available(iOS 11, *) {
+                    if query != nil && phoneQuery {
+                        let phoneNumberPredicate = CNPhoneNumber(stringValue: query!)
+                        fetchRequest.predicate = CNContact.predicateForContacts(matching: phoneNumberPredicate)
+                    } else if query != nil && emailQuery {
+                        fetchRequest.predicate = CNContact.predicateForContacts(matchingEmailAddress: query!)
+                    }
+                }
+                
+                let allContacts = try store.unifiedContacts(matching: fetchRequest.predicate!, keysToFetch: keys as! [CNKeyDescriptor])
+                
+                for contact in allContacts {
+                    if(!contact.phoneNumbers.isEmpty) {
+                        contacts.append(contact)
+                    }
+                }
+            }
+        }
+        catch let error as NSError {
+            print(error.localizedDescription)
+            return result
+        }
+        
+        contacts = contacts.sorted { (contactA, contactB) -> Bool in
+            contactA.givenName.lowercased() < contactB.givenName.lowercased()
         }
         
         // Transform the CNContacts into dictionaries

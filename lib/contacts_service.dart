@@ -229,7 +229,8 @@ class Contact {
       this.relations,
       this.websites,
       this.socialProfiles,
-      this.labels});
+      this.labels,
+      this.birthDayString});
 
   String identifier, displayName, givenName, middleName, prefix, suffix, familyName, company, jobTitle;
   String note, sip, phoneticGivenName, phoneticMiddleName, phoneticFamilyName, phoneticName, nickname, department;
@@ -247,6 +248,7 @@ class Contact {
 
   Uint8List avatar;
   DateTime birthday;
+  String birthDayString;
 
   String initials() {
     return ((this.givenName?.isNotEmpty == true ? this.givenName[0] : "") + (this.familyName?.isNotEmpty == true ? this.familyName[0] : ""))
@@ -312,6 +314,7 @@ class Contact {
     } catch (e) {
       birthday = null;
     }
+    birthDayString = m["birthday"];
   }
 
   static Map _toMap(Contact contact) {
@@ -461,6 +464,7 @@ class Contact {
         socialProfiles:
             this.socialProfiles == null ? other.socialProfiles : this.socialProfiles.toSet().union(other.socialProfiles?.toSet() ?? Set()).toList(),
         labels: this.labels == null ? other.labels : this.labels.toSet().union(other.labels?.toSet() ?? Set()).toList(),
+        birthDayString: this.birthDayString ?? other.birthDayString
       );
 
   /// Returns true if all items in this contact are identical.
@@ -497,7 +501,8 @@ class Contact {
         DeepCollectionEquality.unordered().equals(this.relations, other.relations) &&
         DeepCollectionEquality.unordered().equals(this.websites, other.websites) &&
         DeepCollectionEquality.unordered().equals(this.socialProfiles, other.socialProfiles) &&
-        DeepCollectionEquality.unordered().equals(this.labels, other.labels);
+        DeepCollectionEquality.unordered().equals(this.labels, other.labels) &&
+        this.birthDayString == other.birthDayString;
   }
 
   @override

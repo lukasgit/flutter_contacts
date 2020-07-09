@@ -28,7 +28,7 @@ class ContactsService {
     return contacts.map((m) => Contact.fromMap(m));
   }
 
-  /// Fetches all contacts name for list screen, or when specified, the contacts with a name
+  /// Fetches all contacts with names fields for list screen, or when specified, the contacts with a name
   /// matching [query]
   static Future<Iterable<Contact>> getContactsSummary(
       {String query,
@@ -46,7 +46,7 @@ class ContactsService {
     return contacts.map((m) => Contact.fromSummaryMap(m));
   }
 
-  /// Fetches all contacts name for list screen, or when specified, the contacts with a name
+  /// Fetches all contacts identifiers, or when specified, the contacts with a name
   /// matching [query]
   static Future<Iterable<String>> getIdentifiers(
       {String query,
@@ -68,7 +68,7 @@ class ContactsService {
     return List<String>();
   }
 
-  /// Fetches all contacts name for list screen, or when specified, the contacts with a name
+  /// Fetches all contacts with specified identifiers for list screen, or when specified, the contacts with a name
   /// matching [query]
   static Future<Iterable<Contact>> getContactsByIdentifiers(
       {List<String> identifiers,
@@ -130,6 +130,10 @@ class ContactsService {
 
   /// Deletes the [contact] if it has a valid identifier
   static Future deleteContact(Contact contact) => _channel.invokeMethod('deleteContact', Contact._toMap(contact));
+
+  /// Deletes the contacts with specified identifiers if they have valid identifiers
+  static Future deleteContactsByIdentifiers(List<String> identifiers) =>
+      _channel.invokeMethod('deleteContactsByIdentifiers', <String, dynamic>{'identifiers': identifiers.join('|')});
 
   /// Updates the [contact] if it has a valid identifier
   static Future updateContact(Contact contact) => _channel.invokeMethod('updateContact', Contact._toMap(contact));
@@ -431,41 +435,39 @@ class Contact {
 
   /// The [+] operator fills in this contact's empty fields with the fields from [other]
   operator +(Contact other) => Contact(
-        givenName: this.givenName ?? other.givenName,
-        middleName: this.middleName ?? other.middleName,
-        prefix: this.prefix ?? other.prefix,
-        suffix: this.suffix ?? other.suffix,
-        familyName: this.familyName ?? other.familyName,
-        company: this.company ?? other.company,
-        jobTitle: this.jobTitle ?? other.jobTitle,
-        androidAccountType: this.androidAccountType ?? other.androidAccountType,
-        androidAccountName: this.androidAccountName ?? other.androidAccountName,
-        emails: this.emails == null ? other.emails : this.emails.toSet().union(other.emails?.toSet() ?? Set()).toList(),
-        phones: this.phones == null ? other.phones : this.phones.toSet().union(other.phones?.toSet() ?? Set()).toList(),
-        postalAddresses: this.postalAddresses == null
-            ? other.postalAddresses
-            : this.postalAddresses.toSet().union(other.postalAddresses?.toSet() ?? Set()).toList(),
-        avatar: this.avatar ?? other.avatar,
-        birthday: this.birthday ?? other.birthday,
-        note: this.note ?? other.note,
-        sip: this.sip ?? other.sip,
-        phoneticGivenName: this.phoneticGivenName ?? other.phoneticGivenName,
-        phoneticMiddleName: this.phoneticMiddleName ?? other.phoneticMiddleName,
-        phoneticFamilyName: this.phoneticFamilyName ?? other.phoneticFamilyName,
-        phoneticName: this.phoneticName ?? other.phoneticName,
-        nickname: this.nickname ?? other.nickname,
-        department: this.department ?? other.department,
-        dates: this.dates == null ? other.dates : this.dates.toSet().union(other.dates?.toSet() ?? Set()).toList(),
-        instantMessageAddresses: this.instantMessageAddresses == null
-            ? other.instantMessageAddresses
-            : this.instantMessageAddresses.toSet().union(other.instantMessageAddresses?.toSet() ?? Set()).toList(),
-        relations: this.relations == null ? other.relations : this.relations.toSet().union(other.relations?.toSet() ?? Set()).toList(),
-        websites: this.websites == null ? other.websites : this.websites.toSet().union(other.websites?.toSet() ?? Set()).toList(),
-        socialProfiles:
-            this.socialProfiles == null ? other.socialProfiles : this.socialProfiles.toSet().union(other.socialProfiles?.toSet() ?? Set()).toList(),
-        labels: this.labels == null ? other.labels : this.labels.toSet().union(other.labels?.toSet() ?? Set()).toList(),
-        birthDayString: this.birthDayString ?? other.birthDayString
-      );
+      givenName: this.givenName ?? other.givenName,
+      middleName: this.middleName ?? other.middleName,
+      prefix: this.prefix ?? other.prefix,
+      suffix: this.suffix ?? other.suffix,
+      familyName: this.familyName ?? other.familyName,
+      company: this.company ?? other.company,
+      jobTitle: this.jobTitle ?? other.jobTitle,
+      androidAccountType: this.androidAccountType ?? other.androidAccountType,
+      androidAccountName: this.androidAccountName ?? other.androidAccountName,
+      emails: this.emails == null ? other.emails : this.emails.toSet().union(other.emails?.toSet() ?? Set()).toList(),
+      phones: this.phones == null ? other.phones : this.phones.toSet().union(other.phones?.toSet() ?? Set()).toList(),
+      postalAddresses:
+          this.postalAddresses == null ? other.postalAddresses : this.postalAddresses.toSet().union(other.postalAddresses?.toSet() ?? Set()).toList(),
+      avatar: this.avatar ?? other.avatar,
+      birthday: this.birthday ?? other.birthday,
+      note: this.note ?? other.note,
+      sip: this.sip ?? other.sip,
+      phoneticGivenName: this.phoneticGivenName ?? other.phoneticGivenName,
+      phoneticMiddleName: this.phoneticMiddleName ?? other.phoneticMiddleName,
+      phoneticFamilyName: this.phoneticFamilyName ?? other.phoneticFamilyName,
+      phoneticName: this.phoneticName ?? other.phoneticName,
+      nickname: this.nickname ?? other.nickname,
+      department: this.department ?? other.department,
+      dates: this.dates == null ? other.dates : this.dates.toSet().union(other.dates?.toSet() ?? Set()).toList(),
+      instantMessageAddresses: this.instantMessageAddresses == null
+          ? other.instantMessageAddresses
+          : this.instantMessageAddresses.toSet().union(other.instantMessageAddresses?.toSet() ?? Set()).toList(),
+      relations: this.relations == null ? other.relations : this.relations.toSet().union(other.relations?.toSet() ?? Set()).toList(),
+      websites: this.websites == null ? other.websites : this.websites.toSet().union(other.websites?.toSet() ?? Set()).toList(),
+      socialProfiles:
+          this.socialProfiles == null ? other.socialProfiles : this.socialProfiles.toSet().union(other.socialProfiles?.toSet() ?? Set()).toList(),
+      labels: this.labels == null ? other.labels : this.labels.toSet().union(other.labels?.toSet() ?? Set()).toList(),
+      birthDayString: this.birthDayString ?? other.birthDayString);
 
   /// Returns true if all items in this contact are identical.
   @override

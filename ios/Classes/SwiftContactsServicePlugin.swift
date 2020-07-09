@@ -17,6 +17,8 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin, CNContactViewC
     static let getContactsSummaryMethod = "getContactsSummary"
     static let getContactsForPhoneMethod = "getContactsForPhone"
     static let getContactsForEmailMethod = "getContactsForEmail"
+    static let deleteContactsByIdentifiersMethod = "deleteContactsByIdentifiers"
+    
     
     static let addContactMethod = "addContact"
     static let deleteContactMethod = "deleteContact"
@@ -86,6 +88,13 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin, CNContactViewC
             }
             else {
                 result(FlutterError(code: "", message: addResult, details: nil))
+            }
+        case SwiftContactsServicePlugin.deleteContactsByIdentifiersMethod:
+            if(deleteContactsByIdentifiers(dictionary: call.arguments as! [String : Any])){
+                result(nil)
+            }
+            else{
+                result(FlutterError(code: "", message: "Failed to delete contacts, make sure they have valid identifiers", details: nil))
             }
         case SwiftContactsServicePlugin.deleteContactMethod:
             if(deleteContact(dictionary: call.arguments as! [String : Any])){
@@ -415,6 +424,35 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin, CNContactViewC
         }
     }
     
+    func deleteContactsByIdentifiers(dictionary : [String:Any]) -> Bool{
+        guard let identifiers = dictionary["identifiers"] as? String else{
+            return false;
+        }
+        
+        let contactIdentifiers = identifiers.split(separator: "|").map(String.init)
+        
+        if contactIdentifiers.count > 0 {
+            let store = CNContactStore()
+            let keys = [CNContactIdentifierKey as NSString]
+            do{
+                let predicate = CNContact.predicateForContacts(withIdentifiers: contactIdentifiers)
+
+                let nativeContacts = try store.unifiedContacts(matching: predicate, keysToFetch: keys)
+                for contact in nativeContacts {
+                    let request = CNSaveRequest()
+                    request.delete(contact.mutableCopy() as! CNMutableContact)
+                    try store.execute(request)
+                }
+            }
+            catch{
+                print(error.localizedDescription)
+                return false;
+            }
+        }
+        
+        return true;
+    }
+
     func deleteContact(dictionary : [String:Any]) -> Bool{
         guard let identifier = dictionary["identifier"] as? String else{
             return false;

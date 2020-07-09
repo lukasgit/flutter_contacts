@@ -124,6 +124,19 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
                 }
                 break;
             }
+            case "deleteContactsByIdentifiers" : {
+                String identifierString = (String) call.argument("identifiers");
+                if (identifierString == null) {
+                    result.success(null);
+                } else {
+                    List<String> identifiersList = Arrays.asList(identifierString.split("\\|"));
+                    if (this.deleteContactsByIdentifiers(identifiersList)) {
+                        result.success(null);
+                    } else {
+                        result.error(null, "Failed to delete the contacts, make sure they have valid identifiers", null);
+                    }
+                }
+            }
             case "deleteContact": {
                 final Contact contact = Contact.fromMap((HashMap) call.arguments);
                 if (this.deleteContact(contact)) {
@@ -1126,6 +1139,29 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
         return res;
     }
 
+    private boolean deleteContactsByIdentifiers(List<String> identifiers) {
+        ArrayList<ContentProviderOperation> ops = new ArrayList<>();
+
+        if (identifiers != null) {
+            String selectionString = "";
+
+            for (String i: identifiers) {
+                selectionString += "?,";
+            }
+            String selection = (ContactsContract.Data.CONTACT_ID + " IN (" + selectionString.substring(0, selectionString.length() - 1) +
+                    ")");
+            ops.add(ContentProviderOperation.newDelete(ContactsContract.RawContacts.CONTENT_URI)
+                    .withSelection(selection, identifiers.toArray(new String[0]))
+                    .build());
+        }
+
+        try {
+            contentResolver.applyBatch(ContactsContract.AUTHORITY, ops);
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
 
     private boolean deleteContact(Contact contact) {
         ArrayList<ContentProviderOperation> ops = new ArrayList<>();
@@ -1137,7 +1173,6 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
             return true;
         } catch (Exception e) {
             return false;
-
         }
     }
 

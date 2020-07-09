@@ -23,9 +23,9 @@ class _ContactListPageState extends State<ContactListPage> {
 
   Future<void> refreshContacts() async {
     // Load without thumbnails initially.
-    var ids = (await ContactsService.getIdentifiers());
-    var contactsById = (await ContactsService.getContactsByIdentifiers(identifiers: ids)).toList();
-    var contactsSummary = (await ContactsService.getContactsSummary()).toList();
+//    var ids = (await ContactsService.getIdentifiers());
+//    var contactsById = (await ContactsService.getContactsByIdentifiers(identifiers: ids)).toList();
+//    var contactsSummary = (await ContactsService.getContactsSummary()).toList();
     var contacts = (await ContactsService.getContacts()).toList();
 
     setState(() {

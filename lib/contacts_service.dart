@@ -128,6 +128,16 @@ class ContactsService {
   /// Adds the [contact] to the device contact list
   static Future addContact(Contact contact) => _channel.invokeMethod('addContact', Contact._toMap(contact));
 
+  /// Adds the [contact] to the device contact list and returns identifier
+  static Future<String> addContactWithReturnIdentifier(Contact contact) async {
+    Iterable identifier = await _channel.invokeMethod('addContactWithReturnIdentifier', Contact._toMap(contact));
+    if (identifier != null && identifier.length > 0) {
+      var first = identifier.first;
+      return first['identifier'].toString();
+    }
+    return "";
+  }
+
   /// Deletes the [contact] if it has a valid identifier
   static Future deleteContact(Contact contact) => _channel.invokeMethod('deleteContact', Contact._toMap(contact));
 

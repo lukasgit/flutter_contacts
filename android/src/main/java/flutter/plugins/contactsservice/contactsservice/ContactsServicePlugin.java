@@ -62,6 +62,24 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
     private MethodChannel methodChannel;
     private BaseContactsServiceDelegate delegate;
 
+    private static final String getContactsMethod = "getContacts";
+    private static final String getContactsByIdentifiersMethod = "getContactsByIdentifiers";
+    private static final String getIdentifiersMethod = "getIdentifiers";
+    private static final String getContactsSummaryMethod = "getContactsSummary";
+    private static final String getContactsForPhoneMethod = "getContactsForPhone";
+    private static final String getContactsForEmailMethod = "getContactsForEmail";
+    private static final String deleteContactsByIdentifiersMethod = "deleteContactsByIdentifiers";
+
+    private static final String addContactMethod = "addContact";
+    private static final String deleteContactMethod = "deleteContact";
+    private static final String updateContactMethod = "updateContact";
+    private static final String openContactFormMethod = "openContactForm";
+    private static final String openExistingContactMethod = "openExistingContact";
+    private static final String openDeviceContactPickerMethod = "openDeviceContactPicker";
+    private static final String getAvatarMethod = "getAvatar";
+    private static final String addContactWithReturnIdentifierMethod = "addContactWithReturnIdentifier";
+
+
     private final ExecutorService executor =
             new ThreadPoolExecutor(0, 10, 60, TimeUnit.SECONDS, new ArrayBlockingQueue<Runnable>(1000));
 
@@ -98,24 +116,24 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
     @Override
     public void onMethodCall(MethodCall call, Result result) {
         switch (call.method) {
-            case "getContactsByIdentifiers":
-            case "getIdentifiers":
-            case "getContactsSummary":
-            case "getContacts": {
+            case getContactsByIdentifiersMethod:
+            case getIdentifiersMethod:
+            case getContactsSummaryMethod:
+            case getContactsMethod: {
                 this.getContacts(call.method, (String) call.argument("query"), (boolean) call.argument("withThumbnails"), (boolean) call.argument(
                         "photoHighResolution"), (boolean) call.argument("orderByGivenName"), (String) call.argument("identifiers"), result);
                 break;
             }
-            case "getContactsForPhone": {
+            case getContactsForPhoneMethod: {
                 this.getContactsForPhone(call.method, (String) call.argument("phone"), (boolean) call.argument("withThumbnails"), (boolean) call.argument("photoHighResolution"), (boolean) call.argument("orderByGivenName"), result);
                 break;
             }
-            case "getAvatar": {
+            case getAvatarMethod: {
                 final Contact contact = Contact.fromMap((HashMap) call.argument("contact"));
                 this.getAvatar(contact, (boolean) call.argument("photoHighResolution"), result);
                 break;
             }
-            case "addContact": {
+            case addContactMethod: {
                 final Contact contact = Contact.fromMap((HashMap) call.arguments);
                 if (this.addContact(contact)) {
                     result.success(null);
@@ -124,7 +142,21 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
                 }
                 break;
             }
-            case "deleteContactsByIdentifiers" : {
+            case addContactWithReturnIdentifierMethod: {
+                final Contact contact = Contact.fromMap((HashMap) call.arguments);
+                String identifier = this.addContactWithReturnIdentifier(contact);
+                if (!identifier.isEmpty()) {
+                    ArrayList<HashMap> maps = new ArrayList();
+                    HashMap<String, String> map = new HashMap<>();
+                    map.put("identifier", identifier);
+                    maps.add(map);
+                    result.success(maps);
+                } else {
+                    result.error(null, "Failed to add the contact", null);
+                }
+                break;
+            }
+            case deleteContactsByIdentifiersMethod : {
                 String identifierString = (String) call.argument("identifiers");
                 if (identifierString == null) {
                     result.success(null);
@@ -137,7 +169,7 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
                     }
                 }
             }
-            case "deleteContact": {
+            case deleteContactMethod: {
                 final Contact contact = Contact.fromMap((HashMap) call.arguments);
                 if (this.deleteContact(contact)) {
                     result.success(null);
@@ -146,7 +178,7 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
                 }
                 break;
             }
-            case "updateContact": {
+            case updateContactMethod: {
                 final Contact contact = Contact.fromMap((HashMap) call.arguments);
                 if (this.updateContact(contact)) {
                     result.success(null);
@@ -155,7 +187,7 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
                 }
                 break;
             }
-            case "openExistingContact": {
+            case openExistingContactMethod: {
                 final Contact contact = Contact.fromMap((HashMap) call.argument("contact"));
                 if (delegate != null) {
                     delegate.setResult(result);
@@ -165,7 +197,7 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
                 }
                 break;
             }
-            case "openContactForm": {
+            case openContactFormMethod: {
                 if (delegate != null) {
                     delegate.setResult(result);
                     delegate.openContactForm();
@@ -174,7 +206,7 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
                 }
                 break;
             }
-            case "openDeviceContactPicker": {
+            case openDeviceContactPickerMethod: {
                 openDeviceContactPicker(result);
                 break;
             }
@@ -333,7 +365,7 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
                 Cursor cursor = contentResolver.query(contactUri, null, null, null, null);
                 if (cursor.moveToFirst()) {
                     String id = contactUri.getLastPathSegment();
-                    getContacts("openDeviceContactPicker", id, false, false, false, null, this.result);
+                    getContacts(openDeviceContactPickerMethod, id, false, false, false, null, this.result);
                 } else {
                     Log.e(LOG_TAG, "onActivityResult - cursor.moveToFirst() returns false");
                     finishWithResult(FORM_OPERATION_CANCELED);
@@ -490,22 +522,22 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
         protected ArrayList<HashMap> doInBackground(Object... params) {
             ArrayList<Contact> contacts;
             switch (callMethod) {
-                case "getContactsByIdentifiers":
+                case getContactsByIdentifiersMethod:
                     contacts = getContactsFrom(getCursorForContactIdentifiers(identifiers, orderByGivenName));
                     break;
-                case "openDeviceContactPicker":
+                case openDeviceContactPickerMethod:
                     contacts = getContactsFrom(getCursor(null, (String) params[0], orderByGivenName));
                     break;
-                case "getContacts":
+                case getContactsMethod:
                     contacts = getContactsFrom(getCursor((String) params[0], null, orderByGivenName));
                     break;
-                case "getContactsForPhone":
+                case getContactsForPhoneMethod:
                     contacts = getContactsFrom(getCursorForPhone(((String) params[0]), orderByGivenName));
                     break;
-                case "getContactsSummary":
+                case getContactsSummaryMethod:
                     contacts = getContactsFrom(getCursorForSummary(((String) params[0]), orderByGivenName), true);
                     break;
-                case "getIdentifiers":
+                case getIdentifiersMethod:
                     ArrayList<String> contactList = getContactIdentifiersFrom(getCursorForIdentifiers((String) params[0], orderByGivenName));
                     ArrayList<HashMap> mapList = new ArrayList<>();
                     HashMap map = new HashMap();
@@ -533,7 +565,7 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
 
             ArrayList<HashMap> contactMaps = new ArrayList<>();
 
-            if (callMethod.equalsIgnoreCase("getContactsSummary")) {
+            if (callMethod.equalsIgnoreCase(getContactsSummaryMethod)) {
                 for (Contact c : contacts) {
                     contactMaps.add(c.toSummaryMap());
                 }
@@ -814,17 +846,9 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
     }
 
     private ArrayList<String> getContactIdentifiersFrom(Cursor cursor) {
-//        HashMap<String, Contact> map = new LinkedHashMap<>();
         ArrayList<String> result = new ArrayList<>();
         while (cursor != null && cursor.moveToNext()) {
             int columnIndex = cursor.getColumnIndex(ContactsContract.Data.CONTACT_ID);
-//            String contactId = cursor.getString(columnIndex);
-//            if (!map.containsKey(contactId)) {
-//                map.put(contactId, new Contact(contactId));
-//            }
-//            Contact contact = map.get(contactId);
-//
-//            contact.identifier = contactId;
             result.add(cursor.getString(columnIndex));
         }
 
@@ -832,7 +856,6 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
             cursor.close();
         }
         return result;
-//        return new ArrayList<>(map.values());
     }
 
     private void setAvatarDataForContactIfAvailable(Contact contact) {
@@ -904,7 +927,46 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
     }
 
     private boolean addContact(Contact contact) {
+        try {
+            ArrayList<ContentProviderOperation> ops = getAddContactOperations(contact);
 
+            contentResolver.applyBatch(ContactsContract.AUTHORITY, ops);
+
+            return true;
+        } catch (Exception e) {
+            Log.e("TAG", "Exception encountered while inserting contact: ");
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    private String addContactWithReturnIdentifier(Contact contact) {
+        try {
+            ArrayList<ContentProviderOperation> ops = getAddContactOperations(contact);
+
+            ContentProviderResult[] results = contentResolver.applyBatch(ContactsContract.AUTHORITY, ops);
+            long contactId = 0;
+            final String[] projection = new String[]{ContactsContract.RawContacts.CONTACT_ID};
+            final Cursor cursor = contentResolver.query(results[0].uri, projection, null, null, null);
+            if (cursor != null && cursor.getCount() > 0) {
+                while (cursor.moveToNext()) {
+                    contactId = cursor.getLong(0);
+                }
+                cursor.close();
+            }
+
+            if (contactId > 0) {
+                return String.valueOf(contactId);
+            }
+
+        } catch (Exception e) {
+            Log.e("TAG", "Exception encountered while inserting contact: ");
+            e.printStackTrace();
+        }
+        return "";
+    }
+
+    private ArrayList<ContentProviderOperation> getAddContactOperations(Contact contact) {
         ArrayList<ContentProviderOperation> ops = new ArrayList<>();
 
         ContentProviderOperation.Builder op = ContentProviderOperation.newInsert(ContactsContract.RawContacts.CONTENT_URI)
@@ -1073,13 +1135,7 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
             }
         }
 
-        try {
-            contentResolver.applyBatch(ContactsContract.AUTHORITY, ops);
-
-            return true;
-        } catch (Exception e) {
-            return false;
-        }
+        return ops;
     }
 
     private long insertLabelGroup(String groupTitle) {
@@ -1159,6 +1215,8 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
             contentResolver.applyBatch(ContactsContract.AUTHORITY, ops);
             return true;
         } catch (Exception e) {
+            Log.e("TAG", "Exception encountered while deleting contacts by identifiers: ");
+            e.printStackTrace();
             return false;
         }
     }
@@ -1172,6 +1230,8 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
             contentResolver.applyBatch(ContactsContract.AUTHORITY, ops);
             return true;
         } catch (Exception e) {
+            Log.e("TAG", "Exception encountered while deleting contact: ");
+            e.printStackTrace();
             return false;
         }
     }
@@ -1436,7 +1496,7 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
             return true;
         } catch (Exception e) {
             // Log exception
-            Log.e("TAG", "Exception encountered while inserting contact: ");
+            Log.e("TAG", "Exception encountered while updating contact: ");
             e.printStackTrace();
             return false;
         }

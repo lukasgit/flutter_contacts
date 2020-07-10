@@ -26,6 +26,8 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin, CNContactViewC
     static let openContactFormMethod = "openContactForm"
     static let openExistingContactMethod = "openExistingContact"
     static let openDeviceContactPickerMethod = "openDeviceContactPicker"
+    static let addContactWithReturnIdentifierMethod = "addContactWithReturnIdentifier"
+    
     static var noteEntitlementEnabled = true
     
     public static func register(with registrar: FlutterPluginRegistrar) {
@@ -88,6 +90,18 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin, CNContactViewC
             }
             else {
                 result(FlutterError(code: "", message: addResult, details: nil))
+            }
+        case SwiftContactsServicePlugin.addContactWithReturnIdentifierMethod:
+            let contact = dictionaryToContact(dictionary: call.arguments as! [String : Any])
+
+            let addResult = addContactWithReturnIdentifier(contact: contact)
+            if (!addResult.starts(with: "Error:")) {
+                var resultDict = [[String:Any]]()
+                resultDict.append(["identifier": addResult])
+                result(resultDict)
+            } else {
+                let error = addResult.replacingOccurrences(of: "Error:", with: "")
+                result(FlutterError(code: "", message: error, details: nil))
             }
         case SwiftContactsServicePlugin.deleteContactsByIdentifiersMethod:
             if(deleteContactsByIdentifiers(dictionary: call.arguments as! [String : Any])){
@@ -294,7 +308,7 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin, CNContactViewC
         }
         return false
     }
-
+    
     func addContact(contact : CNMutableContact) -> String {
         let store = CNContactStore()
         do {
@@ -306,6 +320,19 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin, CNContactViewC
             return error.localizedDescription
         }
         return ""
+    }
+    
+    func addContactWithReturnIdentifier(contact : CNMutableContact) -> String {
+        let store = CNContactStore()
+        do {
+            let saveRequest = CNSaveRequest()
+            saveRequest.add(contact, toContainerWithIdentifier: nil)
+            try store.execute(saveRequest)
+            return contact.identifier
+        }
+        catch {
+            return "Error:\(error.localizedDescription)"
+        }
     }
 
     func openContactForm() -> [String:Any]? {

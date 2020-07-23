@@ -606,8 +606,10 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin, CNContactViewC
             contact.note = dictionary["note"] as? String ?? ""
         }
 
-        contact.imageData = (dictionary["avatar"] as? FlutterStandardTypedData)?.data
-        
+        if let image = (dictionary["avatar"] as? FlutterStandardTypedData)?.data, image.count > 0 {
+            contact.imageData = image
+        }
+
         //Phone numbers
         if let phoneNumbers = dictionary["phones"] as? [[String:String]]{
             var updatedPhoneNumbers = [CNLabeledValue<CNPhoneNumber>]()

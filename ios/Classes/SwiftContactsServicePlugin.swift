@@ -1060,7 +1060,7 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin, CNContactViewC
         switch(labelValue.lowercased()){
             case "flickr": return "http://flickr.com/\(userName)"
             case "facebook": return "http://facebook.com/\(userName)"
-            case "linkedin": return "http://linkedin.com/\(userName)"
+            case "linkedin": return "http://linkedin.com/in/\(userName)"
             case "myspace": return "http://myspace.com/\(userName)"
             case "sina weibo": return "http://weibo.com/n/\(userName)"
             case "twitter": return "https://twitter.com/\(userName)"

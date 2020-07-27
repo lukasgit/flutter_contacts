@@ -365,8 +365,12 @@ class Contact {
       socialProfiles.add(Item._toMap(socialProfile));
     }
 
-    final birthday =
-        contact.birthday == null ? null : "--${contact.birthday.month.toString().padLeft(2, '0')}-${contact.birthday.day.toString().padLeft(2, '0')}";
+    final birthday = contact.birthday == null
+        ? null
+        : (contact.birthday.year == 0
+            ? "--${contact.birthday.month.toString().padLeft(2, '0')}-${contact.birthday.day.toString().padLeft(2, '0')}"
+            : "${contact.birthday.year.toString().padLeft(4, '0')}-${contact.birthday.month.toString().padLeft(2, '0')}-${contact.birthday.day
+        .toString().padLeft(2, '0')}");
 
     if (contact.identifier == null) {
       final map = {

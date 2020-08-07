@@ -741,11 +741,17 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin, CNContactViewC
         if let profiles = dictionary["socialProfiles"] as? [[String:String]]{
             var updatedProfiles = [CNLabeledValue<CNSocialProfile>]()
 
-            for profile in profiles where nil != profile["value"] {
+            for profile in profiles where nil != profile["userName"] {
                 let label = profile["label"] ?? ""
-                let userName = profile["value"] ?? ""
-//                contact.socialProfiles.append(CNLabeledValue(label:getSocialProfileLabel(label: label), value:CNSocialProfile(urlString: getSocialProfileUrl(label: label, userName: userName), username: userName, userIdentifier: "", service: getSocialProfileLabel(label: label))))
-                updatedProfiles.append(CNLabeledValue(label:getSocialProfileLabel(label: label), value:CNSocialProfile(urlString: getSocialProfileUrl(label: label, userName: userName), username: userName, userIdentifier: "", service: getSocialProfileLabel(label: label))))
+                let service = (profile["service"] != nil && !profile["service"]!.isEmpty) ? profile["service"] : getSocialProfileLabel(label: label)
+                let userName = profile["userName"] ?? ""
+                let userIdentifier = profile["userIdentifier"] ?? ""
+                var urlString = ""
+                if let urlStringFromMap = profile["urlString"], !urlStringFromMap.isEmpty {
+                    urlString = getSocialProfileUrl(label: label, userName: userName)
+                }
+                
+                updatedProfiles.append(CNLabeledValue(label:getSocialProfileLabel(label: label), value:CNSocialProfile(urlString: urlString, username: userName, userIdentifier: userIdentifier, service: service)))
             }
             contact.socialProfiles = updatedProfiles
         }
@@ -918,7 +924,10 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin, CNContactViewC
         for profile in contact.socialProfiles{
             var profileDictionary = [String:String]()
             profileDictionary["identifier"] = profile.identifier
-            profileDictionary["value"] = String(profile.value.username)
+            profileDictionary["service"] = String(profile.value.service)
+            profileDictionary["urlString"] = String(profile.value.urlString)
+            profileDictionary["userIdentifier"] = String(profile.value.userIdentifier)
+            profileDictionary["userName"] = String(profile.value.username)
             if let label = profile.label{
                 profileDictionary["label"] = localizedLabels ? CNLabeledValue<NSString>.localizedString(forLabel: label) : getRawSocialProfileLabel(label: label);
             }

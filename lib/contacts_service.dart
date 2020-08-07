@@ -257,7 +257,7 @@ class Contact {
   Iterable<Item> instantMessageAddresses = [];
   Iterable<Item> relations = [];
   Iterable<Item> websites = [];
-  Iterable<Item> socialProfiles = [];
+  Iterable<SocialProfile> socialProfiles = [];
   Iterable<String> labels = [];
 
   Uint8List avatar;
@@ -316,7 +316,7 @@ class Contact {
     instantMessageAddresses = (m["instantMessageAddresses"] as Iterable)?.map((m) => Item.fromMap(m));
     relations = (m["relations"] as Iterable)?.map((m) => Item.fromMap(m));
     websites = (m["websites"] as Iterable)?.map((m) => Item.fromMap(m));
-    socialProfiles = (m["socialProfiles"] as Iterable)?.map((m) => Item.fromMap(m));
+    socialProfiles = (m["socialProfiles"] as Iterable)?.map((m) => SocialProfile.fromMap(m));
     labels = m["labels"]?.cast<String>();
     try {
       avatar = m["avatar"];
@@ -361,16 +361,15 @@ class Contact {
       websites.add(Item._toMap(website));
     }
     var socialProfiles = [];
-    for (Item socialProfile in contact.socialProfiles ?? []) {
-      socialProfiles.add(Item._toMap(socialProfile));
+    for (SocialProfile socialProfile in contact.socialProfiles ?? []) {
+      socialProfiles.add(SocialProfile._toMap(socialProfile));
     }
 
     final birthday = contact.birthday == null
         ? null
         : (contact.birthday.year == 0
             ? "--${contact.birthday.month.toString().padLeft(2, '0')}-${contact.birthday.day.toString().padLeft(2, '0')}"
-            : "${contact.birthday.year.toString().padLeft(4, '0')}-${contact.birthday.month.toString().padLeft(2, '0')}-${contact.birthday.day
-        .toString().padLeft(2, '0')}");
+            : "${contact.birthday.year.toString().padLeft(4, '0')}-${contact.birthday.month.toString().padLeft(2, '0')}-${contact.birthday.day.toString().padLeft(2, '0')}");
 
     if (contact.identifier == null) {
       final map = {
@@ -564,6 +563,239 @@ class Contact {
     /// such as Samsung, htc etc...
     return AndroidAccountType.other;
   }
+
+
+  @override
+  String toString() {
+    String finalString = "";
+    if (this.identifier != null) {
+      finalString = this.identifier;
+    }
+
+    if (this.prefix != null) {
+      if (finalString.isNotEmpty) {
+        finalString += ", " + this.prefix;
+      } else {
+        finalString += this.prefix;
+      }
+    }
+
+    if (this.givenName != null) {
+      if (finalString.isNotEmpty) {
+        finalString += ", " + this.givenName;
+      } else {
+        finalString += this.givenName;
+      }
+    }
+
+    if (this.middleName != null) {
+      if (finalString.isNotEmpty) {
+        finalString += ", " + this.middleName;
+      } else {
+        finalString += this.middleName;
+      }
+    }
+
+    if (this.familyName != null) {
+      if (finalString.isNotEmpty) {
+        finalString += ", " + this.familyName;
+      } else {
+        finalString += this.familyName;
+      }
+    }
+
+    if (this.suffix != null) {
+      if (finalString.isNotEmpty) {
+        finalString += ", " + this.suffix;
+      } else {
+        finalString += this.suffix;
+      }
+    }
+
+    if (this.displayName != null) {
+      if (finalString.isNotEmpty) {
+        finalString += ", " + this.displayName;
+      } else {
+        finalString += this.displayName;
+      }
+    }
+
+    if (this.nickname != null) {
+      if (finalString.isNotEmpty) {
+        finalString += ", " + this.nickname;
+      } else {
+        finalString += this.nickname;
+      }
+    }
+
+    if (this.phoneticGivenName != null) {
+      if (finalString.isNotEmpty) {
+        finalString += ", " + this.phoneticGivenName;
+      } else {
+        finalString += this.phoneticGivenName;
+      }
+    }
+
+    if (this.phoneticMiddleName != null) {
+      if (finalString.isNotEmpty) {
+        finalString += ", " + this.phoneticMiddleName;
+      } else {
+        finalString += this.phoneticMiddleName;
+      }
+    }
+
+    if (this.phoneticFamilyName != null) {
+      if (finalString.isNotEmpty) {
+        finalString += ", " + this.phoneticFamilyName;
+      } else {
+        finalString += this.phoneticFamilyName;
+      }
+    }
+
+    if (this.phoneticName != null) {
+      if (finalString.isNotEmpty) {
+        finalString += ", " + this.phoneticName;
+      } else {
+        finalString += this.phoneticName;
+      }
+    }
+
+    if (this.company != null) {
+      if (finalString.isNotEmpty) {
+        finalString += ", " + this.company;
+      } else {
+        finalString += this.company;
+      }
+    }
+
+    if (this.jobTitle != null) {
+      if (finalString.isNotEmpty) {
+        finalString += ", " + this.jobTitle;
+      } else {
+        finalString += this.jobTitle;
+      }
+    }
+
+    if (this.department != null) {
+      if (finalString.isNotEmpty) {
+        finalString += ", " + this.department;
+      } else {
+        finalString += this.department;
+      }
+    }
+
+    if (this.note != null) {
+      if (finalString.isNotEmpty) {
+        finalString += ", " + this.note;
+      } else {
+        finalString += this.note;
+      }
+    }
+
+    if (this.sip != null) {
+      if (finalString.isNotEmpty) {
+        finalString += ", " + this.sip;
+      } else {
+        finalString += this.sip;
+      }
+    }
+
+    if (this.birthday != null) {
+      if (finalString.isNotEmpty) {
+        finalString += ", " + this.birthday.toString();
+      } else {
+        finalString += this.birthday.toString();
+      }
+    }
+
+    if (this.birthDayString != null) {
+      if (finalString.isNotEmpty) {
+        finalString += ", birthdayString: " + this.birthDayString;
+      } else {
+        finalString += "birthdayString: this.birthDayString";
+      }
+    }
+
+    if (this.avatar != null && this.avatar.length > 0) {
+      if (finalString.isNotEmpty) {
+        finalString += ", avatar available";
+      } else {
+        finalString += "avatar available";
+      }
+    }
+
+    if (this.androidAccountTypeRaw != null) {
+      if (finalString.isNotEmpty) {
+        finalString += ", " + this.androidAccountTypeRaw;
+      } else {
+        finalString += this.androidAccountTypeRaw;
+      }
+    }
+
+    if (this.androidAccountName != null) {
+      if (finalString.isNotEmpty) {
+        finalString += ", " + this.androidAccountName;
+      } else {
+        finalString += this.androidAccountName;
+      }
+    }
+
+    if (this.emails != null && this.emails.length > 0) {
+      finalString += " [ Emails: ";
+      this.emails.forEach((element) { finalString += "{" + element.toString() + "}"; });
+      finalString += " ]";
+    }
+
+    if (this.phones != null && this.phones.length > 0) {
+      finalString += " [ Phones: ";
+      this.phones.forEach((element) { finalString += "{" + element.toString() + "}"; });
+      finalString += " ]";
+    }
+
+    if (this.postalAddresses != null && this.postalAddresses.length > 0) {
+      finalString += " [ Postal address: ";
+      this.postalAddresses.forEach((element) { finalString += "{" + element.toString() + "}"; });
+      finalString += " ]";
+    }
+
+    if (this.dates != null && this.dates.length > 0) {
+      finalString += " [ Dates: ";
+      this.dates.forEach((element) { finalString += "{" + element.toString() + "}"; });
+      finalString += " ]";
+    }
+
+    if (this.instantMessageAddresses != null && this.instantMessageAddresses.length > 0) {
+      finalString += " [ IM: ";
+      this.instantMessageAddresses.forEach((element) { finalString += "{" + element.toString() + "}"; });
+      finalString += " ]";
+    }
+
+    if (this.relations != null && this.relations.length > 0) {
+      finalString += " [ Relations: ";
+      this.relations.forEach((element) { finalString += "{" + element.toString() + "}"; });
+      finalString += " ]";
+    }
+
+    if (this.websites != null && this.websites.length > 0) {
+      finalString += " [ Websites: ";
+      this.websites.forEach((element) { finalString += "{" + element.toString() + "}"; });
+      finalString += " ]";
+    }
+
+    if (this.socialProfiles != null && this.socialProfiles.length > 0) {
+      finalString += " [ Social profiles: ";
+      this.socialProfiles.forEach((element) { finalString += "{" + element.toString() + "}"; });
+      finalString += " ]";
+    }
+
+    if (this.labels != null && this.labels.length > 0) {
+      finalString += " [ Labels: ";
+      this.labels.forEach((element) { finalString += "{" + element.toString() + "}"; });
+      finalString += " ]";
+    }
+
+    return finalString;
+  }
 }
 
 class PostalAddress {
@@ -736,6 +968,104 @@ class Item {
     } else {
       return {"identifier": i.identifier, "label": i.label ?? "", "value": i.value ?? ""};
     }
+  }
+}
+
+/// Only supported by iOS CNSocialProfile
+class SocialProfile {
+  String identifier, label, service, userName, urlString, userIdentifier;
+
+  SocialProfile({this.identifier, this.label, this.service, this.userName, this.urlString, this.userIdentifier});
+
+  SocialProfile.fromMap(Map m) {
+    identifier = m["identifier"];
+    label = m["label"];
+    service = m["service"];
+    userName = m["userName"];
+    urlString = m["urlString"];
+    userIdentifier = m["userIdentifier"];
+  }
+
+  @override
+  bool operator == (Object other) {
+    return other is SocialProfile &&
+        this.identifier == other.identifier &&
+        this.label == other.label &&
+        this.userName == other.userName &&
+        this.service == other.service &&
+        this.urlString == other.urlString &&
+        this.userIdentifier == other.userIdentifier;
+  }
+
+  @override
+  int get hashCode {
+    return hashObjects([this.identifier, this.label, this.service, this.userName, this.urlString, this.userIdentifier].where((s) => s != null));
+  }
+
+  static Map _toMap(SocialProfile profile) {
+    if (profile.identifier == null) {
+      return {
+        "label": profile.label ?? "",
+        "service": profile.service ?? "",
+        "userName": profile.userName ?? "",
+        "urlString": profile.urlString ?? "",
+        "userIdentifier": profile.userIdentifier ?? "",
+      };
+    } else {
+      return {
+        "identifier": profile.identifier,
+        "label": profile.label ?? "",
+        "service": profile.service ?? "",
+        "userName": profile.userName ?? "",
+        "urlString": profile.urlString ?? "",
+        "userIdentifier": profile.userIdentifier ?? "",
+      };
+    }
+  }
+
+  @override
+  String toString() {
+    String finalString = "";
+    if (this.identifier != null) {
+      finalString = this.identifier;
+    }
+    if (this.label != null) {
+      if (finalString.isNotEmpty) {
+        finalString += ", " + this.label;
+      } else {
+        finalString += this.label;
+      }
+    }
+    if (this.userName != null) {
+      if (finalString.isNotEmpty) {
+        finalString += ", " + this.userName;
+      } else {
+        finalString += this.userName;
+      }
+    }
+    if (this.service != null) {
+      if (finalString.isNotEmpty) {
+        finalString += ", " + this.service;
+      } else {
+        finalString += this.service;
+      }
+    }
+    if (this.urlString != null) {
+      if (finalString.isNotEmpty) {
+        finalString += ", " + this.urlString;
+      } else {
+        finalString += this.urlString;
+      }
+    }
+    if (this.userIdentifier != null) {
+      if (finalString.isNotEmpty) {
+        finalString += ", " + this.userIdentifier;
+      } else {
+        finalString += this.userIdentifier;
+      }
+    }
+
+    return finalString;
   }
 }
 

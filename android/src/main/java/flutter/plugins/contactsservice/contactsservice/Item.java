@@ -188,7 +188,7 @@ public class Item {
                     return "";
                 }
             default:
-                return "other";
+                return "website";
         }
     }
 

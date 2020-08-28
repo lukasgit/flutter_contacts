@@ -103,6 +103,9 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
       } case "getContactsForPhone": {
         this.getContactsForPhone(call.method, (String)call.argument("phone"), (boolean)call.argument("withThumbnails"), (boolean)call.argument("photoHighResolution"), (boolean)call.argument("orderByGivenName"), result);
         break;
+      }  case "getContactsForEmail": {
+        this.getContactsForEmail(call.method, (String)call.argument("email"), (boolean)call.argument("withThumbnails"), (boolean)call.argument("photoHighResolution"), (boolean)call.argument("orderByGivenName"), result);
+        break;
       } case "getAvatar": {
         final Contact contact = Contact.fromMap((HashMap)call.argument("contact"));
         this.getAvatar(contact, (boolean)call.argument("photoHighResolution"), result);
@@ -201,6 +204,10 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
 
   private void getContactsForPhone(String callMethod, String phone, boolean withThumbnails, boolean photoHighResolution, boolean orderByGivenName, Result result) {
     new GetContactsTask(callMethod, result, withThumbnails, photoHighResolution, orderByGivenName).executeOnExecutor(executor, phone, true);
+  }
+
+  private void getContactsForEmail(String callMethod, String email, boolean withThumbnails, boolean photoHighResolution, boolean orderByGivenName, Result result) {
+    new GetContactsTask(callMethod, result, withThumbnails, photoHighResolution, orderByGivenName).executeOnExecutor(executor, email, true);
   }
 
   @Override
@@ -424,7 +431,9 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
       ArrayList<Contact> contacts;
       switch (callMethod) {
         case "openDeviceContactPicker": contacts = getContactsFrom(getCursor(null, (String) params[0])); break;
-        case "getContacts": contacts = getContactsFrom(getCursor((String) params[0], null)); break;
+        case "getContacts":
+        case "getContactsForEmail":
+          contacts = getContactsFrom(getCursor((String) params[0], null)); break;
         case "getContactsForPhone": contacts = getContactsFrom(getCursorForPhone(((String) params[0]))); break;
         default: return null;
       }
@@ -477,6 +486,29 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
 
 
   private Cursor getCursor(String query, String rawContactId) {
+    if (query != null) {
+      Uri contentUri = Uri.withAppendedPath(
+              ContactsContract.Contacts.CONTENT_FILTER_URI,
+              Uri.encode(query));
+
+      ArrayList<String> contactIds = new ArrayList<>();
+      String[] projection = new String[]{BaseColumns._ID};
+      Cursor cursor = contentResolver.query(contentUri, projection, null, null, null);
+      while (cursor != null && cursor.moveToNext()){
+        contactIds.add(cursor.getString(cursor.getColumnIndex(BaseColumns._ID)));
+      }
+      if (cursor != null)
+        cursor.close();
+
+      if (!contactIds.isEmpty()) {
+        String contactIdsListString = contactIds.toString().replace("[", "(").replace("]", ")");
+        String contactSelection = ContactsContract.Data.CONTACT_ID + " IN " + contactIdsListString;
+        return contentResolver.query(ContactsContract.Data.CONTENT_URI, PROJECTION, contactSelection, null, null);
+      }
+
+      return null;
+    }
+
     String selection = "(" + ContactsContract.Data.MIMETYPE + "=? OR " + ContactsContract.Data.MIMETYPE + "=? OR "
             + ContactsContract.Data.MIMETYPE + "=? OR " + ContactsContract.Data.MIMETYPE + "=? OR "
             + ContactsContract.Data.MIMETYPE + "=? OR " + ContactsContract.Data.MIMETYPE + "=? OR "
@@ -484,11 +516,6 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
     ArrayList<String> selectionArgs = new ArrayList<>(Arrays.asList(CommonDataKinds.Note.CONTENT_ITEM_TYPE, Email.CONTENT_ITEM_TYPE,
             Phone.CONTENT_ITEM_TYPE, StructuredName.CONTENT_ITEM_TYPE, Organization.CONTENT_ITEM_TYPE,
             StructuredPostal.CONTENT_ITEM_TYPE, CommonDataKinds.Event.CONTENT_ITEM_TYPE, ContactsContract.RawContacts.ACCOUNT_TYPE));
-    if (query != null) {
-      selectionArgs = new ArrayList<>();
-      selectionArgs.add(query + "%");
-      selection = ContactsContract.Contacts.DISPLAY_NAME_PRIMARY + " LIKE ?";
-    }
     if (rawContactId != null) {
       selectionArgs.add(rawContactId);
       selection += " AND " + ContactsContract.Data.CONTACT_ID + " =?";
@@ -518,6 +545,28 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
     }
 
     return null;
+  }
+
+  private Cursor getCursorForEmail(String email) {
+    if (email.isEmpty())
+      return null;
+
+    String SELECTION =
+            /*
+             * Searches for an email address
+             * that matches the search string
+             */
+            Email.ADDRESS + " LIKE ? " + "AND " +
+                    /*
+           * Searches for a MIME type that matches
+           * the value of the constant
+           * Email.CONTENT_ITEM_TYPE. Note the
+           * single quotes surrounding Email.CONTENT_ITEM_TYPE.
+           */
+          ContactsContract.Data.MIMETYPE + " = '" + Email.CONTENT_ITEM_TYPE + "'";
+    String[] selectionArgs = { "%" + email + "%" };
+
+    return contentResolver.query(ContactsContract.Data.CONTENT_URI, PROJECTION, SELECTION, selectionArgs, null);
   }
 
   /**

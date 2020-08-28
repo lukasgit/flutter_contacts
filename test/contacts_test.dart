@@ -195,7 +195,8 @@ void main() {
       "phones": [],
       "postalAddresses": [],
       "avatar": null,
-      "birthday": null
+      "birthday": null,
+      "note": null
     });
   });
 }
@@ -233,7 +234,8 @@ void expectMethodCall(List<MethodCall> log, String methodName) {
           }
         ],
         'avatar': null,
-        'birthday': null
+        'birthday': null,
+        'note': null
       },
     ),
   ]);

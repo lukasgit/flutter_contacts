@@ -32,12 +32,30 @@ class ContactsService {
   /// matching [query]
   static Future<Iterable<Contact>> getContactsSummary(
       {String query,
-      bool withThumbnails = true,
-      bool photoHighResolution = false,
-      bool orderByGivenName = true,
-      bool iOSLocalizedLabels = true}) async {
+        bool withThumbnails = true,
+        bool photoHighResolution = false,
+        bool orderByGivenName = true,
+        bool iOSLocalizedLabels = true}) async {
     Iterable contacts = await _channel.invokeMethod('getContactsSummary', <String, dynamic>{
       'query': query,
+      'withThumbnails': withThumbnails,
+      'photoHighResolution': photoHighResolution,
+      'orderByGivenName': orderByGivenName,
+      'iOSLocalizedLabels': iOSLocalizedLabels,
+    });
+    return contacts.map((m) => Contact.fromSummaryMap(m));
+  }
+
+  /// Fetches all contacts with names fields for list screen, or when specified, the contacts with a name
+  /// matching [identifiers]
+  static Future<Iterable<Contact>> getContactsSummaryByIdentifiers(
+      {List<String> identifiers,
+        bool withThumbnails = true,
+        bool photoHighResolution = false,
+        bool orderByGivenName = true,
+        bool iOSLocalizedLabels = true}) async {
+    Iterable contacts = await _channel.invokeMethod('getContactsSummary', <String, dynamic>{
+      'identifiers': identifiers.join('|'),
       'withThumbnails': withThumbnails,
       'photoHighResolution': photoHighResolution,
       'orderByGivenName': orderByGivenName,

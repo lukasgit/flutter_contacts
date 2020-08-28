@@ -218,6 +218,9 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin, CNContactViewC
                 CNContactNamePrefixKey as CNKeyDescriptor,
                 CNContactNameSuffixKey as CNKeyDescriptor,
             ] as [CNKeyDescriptor]
+            if let allIdentifiers = identifiers {
+                contactIdentifiers = allIdentifiers.split(separator: "|").map(String.init)
+            }
         } else if (methodName == SwiftContactsServicePlugin.getContactsByIdentifiersMethod) {
             if let allIdentifiers = identifiers {
                 contactIdentifiers = allIdentifiers.split(separator: "|").map(String.init)

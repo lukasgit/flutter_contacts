@@ -535,7 +535,7 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
                     contacts = getContactsFrom(getCursorForPhone(((String) params[0]), orderByGivenName));
                     break;
                 case getContactsSummaryMethod:
-                    contacts = getContactsFrom(getCursorForSummary(((String) params[0]), orderByGivenName), true);
+                    contacts = getContactsFrom(getCursorForSummary(((String) params[0]), orderByGivenName, identifiers), true);
                     break;
                 case getIdentifiersMethod:
                     ArrayList<String> contactList = getContactIdentifiersFrom(getCursorForIdentifiers((String) params[0], orderByGivenName));
@@ -672,15 +672,27 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
         return null;
     }
 
-    private Cursor getCursorForSummary(String query, boolean orderByGivenName) {
+    private Cursor getCursorForSummary(String query, boolean orderByGivenName, List<String> identifiers) {
         String selection = ContactsContract.Data.MIMETYPE + " = ?";
         ArrayList<String> selectionArgsList = new ArrayList<>();
         selectionArgsList.add(StructuredName.CONTENT_ITEM_TYPE);
 
-        if (query != null) {
-            selectionArgsList.add(query + "%");
-            selection += (" AND " + ContactsContract.Contacts.DISPLAY_NAME + " LIKE ?");
+        if (identifiers != null) {
+
+            String selectionString = "";
+
+            for (String i: identifiers) {
+                selectionString += "?,";
+            }
+            selection += (" AND " + ContactsContract.Data.CONTACT_ID + " IN (" + selectionString.substring(0, selectionString.length() - 1) + ")");
+            selectionArgsList.addAll(identifiers);
+        } else {
+            if (query != null) {
+                selectionArgsList.add(query + "%");
+                selection += (" AND " + ContactsContract.Contacts.DISPLAY_NAME + " LIKE ?");
+            }
         }
+
         if (orderByGivenName) {
             return contentResolver.query(ContactsContract.Data.CONTENT_URI, SUMMARY_PROJECTION, selection, selectionArgsList.toArray(new String[selectionArgsList.size()]),
                     ORDER_BY_FIELD);

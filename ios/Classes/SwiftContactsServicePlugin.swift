@@ -933,6 +933,8 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin, CNContactViewC
             profileDictionary["userName"] = String(profile.value.username)
             if let label = profile.label{
                 profileDictionary["label"] = localizedLabels ? CNLabeledValue<NSString>.localizedString(forLabel: label) : getRawSocialProfileLabel(label: label);
+            } else {
+                profileDictionary["label"] = localizedLabels ? CNLabeledValue<NSString>.localizedString(forLabel: String(profile.value.service)) : getRawSocialProfileLabel(label: String(profile.value.service));
             }
             profiles.append(profileDictionary)
         }

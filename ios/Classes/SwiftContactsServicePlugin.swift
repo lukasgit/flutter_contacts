@@ -237,33 +237,63 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin, CNContactViewC
 
         let fetchRequest = CNContactFetchRequest(keysToFetch: keys)
 
-        if let byContactIdentifiers = contactIdentifiers { // contact by identifiers
-            fetchRequest.predicate = CNContact.predicateForContacts(withIdentifiers: byContactIdentifiers)
-        } else {
-            // Set the predicate if there is a query
-            if query != nil && !phoneQuery && !emailQuery {
-                fetchRequest.predicate = CNContact.predicateForContacts(matchingName: query!)
-            }
+        var contactIds: [String] = []
+        
+        do {
+            let allContainers: [CNContainer] = try store.containers(matching: nil)
+            for container in allContainers {
+                fetchRequest.predicate = CNContact.predicateForContactsInContainer(withIdentifier: container.identifier)
+                
+                if let byContactIdentifiers = contactIdentifiers { // contact by identifiers
+                    fetchRequest.predicate = CNContact.predicateForContacts(withIdentifiers: byContactIdentifiers)
 
-            if #available(iOS 11, *) {
-                if query != nil && phoneQuery {
-                    let phoneNumberPredicate = CNPhoneNumber(stringValue: query!)
-                    fetchRequest.predicate = CNContact.predicateForContacts(matching: phoneNumberPredicate)
-                } else if query != nil && emailQuery {
-                    fetchRequest.predicate = CNContact.predicateForContacts(matchingEmailAddress: query!)
+                } else {
+                    // Set the predicate if there is a query
+                    if query != nil && !phoneQuery && !emailQuery {
+                        fetchRequest.predicate = CNContact.predicateForContacts(matchingName: query!)
+                    }
+
+                    if #available(iOS 11, *) {
+                        if query != nil && phoneQuery {
+                            let phoneNumberPredicate = CNPhoneNumber(stringValue: query!)
+                            fetchRequest.predicate = CNContact.predicateForContacts(matching: phoneNumberPredicate)
+                        } else if query != nil && emailQuery {
+                            fetchRequest.predicate = CNContact.predicateForContacts(matchingEmailAddress: query!)
+                        }
+                    }
+                }
+                
+                if (orderByGivenName) {
+                    fetchRequest.sortOrder = CNContactSortOrder.givenName
+                }
+                
+                do {
+                    try store.enumerateContacts(with: fetchRequest, usingBlock: { (contact, stop) -> Void in
+                        if (!contactIds.contains(contact.identifier)) {
+                            contactIds.append(contact.identifier)
+                            contacts.append(contact)
+                        }
+                    })
+                } catch let error as NSError {
+                    print(" Error in getContact: \(error.code), \(error.localizedDescription)")
+                    if (error.code == 102) {// iOS13, the note entitilement is introduced. Need to remove note as the entitlemnt is not yet aprroved or appended with plist
+                        SwiftContactsServicePlugin.noteEntitlementEnabled = false
+                        keys = keys.filter { !$0.isEqual(CNContactNoteKey) }
+                        do{
+                            fetchRequest.keysToFetch = keys
+                            try store.enumerateContacts(with: fetchRequest, usingBlock: { (contact, stop) -> Void in
+                                if (!contactIds.contains(contact.identifier)) {
+                                    contactIds.append(contact.identifier)
+                                    contacts.append(contact)
+                                }
+                            })
+                        } catch let error as NSError {
+                            print(" Error after removing note key in getContact: \(error.code), \(error.localizedDescription)")
+                            return result
+                        }
+                    }
                 }
             }
-        }
-        
-        if (orderByGivenName) {
-            fetchRequest.sortOrder = CNContactSortOrder.givenName
-        }
-        
-        // Fetch contacts
-        do{
-            try store.enumerateContacts(with: fetchRequest, usingBlock: { (contact, stop) -> Void in
-                contacts.append(contact)
-            })
         } catch let error as NSError {
             print(" Error in getContact: \(error.code), \(error.localizedDescription)")
             if (error.code == 102) {// iOS13, the note entitilement is introduced. Need to remove note as the entitlemnt is not yet aprroved or appended with plist
@@ -272,7 +302,10 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin, CNContactViewC
                 do{
                     fetchRequest.keysToFetch = keys
                     try store.enumerateContacts(with: fetchRequest, usingBlock: { (contact, stop) -> Void in
-                        contacts.append(contact)
+                        if (!contactIds.contains(contact.identifier)) {
+                            contactIds.append(contact.identifier)
+                            contacts.append(contact)
+                        }
                     })
                 } catch let error as NSError {
                     print(" Error after removing note key in getContact: \(error.code), \(error.localizedDescription)")
@@ -280,8 +313,11 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin, CNContactViewC
                 }
             }
         }
-
-        // Transform the CNContacts into dictionaries
+        
+        contacts = contacts.sorted { (contactA, contactB) -> Bool in
+             contactA.givenName.lowercased() < contactB.givenName.lowercased()
+        }
+        
         if (methodName == SwiftContactsServicePlugin.getContactsSummaryMethod) {
             for contact : CNContact in contacts{
                 result.append(contactToSummaryDictionary(contact: contact))
@@ -291,7 +327,7 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin, CNContactViewC
                 result.append(contactToDictionary(contact: contact, localizedLabels: localizedLabels))
             }
         }
-
+        
         return result
     }
 

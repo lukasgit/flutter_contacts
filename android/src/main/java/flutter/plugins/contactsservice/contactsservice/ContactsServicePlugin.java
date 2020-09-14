@@ -267,7 +267,7 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
       if(requestCode == REQUEST_OPEN_EXISTING_CONTACT || requestCode == REQUEST_OPEN_CONTACT_FORM) {
         try {
           Uri ur = intent.getData();
-          finishWithResult(getContactByIdentifier(ur.getLastPathSegment(), localizedLabels));
+          finishWithResult(getContactByIdentifier(ur.getLastPathSegment()));
         } catch (NullPointerException e) {
           finishWithResult(FORM_OPERATION_CANCELED);
         }
@@ -299,7 +299,7 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
     void openExistingContact(Contact contact) {
       String identifier = contact.identifier;
       try {
-        HashMap contactMapFromDevice = getContactByIdentifier(identifier, localizedLabels);
+        HashMap contactMapFromDevice = getContactByIdentifier(identifier);
         // Contact existence check
         if(contactMapFromDevice != null) {
           Uri uri = Uri.withAppendedPath(ContactsContract.Contacts.CONTENT_URI, identifier);
@@ -333,7 +333,7 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
     void startIntent(Intent intent, int request) {
     }
 
-    HashMap getContactByIdentifier(String identifier, boolean localizedLabels) {
+    HashMap getContactByIdentifier(String identifier) {
       ArrayList<Contact> matchingContacts;
       {
         Cursor cursor = contentResolver.query(
@@ -596,7 +596,14 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
       }
       //ADDRESSES
       else if (mimeType.equals(CommonDataKinds.StructuredPostal.CONTENT_ITEM_TYPE)) {
-        contact.postalAddresses.add(new PostalAddress(cursor));
+        int type = cursor.getInt(cursor.getColumnIndex(StructuredPostal.TYPE));
+        String label = PostalAddress.getLabel(resources, type, cursor, localizedLabels);
+        String street = cursor.getString(cursor.getColumnIndex(StructuredPostal.STREET));
+        String city = cursor.getString(cursor.getColumnIndex(StructuredPostal.CITY));
+        String postcode = cursor.getString(cursor.getColumnIndex(StructuredPostal.POSTCODE));
+        String region = cursor.getString(cursor.getColumnIndex(StructuredPostal.REGION));
+        String country = cursor.getString(cursor.getColumnIndex(StructuredPostal.COUNTRY));
+        contact.postalAddresses.add(new PostalAddress(label, street, city, postcode, region, country, type));
       }
       // BIRTHDAY
       else if (mimeType.equals(CommonDataKinds.Event.CONTENT_ITEM_TYPE)) {
@@ -752,7 +759,7 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
       op = ContentProviderOperation.newInsert(ContactsContract.Data.CONTENT_URI)
               .withValueBackReference(ContactsContract.Data.RAW_CONTACT_ID, 0)
               .withValue(ContactsContract.Data.MIMETYPE, CommonDataKinds.StructuredPostal.CONTENT_ITEM_TYPE)
-              .withValue(CommonDataKinds.StructuredPostal.TYPE, PostalAddress.stringToPostalAddressType(address.label))
+              .withValue(CommonDataKinds.StructuredPostal.TYPE, address.type)
               .withValue(CommonDataKinds.StructuredPostal.LABEL, address.label)
               .withValue(CommonDataKinds.StructuredPostal.STREET, address.street)
               .withValue(CommonDataKinds.StructuredPostal.CITY, address.city)
@@ -891,7 +898,7 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
       op = ContentProviderOperation.newInsert(ContactsContract.Data.CONTENT_URI)
               .withValue(ContactsContract.Data.MIMETYPE, CommonDataKinds.StructuredPostal.CONTENT_ITEM_TYPE)
               .withValue(ContactsContract.Data.RAW_CONTACT_ID, contact.identifier)
-              .withValue(CommonDataKinds.StructuredPostal.TYPE, PostalAddress.stringToPostalAddressType(address.label))
+              .withValue(CommonDataKinds.StructuredPostal.TYPE, address.type)
               .withValue(CommonDataKinds.StructuredPostal.STREET, address.street)
               .withValue(CommonDataKinds.StructuredPostal.CITY, address.city)
               .withValue(CommonDataKinds.StructuredPostal.REGION, address.region)

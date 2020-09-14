@@ -6,6 +6,7 @@ import android.content.ContentResolver;
 import android.content.ContentUris;
 import android.content.Context;
 import android.content.Intent;
+import android.content.res.Resources;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -60,6 +61,7 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
   private ContentResolver contentResolver;
   private MethodChannel methodChannel;
   private BaseContactsServiceDelegate delegate;
+  private Resources resources;
 
   private final ExecutorService executor =
           new ThreadPoolExecutor(0, 10, 60, TimeUnit.SECONDS, new ArrayBlockingQueue<Runnable>(1000));
@@ -82,6 +84,7 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
 
   @Override
   public void onAttachedToEngine(FlutterPluginBinding binding) {
+    resources = binding.getApplicationContext().getResources();
     initInstance(binding.getBinaryMessenger(), binding.getApplicationContext());
     this.delegate = new ContactServiceDelegate(binding.getApplicationContext());
   }
@@ -92,6 +95,7 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
     methodChannel = null;
     contentResolver = null;
     this.delegate = null;
+    resources = null;
   }
 
   @Override
@@ -559,8 +563,8 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
         String phoneNumber = cursor.getString(cursor.getColumnIndex(Phone.NUMBER));
         if (!TextUtils.isEmpty(phoneNumber)){
           int type = cursor.getInt(cursor.getColumnIndex(Phone.TYPE));
-          String label = Item.getPhoneLabel(type, cursor);
-          contact.phones.add(new Item(label,phoneNumber));
+          String label = Item.getPhoneLabel(resources, type, cursor, true);
+          contact.phones.add(new Item(label, phoneNumber, type));
         }
       }
       //MAILS
@@ -568,7 +572,8 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
         String email = cursor.getString(cursor.getColumnIndex(Email.ADDRESS));
         int type = cursor.getInt(cursor.getColumnIndex(Email.TYPE));
         if (!TextUtils.isEmpty(email)) {
-          contact.emails.add(new Item(Item.getEmailLabel(type, cursor),email));
+          String label = Item.getEmailLabel(resources, type, cursor, true);
+          contact.emails.add(new Item(label, email, type));
         }
       }
       //ORG
@@ -711,11 +716,11 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
               .withValue(ContactsContract.Data.MIMETYPE, CommonDataKinds.Phone.CONTENT_ITEM_TYPE)
               .withValue(ContactsContract.CommonDataKinds.Phone.NUMBER, phone.value);
 
-      if (Item.stringToPhoneType(phone.label) == ContactsContract.CommonDataKinds.Phone.TYPE_CUSTOM){
+      if (phone.type == ContactsContract.CommonDataKinds.Phone.TYPE_CUSTOM){
         op.withValue( ContactsContract.CommonDataKinds.Phone.TYPE, ContactsContract.CommonDataKinds.BaseTypes.TYPE_CUSTOM );
         op.withValue(ContactsContract.CommonDataKinds.Phone.LABEL, phone.label);
       } else
-        op.withValue( ContactsContract.CommonDataKinds.Phone.TYPE, Item.stringToPhoneType(phone.label) );
+        op.withValue(ContactsContract.CommonDataKinds.Phone.TYPE, phone.type);
 
       ops.add(op.build());
     }
@@ -726,7 +731,7 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
               .withValueBackReference(ContactsContract.Data.RAW_CONTACT_ID, 0)
               .withValue(ContactsContract.Data.MIMETYPE, CommonDataKinds.Email.CONTENT_ITEM_TYPE)
               .withValue(CommonDataKinds.Email.ADDRESS, email.value)
-              .withValue(CommonDataKinds.Email.TYPE, Item.stringToEmailType(email.label));
+              .withValue(CommonDataKinds.Email.TYPE, email.type);
       ops.add(op.build());
     }
     //Postal addresses
@@ -851,11 +856,11 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
               .withValue(ContactsContract.Data.RAW_CONTACT_ID, contact.identifier)
               .withValue(Phone.NUMBER, phone.value);
 
-      if (Item.stringToPhoneType(phone.label) == ContactsContract.CommonDataKinds.Phone.TYPE_CUSTOM){
+      if (phone.type == ContactsContract.CommonDataKinds.Phone.TYPE_CUSTOM){
         op.withValue( ContactsContract.CommonDataKinds.Phone.TYPE, ContactsContract.CommonDataKinds.BaseTypes.TYPE_CUSTOM );
         op.withValue(ContactsContract.CommonDataKinds.Phone.LABEL, phone.label);
       } else
-        op.withValue( ContactsContract.CommonDataKinds.Phone.TYPE, Item.stringToPhoneType(phone.label) );
+        op.withValue(ContactsContract.CommonDataKinds.Phone.TYPE, phone.type);
 
       ops.add(op.build());
     }
@@ -865,7 +870,7 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
               .withValue(ContactsContract.Data.MIMETYPE, CommonDataKinds.Email.CONTENT_ITEM_TYPE)
               .withValue(ContactsContract.Data.RAW_CONTACT_ID, contact.identifier)
               .withValue(CommonDataKinds.Email.ADDRESS, email.value)
-              .withValue(CommonDataKinds.Email.TYPE, Item.stringToEmailType(email.label));
+              .withValue(CommonDataKinds.Email.TYPE, email.type);
       ops.add(op.build());
     }
 

@@ -583,7 +583,6 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin, CNContactViewC
         do {
             // Check if the contact exists
             if let contact = try store.unifiedContact(withIdentifier: identifier, keysToFetch: keys).mutableCopy() as? CNMutableContact{
-
                 setDictionaryToContact(dictionary: dictionary, contact: contact)
 
                 // Attempt to update the contact
@@ -1024,7 +1023,14 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin, CNContactViewC
             case "work": return CNLabelWork
             case "home": return CNLabelHome
             case "other": return CNLabelOther
-            default: return labelValue
+        case "school" :
+            if #available(iOS 13.0, *) {
+                return CNLabelSchool
+            } else {
+                return labelValue
+            }
+        default:
+            return labelValue
         }
     }
 
@@ -1034,6 +1040,14 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin, CNContactViewC
             case "work": return CNLabelWork
             case "home": return CNLabelHome
             case "other": return CNLabelOther
+        case "school" :
+            if #available(iOS 13.0, *) {
+                return CNLabelSchool
+            } else {
+                return labelValue
+            }
+        case "email" : return CNLabelEmailiCloud
+        
             default: return labelValue
         }
     }
@@ -1134,7 +1148,14 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin, CNContactViewC
             case "work": return CNLabelWork
             case "home": return CNLabelHome
             case "other": return CNLabelOther
-            default: return labelValue
+        case "school" :
+            if #available(iOS 13.0, *) {
+                return CNLabelSchool
+            } else {
+                return labelValue
+            }
+        default:
+            return labelValue
         }
     }
 
@@ -1147,7 +1168,11 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin, CNContactViewC
             case CNLabelWork.lowercased(): return "work"
             case CNLabelHome.lowercased(): return "home"
             case CNLabelOther.lowercased(): return "other"
-            default: return labelValue
+        default:
+            if #available(iOS 13.0, *) {
+                if labelValue.lowercased() == CNLabelSchool.lowercased() { return "school" }
+            }
+            return labelValue
         }
     }
 
@@ -1156,8 +1181,13 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin, CNContactViewC
         switch(labelValue.lowercased()){
             case CNLabelWork.lowercased(): return "work"
             case CNLabelHome.lowercased(): return "home"
-            case CNLabelOther.lowercased(): return "other"
-            default: return labelValue
+        case CNLabelOther.lowercased(): return "other"
+        case CNLabelEmailiCloud.lowercased(): return "email"
+        default:
+            if #available(iOS 13.0, *) {
+                if labelValue.lowercased() == CNLabelSchool.lowercased() { return "school" }
+            }
+            return labelValue
         }
     }
 
@@ -1244,8 +1274,13 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin, CNContactViewC
             case CNLabelWork.lowercased(): return "work"
             case CNLabelHome.lowercased(): return "home"
             case CNLabelOther.lowercased(): return "other"
-            default: return labelValue
+        default:
+            if #available(iOS 13.0, *) {
+                if labelValue.lowercased() == CNLabelSchool.lowercased() { return "school" }
+            }
+            return labelValue
         }
     }
 
 }
+

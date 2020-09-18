@@ -1071,6 +1071,7 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
                     .withValue(ContactsContract.Data.MIMETYPE, CommonDataKinds.StructuredPostal.CONTENT_ITEM_TYPE)
                     .withValue(CommonDataKinds.StructuredPostal.LABEL, address.label)
                     .withValue(CommonDataKinds.StructuredPostal.STREET, address.street)
+                    .withValue(CommonDataKinds.StructuredPostal.NEIGHBORHOOD, address.locality)
                     .withValue(CommonDataKinds.StructuredPostal.CITY, address.city)
                     .withValue(CommonDataKinds.StructuredPostal.REGION, address.region)
                     .withValue(CommonDataKinds.StructuredPostal.POSTCODE, address.postcode)

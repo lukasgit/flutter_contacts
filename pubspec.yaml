@@ -8,7 +8,7 @@ homepage: https://github.com/lukasgit/flutter_contacts
 maintainer: Lukas Dickie (@lukasgit)
 
 environment:
-  sdk: ">=2.0.0-dev.58.0.flutter-f981f09760 <3.0.0"
+  sdk: ">=2.1.0 <3.0.0"
 
 dependencies:
   flutter:

@@ -730,7 +730,7 @@ class Contact {
       if (finalString.isNotEmpty) {
         finalString += ", birthdayString: " + this.birthDayString;
       } else {
-        finalString += "birthdayString: this.birthDayString";
+        finalString += "birthdayString: ${this.birthDayString}";
       }
     }
 

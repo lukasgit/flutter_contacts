@@ -45,30 +45,25 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<PermissionStatus> _getContactPermission() async {
-    PermissionStatus permission = await PermissionHandler()
-        .checkPermissionStatus(PermissionGroup.contacts);
-    if (permission != PermissionStatus.granted &&
-        permission != PermissionStatus.disabled) {
-      Map<PermissionGroup, PermissionStatus> permissionStatus =
-          await PermissionHandler()
-              .requestPermissions([PermissionGroup.contacts]);
-      return permissionStatus[PermissionGroup.contacts] ??
-          PermissionStatus.unknown;
+    PermissionStatus status = await Permission.contacts.status;
+
+    if (status != PermissionStatus.granted && status != PermissionStatus.permanentlyDenied) {
+      return await Permission.contacts.request();
     } else {
-      return permission;
+      return status;
     }
   }
 
   void _handleInvalidPermissions(PermissionStatus permissionStatus) {
     if (permissionStatus == PermissionStatus.denied) {
       throw PlatformException(
-          code: "PERMISSION_DENIED",
-          message: "Access to location data denied",
+          code: 'PERMISSION_DENIED',
+          message: 'Access to location data denied',
           details: null);
-    } else if (permissionStatus == PermissionStatus.disabled) {
+    } else if (permissionStatus == PermissionStatus.restricted) {
       throw PlatformException(
-          code: "PERMISSION_DISABLED",
-          message: "Location data is not available on device",
+          code: 'PERMISSION_DISABLED',
+          message: 'Location data is not available on device',
           details: null);
     }
   }

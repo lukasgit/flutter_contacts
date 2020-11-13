@@ -18,7 +18,8 @@ class ContactsService {
       bool withThumbnails = true,
       bool photoHighResolution = true,
       bool orderByGivenName = true,
-      bool iOSLocalizedLabels = true}) async {
+      bool iOSLocalizedLabels = true,
+      bool androidLocalizedLabels = true}) async {
     Iterable contacts =
         await _channel.invokeMethod('getContacts', <String, dynamic>{
       'query': query,
@@ -26,6 +27,7 @@ class ContactsService {
       'photoHighResolution': photoHighResolution,
       'orderByGivenName': orderByGivenName,
       'iOSLocalizedLabels': iOSLocalizedLabels,
+      'androidLocalizedLabels': androidLocalizedLabels,
     });
     return contacts.map((m) => Contact.fromMap(m));
   }
@@ -36,7 +38,8 @@ class ContactsService {
       {bool withThumbnails = true,
       bool photoHighResolution = true,
       bool orderByGivenName = true,
-      bool iOSLocalizedLabels = true}) async {
+      bool iOSLocalizedLabels = true,
+      bool androidLocalizedLabels = true}) async {
     if (phone == null || phone.isEmpty) return Iterable.empty();
 
     Iterable contacts =
@@ -46,6 +49,7 @@ class ContactsService {
       'photoHighResolution': photoHighResolution,
       'orderByGivenName': orderByGivenName,
       'iOSLocalizedLabels': iOSLocalizedLabels,
+      'androidLocalizedLabels': androidLocalizedLabels,
     });
     return contacts.map((m) => Contact.fromMap(m));
   }
@@ -57,13 +61,15 @@ class ContactsService {
       {bool withThumbnails = true,
         bool photoHighResolution = true,
         bool orderByGivenName = true,
-        bool iOSLocalizedLabels = true}) async {
+        bool iOSLocalizedLabels = true,
+        bool androidLocalizedLabels = true}) async {
     Iterable contacts = await _channel.invokeMethod('getContactsForEmail',<String,dynamic>{
       'email': email,
       'withThumbnails': withThumbnails,
       'photoHighResolution': photoHighResolution,
       'orderByGivenName': orderByGivenName,
       'iOSLocalizedLabels': iOSLocalizedLabels,
+      'androidLocalizedLabels': androidLocalizedLabels,
     });
     return contacts.map((m) => Contact.fromMap(m));
   }
@@ -90,25 +96,28 @@ class ContactsService {
   static Future updateContact(Contact contact) =>
       _channel.invokeMethod('updateContact', Contact._toMap(contact));
 
-  static Future<Contact> openContactForm({bool iOSLocalizedLabels = true}) async {
+  static Future<Contact> openContactForm({bool iOSLocalizedLabels = true, bool androidLocalizedLabels = true}) async {
     dynamic result = await _channel.invokeMethod('openContactForm',<String,dynamic>{
       'iOSLocalizedLabels': iOSLocalizedLabels,
+      'androidLocalizedLabels': androidLocalizedLabels,
     });
    return _handleFormOperation(result);
   }
 
-  static Future<Contact> openExistingContact(Contact contact, {bool iOSLocalizedLabels = true}) async {
+  static Future<Contact> openExistingContact(Contact contact, {bool iOSLocalizedLabels = true, bool androidLocalizedLabels = true}) async {
    dynamic result = await _channel.invokeMethod('openExistingContact',<String,dynamic>{
      'contact': Contact._toMap(contact),
      'iOSLocalizedLabels': iOSLocalizedLabels,
+     'androidLocalizedLabels': androidLocalizedLabels,
    }, );
    return _handleFormOperation(result);
   }
 
   // Displays the device/native contact picker dialog and returns the contact selected by the user
-  static Future<Contact> openDeviceContactPicker({bool iOSLocalizedLabels = true}) async {
+  static Future<Contact> openDeviceContactPicker({bool iOSLocalizedLabels = true, bool androidLocalizedLabels = true}) async {
     dynamic result = await _channel.invokeMethod('openDeviceContactPicker',<String,dynamic>{
       'iOSLocalizedLabels': iOSLocalizedLabels,
+      'androidLocalizedLabels': androidLocalizedLabels,
     });
     // result contains either :
     // - an Iterable of contacts containing 0 or 1 contact

@@ -300,7 +300,7 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin, CNContactViewC
          }
      }
      
-    func openDeviceContactPicker(arguments arguments: [String:Any], result: @escaping FlutterResult) {
+    func openDeviceContactPicker(arguments: [String:Any], result: @escaping FlutterResult) {
         localizedLabels = arguments["iOSLocalizedLabels"] as! Bool
         self.result = result
         

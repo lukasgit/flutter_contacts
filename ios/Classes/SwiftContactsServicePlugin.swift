@@ -84,6 +84,12 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin, CNContactViewC
             localizedLabels = arguments["iOSLocalizedLabels"] as! Bool
             self.result = result
             _ = openContactForm()
+        case "preloadContactView":
+          let arguments = call.arguments as! [String:Any]
+           let contact = dictionaryToContact(dictionary: call.arguments as! [String : Any])
+          localizedLabels = true
+          self.result = result
+          _ = preLoadContactView(contact: contact)
          case "openExistingContact":
             let arguments = call.arguments as! [String : Any]
             let contact = arguments["contact"] as! [String : Any]
@@ -224,11 +230,15 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin, CNContactViewC
         return nil
     }
     
-    func preLoadContactView() {
-        DispatchQueue.main.asyncAfter(deadline: .now()+5) {
-            NSLog("Preloading CNContactViewController")
-            let contactViewController = CNContactViewController.init(forNewContact: nil)
+    func preLoadContactView(contact : CNMutableContact) -> [String:Any]? {
+        let controller = CNContactViewController.init(forUnknownContact:contact)
+        controller.delegate = self
+        DispatchQueue.main.async {
+         let navigation = UINavigationController .init(rootViewController: controller)
+         let viewController : UIViewController? = UIApplication.shared.delegate?.window??.rootViewController
+            viewController?.present(navigation, animated:true, completion: nil)
         }
+        return nil
     }
     
     @objc func cancelContactForm() {

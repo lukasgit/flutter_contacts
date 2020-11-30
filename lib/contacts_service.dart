@@ -91,9 +91,11 @@ class ContactsService {
   static Future updateContact(Contact contact) =>
       _channel.invokeMethod('updateContact', Contact._toMap(contact));
 
-  /// Adds the [contact] to the device contact list
-  static Future preloadContact(Contact contact) =>
-      _channel.invokeMethod('preloadContactView', Contact._toMap(contact));
+  static Future<Contact> preloadContact(Contact contact) async {
+    dynamic result =
+        await _channel.invokeMethod('openContactForm', Contact._toMap(contact));
+    return _handleFormOperation(result);
+  }
 
   static Future<Contact> openContactForm(
       {bool iOSLocalizedLabels = true}) async {

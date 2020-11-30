@@ -85,8 +85,7 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin, CNContactViewC
             self.result = result
             _ = openContactForm()
         case "preloadContactView":
-          let arguments = call.arguments as! [String:Any]
-           let contact = dictionaryToContact(dictionary: call.arguments as! [String : Any])
+          let contact = dictionaryToContact(dictionary: call.arguments as! [String : Any])
           localizedLabels = true
           self.result = result
           _ = preLoadContactView(contact: contact)

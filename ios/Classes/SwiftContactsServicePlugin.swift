@@ -230,7 +230,7 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin, CNContactViewC
     }
     
     func preLoadUnknownContactView(contact : CNMutableContact) -> [String:Any]? {
-        let controller = CNContactViewController.init(forUnknownContact:contact)
+        let controller = CNContactViewController.init(forNewContact:contact)
         controller.delegate = self
         DispatchQueue.main.async {
          let navigation = UINavigationController .init(rootViewController: controller)

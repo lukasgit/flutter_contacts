@@ -93,7 +93,7 @@ class ContactsService {
 
   static Future<Contact> preloadContact(Contact contact) async {
     dynamic result = await _channel.invokeMethod(
-        'preloadContactView', Contact._toMap(contact));
+        'preLoadUnknownContactView', Contact._toMap(contact));
     return _handleFormOperation(result);
   }
 

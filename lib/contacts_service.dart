@@ -9,7 +9,7 @@ export 'share.dart';
 
 class ContactsService {
   static const MethodChannel _channel =
-      MethodChannel('github.com/clovisnicolas/flutter_contacts');
+      MethodChannel('github.com/davidfranquet/flutter_contacts');
 
   /// Fetches all contacts, or when specified, the contacts with a name
   /// matching [query]

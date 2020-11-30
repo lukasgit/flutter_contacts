@@ -75,7 +75,7 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
   }
 
   private void initInstance(BinaryMessenger messenger, Context context) {
-    methodChannel = new MethodChannel(messenger, "github.com/clovisnicolas/flutter_contacts");
+    methodChannel = new MethodChannel(messenger, "github.com/davidfranquet/flutter_contacts");
     methodChannel.setMethodCallHandler(this);
     this.contentResolver = context.getContentResolver();
   }
@@ -144,6 +144,15 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
         if (delegate != null) {
           delegate.setResult(result);
           delegate.openContactForm();
+        } else {
+          result.success(FORM_COULD_NOT_BE_OPEN);
+        }
+        break;
+      }
+      case "preloadContactView": {
+        if (delegate != null) {
+          delegate.setResult(result);
+          delegate.preloadContactForm();
         } else {
           result.success(FORM_COULD_NOT_BE_OPEN);
         }
@@ -302,6 +311,15 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
     }
 
     void openContactForm() {
+      try {
+        Intent intent = new Intent(Intent.ACTION_INSERT, ContactsContract.Contacts.CONTENT_URI);
+        intent.putExtra("finishActivityOnSaveCompleted", true);
+        startIntent(intent, REQUEST_OPEN_CONTACT_FORM);
+      }catch(Exception e) {
+      }
+    }
+
+    void preloadContactForm() {
       try {
         Intent intent = new Intent(Intent.ACTION_INSERT, ContactsContract.Contacts.CONTENT_URI);
         intent.putExtra("finishActivityOnSaveCompleted", true);

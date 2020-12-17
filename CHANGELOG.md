@@ -1,3 +1,7 @@
+## [0.5.0-nullsafety.0]
+
+* Migrated to null safety in preview mode.
+
 ## [0.4.6] - April 29, 2020
 
 * Fixed openExistingContact in Android and in example (@engylemure)

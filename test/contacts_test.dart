@@ -7,28 +7,33 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  const MethodChannel channel = MethodChannel('github.com/clovisnicolas/flutter_contacts');
+  const MethodChannel channel =
+      MethodChannel('github.com/clovisnicolas/flutter_contacts');
   final List<MethodCall> log = <MethodCall>[];
   channel.setMockMethodCallHandler((MethodCall methodCall) async {
     log.add(methodCall);
-    if (methodCall.method == 'getContacts') {
-      return [
-        {'givenName': 'givenName1'},
-        {
-          'givenName': 'givenName2',
-          'postalAddresses': [
-            {'label': 'label'}
-          ],
-          'emails': [
-            {'label': 'label'}
-          ],
-          'birthday': '1994-02-01'
-        },
-      ];
-    } else if (methodCall.method == 'getAvatar') {
-      return Uint8List.fromList([0, 1, 2, 3]);
+    switch (methodCall.method) {
+      case 'getContacts':
+      case 'getContactsForPhone':
+      case 'getContactsForEmail':
+        return [
+          {'givenName': 'givenName1'},
+          {
+            'givenName': 'givenName2',
+            'postalAddresses': [
+              {'label': 'label'}
+            ],
+            'emails': [
+              {'label': 'label'}
+            ],
+            'birthday': '1994-02-01'
+          },
+        ];
+      case 'getAvatar':
+        return Uint8List.fromList([0, 1, 2, 3]);
+      default:
+        return null;
     }
-    return null;
   });
 
   tearDown(() {
@@ -40,8 +45,8 @@ void main() {
     expect(contacts.length, 2);
     expect(contacts, everyElement(isInstanceOf<Contact>()));
     expect(contacts.toList()[0].givenName, 'givenName1');
-    expect(contacts.toList()[1].postalAddresses.toList()[0].label, 'label');
-    expect(contacts.toList()[1].emails.toList()[0].label, 'label');
+    expect(contacts.toList()[1].postalAddresses!.toList()[0].label, 'label');
+    expect(contacts.toList()[1].emails!.toList()[0].label, 'label');
     expect(contacts.toList()[1].birthday, DateTime(1994, 2, 1));
   });
 
@@ -58,6 +63,37 @@ void main() {
     ]);
 
     expect(avatar, Uint8List.fromList([0, 1, 2, 3]));
+  });
+
+  group('ContactsService.getContactsForPhone', () {
+    test('returns empty list when no phone number specified', () async {
+      final contacts = await ContactsService.getContactsForPhone(null);
+      expect(contacts.length, equals(0));
+    });
+
+    /// Tests whether phone number argument is not null and plugin call is
+    /// fired.
+    ///
+    /// Whether contact is returned or not depends on the plaform implementation
+    /// which cannot be tested in unit tests.
+    test('returns contacts if phone number supplied', () async {
+      final contacts = await ContactsService.getContactsForPhone('1234567890');
+      expect(contacts.length, equals(2));
+      expect(contacts.toList()[0].givenName, 'givenName1');
+      expect(contacts.toList()[1].givenName, 'givenName2');
+    });
+  });
+
+  group('ContactsService.getContactsForEmail', () {
+    /// Just tests whether the plugin call is fired.
+    test('returns contacts when email is supplied', () async {
+      final contacts = await ContactsService.getContactsForEmail(
+        'abc@example.net',
+      );
+      expect(contacts.length, equals(2));
+      expect(contacts.toList()[0].givenName, 'givenName1');
+      expect(contacts.toList()[1].givenName, 'givenName2');
+    });
   });
 
   test('should get low-res avatar for contact identifiers', () async {
@@ -94,8 +130,8 @@ void main() {
   });
 
   test('should provide initials for contact', () {
-    Contact contact1 = Contact(
-        givenName: "givenName", familyName: "familyName");
+    Contact contact1 =
+        Contact(givenName: "givenName", familyName: "familyName");
     Contact contact2 = Contact(givenName: "givenName");
     Contact contact3 = Contact(familyName: "familyName");
     Contact contact4 = Contact();
@@ -115,7 +151,6 @@ void main() {
     ));
     expectMethodCall(log, 'updateContact');
   });
-
 
   test('should show contacts are equal', () {
     Contact contact1 =
@@ -171,7 +206,7 @@ void main() {
     expect(contact1 + contact2, mergedContact);
   });
 
-  test('should provide a valid merged contact, with no extra info', (){
+  test('should provide a valid merged contact, with no extra info', () {
     Contact contact1 = Contact(familyName: "familyName");
     Contact contact2 = Contact();
     expect(contact1 + contact2, contact1);

@@ -1,4 +1,4 @@
-## [0.5.0] - December 22, 2020
+## [0.5.0-nullsafety.0] - December 22, 2020
 
 * Migrated to null safety in preview mode (@creativepsyco)
 

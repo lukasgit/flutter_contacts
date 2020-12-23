@@ -14,11 +14,12 @@ class ContactsService {
   /// Fetches all contacts, or when specified, the contacts with a name
   /// matching [query]
   static Future<Iterable<Contact>> getContacts(
-      {String query,
+      {String? query,
       bool withThumbnails = true,
       bool photoHighResolution = true,
       bool orderByGivenName = true,
-      bool iOSLocalizedLabels = true}) async {
+      bool iOSLocalizedLabels = true,
+      bool androidLocalizedLabels = true}) async {
     Iterable contacts =
         await _channel.invokeMethod('getContacts', <String, dynamic>{
       'query': query,
@@ -26,17 +27,19 @@ class ContactsService {
       'photoHighResolution': photoHighResolution,
       'orderByGivenName': orderByGivenName,
       'iOSLocalizedLabels': iOSLocalizedLabels,
+      'androidLocalizedLabels': androidLocalizedLabels,
     });
     return contacts.map((m) => Contact.fromMap(m));
   }
 
   /// Fetches all contacts, or when specified, the contacts with the phone
   /// matching [phone]
-  static Future<Iterable<Contact>> getContactsForPhone(String phone,
+  static Future<Iterable<Contact>> getContactsForPhone(String? phone,
       {bool withThumbnails = true,
       bool photoHighResolution = true,
       bool orderByGivenName = true,
-      bool iOSLocalizedLabels = true}) async {
+      bool iOSLocalizedLabels = true,
+      bool androidLocalizedLabels = true}) async {
     if (phone == null || phone.isEmpty) return Iterable.empty();
 
     Iterable contacts =
@@ -46,6 +49,7 @@ class ContactsService {
       'photoHighResolution': photoHighResolution,
       'orderByGivenName': orderByGivenName,
       'iOSLocalizedLabels': iOSLocalizedLabels,
+      'androidLocalizedLabels': androidLocalizedLabels,
     });
     return contacts.map((m) => Contact.fromMap(m));
   }
@@ -55,15 +59,18 @@ class ContactsService {
   /// Works only on iOS
   static Future<Iterable<Contact>> getContactsForEmail(String email,
       {bool withThumbnails = true,
-        bool photoHighResolution = true,
-        bool orderByGivenName = true,
-        bool iOSLocalizedLabels = true}) async {
-    Iterable contacts = await _channel.invokeMethod('getContactsForEmail',<String,dynamic>{
+      bool photoHighResolution = true,
+      bool orderByGivenName = true,
+      bool iOSLocalizedLabels = true,
+      bool androidLocalizedLabels = true}) async {
+    Iterable contacts =
+        await _channel.invokeMethod('getContactsForEmail', <String, dynamic>{
       'email': email,
       'withThumbnails': withThumbnails,
       'photoHighResolution': photoHighResolution,
       'orderByGivenName': orderByGivenName,
       'iOSLocalizedLabels': iOSLocalizedLabels,
+      'androidLocalizedLabels': androidLocalizedLabels,
     });
     return contacts.map((m) => Contact.fromMap(m));
   }
@@ -71,8 +78,8 @@ class ContactsService {
   /// Loads the avatar for the given contact and returns it. If the user does
   /// not have an avatar, then `null` is returned in that slot. Only implemented
   /// on Android.
-  static Future<Uint8List> getAvatar(
-      final Contact contact, {final bool photoHighRes = true}) =>
+  static Future<Uint8List?> getAvatar(final Contact contact,
+          {final bool photoHighRes = true}) =>
       _channel.invokeMethod('getAvatar', <String, dynamic>{
         'contact': Contact._toMap(contact),
         'photoHighResolution': photoHighRes,
@@ -90,25 +97,39 @@ class ContactsService {
   static Future updateContact(Contact contact) =>
       _channel.invokeMethod('updateContact', Contact._toMap(contact));
 
-  static Future<Contact> openContactForm({bool iOSLocalizedLabels = true}) async {
-    dynamic result = await _channel.invokeMethod('openContactForm',<String,dynamic>{
+  static Future<Contact> openContactForm(
+      {bool iOSLocalizedLabels = true,
+      bool androidLocalizedLabels = true}) async {
+    dynamic result =
+        await _channel.invokeMethod('openContactForm', <String, dynamic>{
       'iOSLocalizedLabels': iOSLocalizedLabels,
+      'androidLocalizedLabels': androidLocalizedLabels,
     });
-   return _handleFormOperation(result);
+    return _handleFormOperation(result);
   }
 
-  static Future<Contact> openExistingContact(Contact contact, {bool iOSLocalizedLabels = true}) async {
-   dynamic result = await _channel.invokeMethod('openExistingContact',<String,dynamic>{
-     'contact': Contact._toMap(contact),
-     'iOSLocalizedLabels': iOSLocalizedLabels,
-   }, );
-   return _handleFormOperation(result);
+  static Future<Contact> openExistingContact(Contact contact,
+      {bool iOSLocalizedLabels = true,
+      bool androidLocalizedLabels = true}) async {
+    dynamic result = await _channel.invokeMethod(
+      'openExistingContact',
+      <String, dynamic>{
+        'contact': Contact._toMap(contact),
+        'iOSLocalizedLabels': iOSLocalizedLabels,
+        'androidLocalizedLabels': androidLocalizedLabels,
+      },
+    );
+    return _handleFormOperation(result);
   }
 
   // Displays the device/native contact picker dialog and returns the contact selected by the user
-  static Future<Contact> openDeviceContactPicker({bool iOSLocalizedLabels = true}) async {
-    dynamic result = await _channel.invokeMethod('openDeviceContactPicker',<String,dynamic>{
+  static Future<Contact?> openDeviceContactPicker(
+      {bool iOSLocalizedLabels = true,
+      bool androidLocalizedLabels = true}) async {
+    dynamic result = await _channel
+        .invokeMethod('openDeviceContactPicker', <String, dynamic>{
       'iOSLocalizedLabels': iOSLocalizedLabels,
+      'androidLocalizedLabels': androidLocalizedLabels,
     });
     // result contains either :
     // - an Iterable of contacts containing 0 or 1 contact
@@ -123,28 +144,32 @@ class ContactsService {
   }
 
   static Contact _handleFormOperation(dynamic result) {
-    if(result is int) {
+    if (result is int) {
       switch (result) {
         case 1:
-          throw FormOperationException(errorCode: FormOperationErrorCode.FORM_OPERATION_CANCELED);
+          throw FormOperationException(
+              errorCode: FormOperationErrorCode.FORM_OPERATION_CANCELED);
         case 2:
-          throw FormOperationException(errorCode: FormOperationErrorCode.FORM_COULD_NOT_BE_OPEN);
+          throw FormOperationException(
+              errorCode: FormOperationErrorCode.FORM_COULD_NOT_BE_OPEN);
         default:
-          throw FormOperationException(errorCode: FormOperationErrorCode.FORM_OPERATION_UNKNOWN_ERROR);
+          throw FormOperationException(
+              errorCode: FormOperationErrorCode.FORM_OPERATION_UNKNOWN_ERROR);
       }
-    } else if(result is Map) {
+    } else if (result is Map) {
       return Contact.fromMap(result);
     } else {
-      throw FormOperationException(errorCode: FormOperationErrorCode.FORM_OPERATION_UNKNOWN_ERROR);
+      throw FormOperationException(
+          errorCode: FormOperationErrorCode.FORM_OPERATION_UNKNOWN_ERROR);
     }
   }
 }
 
 class FormOperationException implements Exception {
-  final FormOperationErrorCode errorCode;
+  final FormOperationErrorCode? errorCode;
 
   const FormOperationException({this.errorCode});
-   String toString() => 'FormOperationException: $errorCode';
+  String toString() => 'FormOperationException: $errorCode';
 }
 
 enum FormOperationErrorCode {
@@ -152,7 +177,6 @@ enum FormOperationErrorCode {
   FORM_COULD_NOT_BE_OPEN,
   FORM_OPERATION_UNKNOWN_ERROR
 }
-
 
 class Contact {
   Contact({
@@ -174,18 +198,26 @@ class Contact {
     this.androidAccountName,
   });
 
-  String identifier, displayName, givenName, middleName, prefix, suffix, familyName, company, jobTitle;
-  String androidAccountTypeRaw, androidAccountName;
-  AndroidAccountType androidAccountType;
-  Iterable<Item> emails = [];
-  Iterable<Item> phones = [];
-  Iterable<PostalAddress> postalAddresses = [];
-  Uint8List avatar;
-  DateTime birthday;
+  String? identifier,
+      displayName,
+      givenName,
+      middleName,
+      prefix,
+      suffix,
+      familyName,
+      company,
+      jobTitle;
+  String? androidAccountTypeRaw, androidAccountName;
+  AndroidAccountType? androidAccountType;
+  Iterable<Item>? emails = [];
+  Iterable<Item>? phones = [];
+  Iterable<PostalAddress>? postalAddresses = [];
+  Uint8List? avatar;
+  DateTime? birthday;
 
   String initials() {
-    return ((this.givenName?.isNotEmpty == true ? this.givenName[0] : "") +
-            (this.familyName?.isNotEmpty == true ? this.familyName[0] : ""))
+    return ((this.givenName?.isNotEmpty == true ? this.givenName![0] : "") +
+            (this.familyName?.isNotEmpty == true ? this.familyName![0] : ""))
         .toUpperCase();
   }
 
@@ -202,9 +234,9 @@ class Contact {
     androidAccountTypeRaw = m["androidAccountType"];
     androidAccountType = accountTypeFromString(androidAccountTypeRaw);
     androidAccountName = m["androidAccountName"];
-    emails = (m["emails"] as Iterable)?.map((m) => Item.fromMap(m));
-    phones = (m["phones"] as Iterable)?.map((m) => Item.fromMap(m));
-    postalAddresses = (m["postalAddresses"] as Iterable)
+    emails = (m["emails"] as Iterable?)?.map((m) => Item.fromMap(m));
+    phones = (m["phones"] as Iterable?)?.map((m) => Item.fromMap(m));
+    postalAddresses = (m["postalAddresses"] as Iterable?)
         ?.map((m) => PostalAddress.fromMap(m));
     avatar = m["avatar"];
     try {
@@ -230,7 +262,7 @@ class Contact {
 
     final birthday = contact.birthday == null
         ? null
-        : "${contact.birthday.year.toString()}-${contact.birthday.month.toString().padLeft(2, '0')}-${contact.birthday.day.toString().padLeft(2, '0')}";
+        : "${contact.birthday!.year.toString()}-${contact.birthday!.month.toString().padLeft(2, '0')}-${contact.birthday!.day.toString().padLeft(2, '0')}";
 
     return {
       "identifier": contact.identifier,
@@ -258,31 +290,39 @@ class Contact {
 
   /// The [+] operator fills in this contact's empty fields with the fields from [other]
   operator +(Contact other) => Contact(
-      givenName: this.givenName ?? other.givenName,
-      middleName: this.middleName ?? other.middleName,
-      prefix: this.prefix ?? other.prefix,
-      suffix: this.suffix ?? other.suffix,
-      familyName: this.familyName ?? other.familyName,
-      company: this.company ?? other.company,
-      jobTitle: this.jobTitle ?? other.jobTitle,
-      androidAccountType: this.androidAccountType ?? other.androidAccountType,
-      androidAccountName: this.androidAccountName ?? other.androidAccountName,
-      emails: this.emails == null
-          ? other.emails
-          : this.emails.toSet().union(other.emails?.toSet() ?? Set()).toList(),
-      phones: this.phones == null
-          ? other.phones
-          : this.phones.toSet().union(other.phones?.toSet() ?? Set()).toList(),
-      postalAddresses: this.postalAddresses == null
-          ? other.postalAddresses
-          : this
-              .postalAddresses
-              .toSet()
-              .union(other.postalAddresses?.toSet() ?? Set())
-              .toList(),
-      avatar: this.avatar ?? other.avatar,
-      birthday: this.birthday ?? other.birthday,
-    );
+        givenName: this.givenName ?? other.givenName,
+        middleName: this.middleName ?? other.middleName,
+        prefix: this.prefix ?? other.prefix,
+        suffix: this.suffix ?? other.suffix,
+        familyName: this.familyName ?? other.familyName,
+        company: this.company ?? other.company,
+        jobTitle: this.jobTitle ?? other.jobTitle,
+        androidAccountType: this.androidAccountType ?? other.androidAccountType,
+        androidAccountName: this.androidAccountName ?? other.androidAccountName,
+        emails: this.emails == null
+            ? other.emails
+            : this
+                .emails!
+                .toSet()
+                .union(other.emails?.toSet() ?? Set())
+                .toList(),
+        phones: this.phones == null
+            ? other.phones
+            : this
+                .phones!
+                .toSet()
+                .union(other.phones?.toSet() ?? Set())
+                .toList(),
+        postalAddresses: this.postalAddresses == null
+            ? other.postalAddresses
+            : this
+                .postalAddresses!
+                .toSet()
+                .union(other.postalAddresses?.toSet() ?? Set())
+                .toList(),
+        avatar: this.avatar ?? other.avatar,
+        birthday: this.birthday ?? other.birthday,
+      );
 
   /// Returns true if all items in this contact are identical.
   @override
@@ -325,7 +365,7 @@ class Contact {
     ].where((s) => s != null));
   }
 
-  AndroidAccountType accountTypeFromString(String androidAccountType) {
+  AndroidAccountType? accountTypeFromString(String? androidAccountType) {
     if (androidAccountType == null) {
       return null;
     }
@@ -336,6 +376,7 @@ class Contact {
     } else if (androidAccountType.startsWith("com.facebook")) {
       return AndroidAccountType.facebook;
     }
+
     /// Other account types are not supported on Android
     /// such as Samsung, htc etc...
     return AndroidAccountType.other;
@@ -350,7 +391,7 @@ class PostalAddress {
       this.postcode,
       this.region,
       this.country});
-  String label, street, city, postcode, region, country;
+  String? label, street, city, postcode, region, country;
 
   PostalAddress.fromMap(Map m) {
     label = m["label"];
@@ -397,34 +438,34 @@ class PostalAddress {
   String toString() {
     String finalString = "";
     if (this.street != null) {
-      finalString += this.street;
+      finalString += this.street!;
     }
     if (this.city != null) {
       if (finalString.isNotEmpty) {
-        finalString += ", " + this.city;
+        finalString += ", " + this.city!;
       } else {
-        finalString += this.city;
+        finalString += this.city!;
       }
     }
     if (this.region != null) {
       if (finalString.isNotEmpty) {
-        finalString += ", " + this.region;
+        finalString += ", " + this.region!;
       } else {
-        finalString += this.region;
+        finalString += this.region!;
       }
     }
     if (this.postcode != null) {
       if (finalString.isNotEmpty) {
-        finalString += " " + this.postcode;
+        finalString += " " + this.postcode!;
       } else {
-        finalString += this.postcode;
+        finalString += this.postcode!;
       }
     }
     if (this.country != null) {
       if (finalString.isNotEmpty) {
-        finalString += ", " + this.country;
+        finalString += ", " + this.country!;
       } else {
-        finalString += this.country;
+        finalString += this.country!;
       }
     }
     return finalString;
@@ -436,7 +477,7 @@ class PostalAddress {
 class Item {
   Item({this.label, this.value});
 
-  String label, value;
+  String? label, value;
 
   Item.fromMap(Map m) {
     label = m["label"];
@@ -456,9 +497,4 @@ class Item {
   static Map _toMap(Item i) => {"label": i.label, "value": i.value};
 }
 
-enum AndroidAccountType {
-  facebook,
-  google,
-  whatsapp,
-  other
-}
+enum AndroidAccountType { facebook, google, whatsapp, other }

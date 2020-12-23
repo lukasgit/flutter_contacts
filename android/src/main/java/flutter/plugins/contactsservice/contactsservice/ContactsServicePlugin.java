@@ -6,6 +6,7 @@ import android.content.ContentResolver;
 import android.content.ContentUris;
 import android.content.Context;
 import android.content.Intent;
+import android.content.res.Resources;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -60,6 +61,7 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
   private ContentResolver contentResolver;
   private MethodChannel methodChannel;
   private BaseContactsServiceDelegate delegate;
+  private Resources resources;
 
   private final ExecutorService executor =
           new ThreadPoolExecutor(0, 10, 60, TimeUnit.SECONDS, new ArrayBlockingQueue<Runnable>(1000));
@@ -82,6 +84,7 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
 
   @Override
   public void onAttachedToEngine(FlutterPluginBinding binding) {
+    resources = binding.getApplicationContext().getResources();
     initInstance(binding.getBinaryMessenger(), binding.getApplicationContext());
     this.delegate = new ContactServiceDelegate(binding.getApplicationContext());
   }
@@ -92,16 +95,17 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
     methodChannel = null;
     contentResolver = null;
     this.delegate = null;
+    resources = null;
   }
 
   @Override
   public void onMethodCall(MethodCall call, Result result) {
     switch(call.method){
       case "getContacts": {
-        this.getContacts(call.method, (String)call.argument("query"), (boolean)call.argument("withThumbnails"), (boolean)call.argument("photoHighResolution"), (boolean)call.argument("orderByGivenName"), result);
+        this.getContacts(call.method, (String)call.argument("query"), (boolean)call.argument("withThumbnails"), (boolean)call.argument("photoHighResolution"), (boolean)call.argument("orderByGivenName"), (boolean)call.argument("androidLocalizedLabels"), result);
         break;
       } case "getContactsForPhone": {
-        this.getContactsForPhone(call.method, (String)call.argument("phone"), (boolean)call.argument("withThumbnails"), (boolean)call.argument("photoHighResolution"), (boolean)call.argument("orderByGivenName"), result);
+        this.getContactsForPhone(call.method, (String)call.argument("phone"), (boolean)call.argument("withThumbnails"), (boolean)call.argument("photoHighResolution"), (boolean)call.argument("orderByGivenName"), (boolean)call.argument("androidLocalizedLabels"), result);
         break;
       } case "getAvatar": {
         final Contact contact = Contact.fromMap((HashMap)call.argument("contact"));
@@ -133,23 +137,28 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
         break;
       } case "openExistingContact" :{
         final Contact contact = Contact.fromMap((HashMap)call.argument("contact"));
+        final boolean localizedLabels = call.argument("androidLocalizedLabels");
         if (delegate != null) {
           delegate.setResult(result);
+          delegate.setLocalizedLabels(localizedLabels);
           delegate.openExistingContact(contact);
         } else {
           result.success(FORM_COULD_NOT_BE_OPEN);
         }
         break;
       } case "openContactForm": {
+        final boolean localizedLabels = call.argument("androidLocalizedLabels");
         if (delegate != null) {
           delegate.setResult(result);
+          delegate.setLocalizedLabels(localizedLabels);
           delegate.openContactForm();
         } else {
           result.success(FORM_COULD_NOT_BE_OPEN);
         }
         break;
       } case "openDeviceContactPicker": {
-        openDeviceContactPicker(result);
+        final boolean localizedLabels = call.argument("androidLocalizedLabels");
+        openDeviceContactPicker(result, localizedLabels);
         break;
       } default: {
         result.notImplemented();
@@ -195,12 +204,12 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
 
 
   @TargetApi(Build.VERSION_CODES.ECLAIR)
-  private void getContacts(String callMethod, String query, boolean withThumbnails, boolean photoHighResolution, boolean orderByGivenName, Result result) {
-    new GetContactsTask(callMethod, result, withThumbnails, photoHighResolution, orderByGivenName).executeOnExecutor(executor, query, false);
+  private void getContacts(String callMethod, String query, boolean withThumbnails, boolean photoHighResolution, boolean orderByGivenName, boolean localizedLabels, Result result) {
+    new GetContactsTask(callMethod, result, withThumbnails, photoHighResolution, orderByGivenName, localizedLabels).executeOnExecutor(executor, query, false);
   }
 
-  private void getContactsForPhone(String callMethod, String phone, boolean withThumbnails, boolean photoHighResolution, boolean orderByGivenName, Result result) {
-    new GetContactsTask(callMethod, result, withThumbnails, photoHighResolution, orderByGivenName).executeOnExecutor(executor, phone, true);
+  private void getContactsForPhone(String callMethod, String phone, boolean withThumbnails, boolean photoHighResolution, boolean orderByGivenName, boolean localizedLabels, Result result) {
+    new GetContactsTask(callMethod, result, withThumbnails, photoHighResolution, orderByGivenName, localizedLabels).executeOnExecutor(executor, phone, true);
   }
 
   @Override
@@ -236,9 +245,14 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
     private static final int REQUEST_OPEN_EXISTING_CONTACT = 52942;
     private static final int REQUEST_OPEN_CONTACT_PICKER = 52943;
     private Result result;
+    private boolean localizedLabels;
 
     void setResult(Result result) {
       this.result = result;
+    }
+
+    void setLocalizedLabels(boolean localizedLabels) {
+      this.localizedLabels = localizedLabels;
     }
 
     void finishWithResult(Object result) {
@@ -269,7 +283,7 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
         Cursor cursor = contentResolver.query(contactUri, null, null, null, null);
         if (cursor.moveToFirst()) {
           String id = contactUri.getLastPathSegment();
-          getContacts("openDeviceContactPicker", id, false, false, false, this.result);
+          getContacts("openDeviceContactPicker", id, false, false, false, localizedLabels, this.result);
         } else {
           Log.e(LOG_TAG, "onActivityResult - cursor.moveToFirst() returns false");
           finishWithResult(FORM_OPERATION_CANCELED);
@@ -329,7 +343,7 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
                 null
         );
         try {
-          matchingContacts = getContactsFrom(cursor);
+          matchingContacts = getContactsFrom(cursor, localizedLabels);
         } finally {
           if(cursor != null) {
             cursor.close();
@@ -343,9 +357,10 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
     }
   }
   
-    private void openDeviceContactPicker(Result result) {
+    private void openDeviceContactPicker(Result result, boolean localizedLabels) {
       if (delegate != null) {
         delegate.setResult(result);
+        delegate.setLocalizedLabels(localizedLabels);
         delegate.openContactPicker();
       } else {
         result.success(FORM_COULD_NOT_BE_OPEN);
@@ -410,22 +425,24 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
     private boolean withThumbnails;
     private boolean photoHighResolution;
     private boolean orderByGivenName;
+    private boolean localizedLabels;
 
-    public GetContactsTask(String callMethod, Result result, boolean withThumbnails, boolean photoHighResolution, boolean orderByGivenName){
+    public GetContactsTask(String callMethod, Result result, boolean withThumbnails, boolean photoHighResolution, boolean orderByGivenName, boolean localizedLabels) {
       this.callMethod = callMethod;
       this.getContactResult = result;
       this.withThumbnails = withThumbnails;
       this.photoHighResolution = photoHighResolution;
       this.orderByGivenName = orderByGivenName;
+      this.localizedLabels = localizedLabels;
     }
 
     @TargetApi(Build.VERSION_CODES.ECLAIR)
     protected ArrayList<HashMap> doInBackground(Object... params) {
       ArrayList<Contact> contacts;
       switch (callMethod) {
-        case "openDeviceContactPicker": contacts = getContactsFrom(getCursor(null, (String) params[0])); break;
-        case "getContacts": contacts = getContactsFrom(getCursor((String) params[0], null)); break;
-        case "getContactsForPhone": contacts = getContactsFrom(getCursorForPhone(((String) params[0]))); break;
+        case "openDeviceContactPicker": contacts = getContactsFrom(getCursor(null, (String) params[0]), localizedLabels); break;
+        case "getContacts": contacts = getContactsFrom(getCursor((String) params[0], null), localizedLabels); break;
+        case "getContactsForPhone": contacts = getContactsFrom(getCursorForPhone(((String) params[0])), localizedLabels); break;
         default: return null;
       }
 
@@ -525,7 +542,7 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
    * @param cursor
    * @return the list of contacts
    */
-  private ArrayList<Contact> getContactsFrom(Cursor cursor) {
+  private ArrayList<Contact> getContactsFrom(Cursor cursor, boolean localizedLabels) {
     HashMap<String, Contact> map = new LinkedHashMap<>();
 
     while (cursor != null && cursor.moveToNext()) {
@@ -559,8 +576,8 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
         String phoneNumber = cursor.getString(cursor.getColumnIndex(Phone.NUMBER));
         if (!TextUtils.isEmpty(phoneNumber)){
           int type = cursor.getInt(cursor.getColumnIndex(Phone.TYPE));
-          String label = Item.getPhoneLabel(type, cursor);
-          contact.phones.add(new Item(label,phoneNumber));
+          String label = Item.getPhoneLabel(resources, type, cursor, localizedLabels);
+          contact.phones.add(new Item(label, phoneNumber, type));
         }
       }
       //MAILS
@@ -568,7 +585,8 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
         String email = cursor.getString(cursor.getColumnIndex(Email.ADDRESS));
         int type = cursor.getInt(cursor.getColumnIndex(Email.TYPE));
         if (!TextUtils.isEmpty(email)) {
-          contact.emails.add(new Item(Item.getEmailLabel(type, cursor),email));
+          String label = Item.getEmailLabel(resources, type, cursor, localizedLabels);
+          contact.emails.add(new Item(label, email, type));
         }
       }
       //ORG
@@ -578,7 +596,14 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
       }
       //ADDRESSES
       else if (mimeType.equals(CommonDataKinds.StructuredPostal.CONTENT_ITEM_TYPE)) {
-        contact.postalAddresses.add(new PostalAddress(cursor));
+        int type = cursor.getInt(cursor.getColumnIndex(StructuredPostal.TYPE));
+        String label = PostalAddress.getLabel(resources, type, cursor, localizedLabels);
+        String street = cursor.getString(cursor.getColumnIndex(StructuredPostal.STREET));
+        String city = cursor.getString(cursor.getColumnIndex(StructuredPostal.CITY));
+        String postcode = cursor.getString(cursor.getColumnIndex(StructuredPostal.POSTCODE));
+        String region = cursor.getString(cursor.getColumnIndex(StructuredPostal.REGION));
+        String country = cursor.getString(cursor.getColumnIndex(StructuredPostal.COUNTRY));
+        contact.postalAddresses.add(new PostalAddress(label, street, city, postcode, region, country, type));
       }
       // BIRTHDAY
       else if (mimeType.equals(CommonDataKinds.Event.CONTENT_ITEM_TYPE)) {
@@ -711,11 +736,11 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
               .withValue(ContactsContract.Data.MIMETYPE, CommonDataKinds.Phone.CONTENT_ITEM_TYPE)
               .withValue(ContactsContract.CommonDataKinds.Phone.NUMBER, phone.value);
 
-      if (Item.stringToPhoneType(phone.label) == ContactsContract.CommonDataKinds.Phone.TYPE_CUSTOM){
+      if (phone.type == ContactsContract.CommonDataKinds.Phone.TYPE_CUSTOM){
         op.withValue( ContactsContract.CommonDataKinds.Phone.TYPE, ContactsContract.CommonDataKinds.BaseTypes.TYPE_CUSTOM );
         op.withValue(ContactsContract.CommonDataKinds.Phone.LABEL, phone.label);
       } else
-        op.withValue( ContactsContract.CommonDataKinds.Phone.TYPE, Item.stringToPhoneType(phone.label) );
+        op.withValue(ContactsContract.CommonDataKinds.Phone.TYPE, phone.type);
 
       ops.add(op.build());
     }
@@ -726,7 +751,7 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
               .withValueBackReference(ContactsContract.Data.RAW_CONTACT_ID, 0)
               .withValue(ContactsContract.Data.MIMETYPE, CommonDataKinds.Email.CONTENT_ITEM_TYPE)
               .withValue(CommonDataKinds.Email.ADDRESS, email.value)
-              .withValue(CommonDataKinds.Email.TYPE, Item.stringToEmailType(email.label));
+              .withValue(CommonDataKinds.Email.TYPE, email.type);
       ops.add(op.build());
     }
     //Postal addresses
@@ -734,7 +759,7 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
       op = ContentProviderOperation.newInsert(ContactsContract.Data.CONTENT_URI)
               .withValueBackReference(ContactsContract.Data.RAW_CONTACT_ID, 0)
               .withValue(ContactsContract.Data.MIMETYPE, CommonDataKinds.StructuredPostal.CONTENT_ITEM_TYPE)
-              .withValue(CommonDataKinds.StructuredPostal.TYPE, PostalAddress.stringToPostalAddressType(address.label))
+              .withValue(CommonDataKinds.StructuredPostal.TYPE, address.type)
               .withValue(CommonDataKinds.StructuredPostal.LABEL, address.label)
               .withValue(CommonDataKinds.StructuredPostal.STREET, address.street)
               .withValue(CommonDataKinds.StructuredPostal.CITY, address.city)
@@ -851,11 +876,11 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
               .withValue(ContactsContract.Data.RAW_CONTACT_ID, contact.identifier)
               .withValue(Phone.NUMBER, phone.value);
 
-      if (Item.stringToPhoneType(phone.label) == ContactsContract.CommonDataKinds.Phone.TYPE_CUSTOM){
+      if (phone.type == ContactsContract.CommonDataKinds.Phone.TYPE_CUSTOM){
         op.withValue( ContactsContract.CommonDataKinds.Phone.TYPE, ContactsContract.CommonDataKinds.BaseTypes.TYPE_CUSTOM );
         op.withValue(ContactsContract.CommonDataKinds.Phone.LABEL, phone.label);
       } else
-        op.withValue( ContactsContract.CommonDataKinds.Phone.TYPE, Item.stringToPhoneType(phone.label) );
+        op.withValue(ContactsContract.CommonDataKinds.Phone.TYPE, phone.type);
 
       ops.add(op.build());
     }
@@ -865,7 +890,7 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
               .withValue(ContactsContract.Data.MIMETYPE, CommonDataKinds.Email.CONTENT_ITEM_TYPE)
               .withValue(ContactsContract.Data.RAW_CONTACT_ID, contact.identifier)
               .withValue(CommonDataKinds.Email.ADDRESS, email.value)
-              .withValue(CommonDataKinds.Email.TYPE, Item.stringToEmailType(email.label));
+              .withValue(CommonDataKinds.Email.TYPE, email.type);
       ops.add(op.build());
     }
 
@@ -873,7 +898,7 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
       op = ContentProviderOperation.newInsert(ContactsContract.Data.CONTENT_URI)
               .withValue(ContactsContract.Data.MIMETYPE, CommonDataKinds.StructuredPostal.CONTENT_ITEM_TYPE)
               .withValue(ContactsContract.Data.RAW_CONTACT_ID, contact.identifier)
-              .withValue(CommonDataKinds.StructuredPostal.TYPE, PostalAddress.stringToPostalAddressType(address.label))
+              .withValue(CommonDataKinds.StructuredPostal.TYPE, address.type)
               .withValue(CommonDataKinds.StructuredPostal.STREET, address.street)
               .withValue(CommonDataKinds.StructuredPostal.CITY, address.city)
               .withValue(CommonDataKinds.StructuredPostal.REGION, address.region)

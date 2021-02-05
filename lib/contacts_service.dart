@@ -39,8 +39,8 @@ class ContactsService {
         ContactInfo.org,
         ContactInfo.location
       ]}) async {
-      List<String> contactInfoStrings = contactInfos.map((info) =>
-      info.toString()).toList();
+    List<String> contactInfoStrings = contactInfos.map((info) =>
+        info.toString()).toList();
     Iterable contacts =
         await _channel.invokeMethod('getContacts', <String, dynamic>{
       'query': query,

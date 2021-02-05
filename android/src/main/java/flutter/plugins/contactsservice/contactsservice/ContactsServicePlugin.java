@@ -138,7 +138,7 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
         if (this.deleteContact(contact)) {
           result.success(null);
         } else {
-            result.error(null, "Failed to delete the contact, make sure it has a valid identifier", null);
+          result.error(null, "Failed to delete the contact, make sure it has a valid identifier", null);
         }
         break;
       } case "updateContact": {
@@ -146,12 +146,12 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
         if (this.updateContact(contact)) {
           result.success(null);
         } else {
-            result.error(null, "Failed to update the contact, make sure it has a valid identifier", null);
+          result.error(null, "Failed to update the contact, make sure it has a valid identifier", null);
         }
         break;
       } case "openExistingContact" :{
         final Contact contact = Contact.fromMap((HashMap)call.argument("contact"));
-          final boolean localizedLabels = call.argument("androidLocalizedLabels");
+        final boolean localizedLabels = call.argument("androidLocalizedLabels");
         if (delegate != null) {
           delegate.setResult(result);
           delegate.setLocalizedLabels(localizedLabels);
@@ -161,7 +161,7 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
         }
         break;
       } case "openContactForm": {
-          final boolean localizedLabels = call.argument("androidLocalizedLabels");
+        final boolean localizedLabels = call.argument("androidLocalizedLabels");
         if (delegate != null) {
           delegate.setResult(result);
           delegate.setLocalizedLabels(localizedLabels);
@@ -434,8 +434,7 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
         Cursor cursor = contentResolver.query(contactUri, null, null, null, null);
         if (cursor.moveToFirst()) {
           String id = contactUri.getLastPathSegment();
-          getContacts(
-              "openDeviceContactPicker", id, false, false, false, localizedLabels, null, this.result);
+          getContacts("openDeviceContactPicker", id, false, false, false, localizedLabels, null, this.result);
         } else {
           Log.e(LOG_TAG, "onActivityResult - cursor.moveToFirst() returns false");
           finishWithResult(FORM_OPERATION_CANCELED);
@@ -1001,7 +1000,7 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
       }
     }
 
-    if(cursor != null) 
+    if(cursor != null)
       cursor.close();
 
     return new ArrayList<>(map.values());
@@ -1175,7 +1174,7 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
   private boolean deleteContact(Contact contact){
     ArrayList<ContentProviderOperation> ops = new ArrayList<>();
     ops.add(ContentProviderOperation.newDelete(ContactsContract.RawContacts.CONTENT_URI)
-            .withSelection(ContactsContract.RawContacts.CONTACT_ID + "=?", new String[] {String.valueOf(contact.identifier)})
+            .withSelection(ContactsContract.RawContacts.CONTACT_ID + "=?", new String[]{String.valueOf(contact.identifier)})
             .build());
     try {
       contentResolver.applyBatch(ContactsContract.AUTHORITY, ops);
@@ -1193,39 +1192,39 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
     // Drop all details about contact except name
     op = ContentProviderOperation.newDelete(ContactsContract.Data.CONTENT_URI)
             .withSelection(ContactsContract.Data.CONTACT_ID + "=? AND " + ContactsContract.Data.MIMETYPE + "=?",
-                  new String[]{String.valueOf(contact.identifier), ContactsContract.CommonDataKinds.Organization.CONTENT_ITEM_TYPE});
+                    new String[]{String.valueOf(contact.identifier), ContactsContract.CommonDataKinds.Organization.CONTENT_ITEM_TYPE});
     ops.add(op.build());
 
     op = ContentProviderOperation.newDelete(ContactsContract.Data.CONTENT_URI)
             .withSelection(ContactsContract.Data.CONTACT_ID + "=? AND " + ContactsContract.Data.MIMETYPE + "=?",
-                  new String[]{ String.valueOf(contact.identifier), ContactsContract.CommonDataKinds.Phone.CONTENT_ITEM_TYPE});
+                    new String[]{ String.valueOf(contact.identifier), ContactsContract.CommonDataKinds.Phone.CONTENT_ITEM_TYPE});
     ops.add(op.build());
 
     op = ContentProviderOperation.newDelete(ContactsContract.Data.CONTENT_URI)
             .withSelection(ContactsContract.Data.CONTACT_ID + "=? AND " + ContactsContract.Data.MIMETYPE + "=?",
-                  new String[]{String.valueOf(contact.identifier), ContactsContract.CommonDataKinds.Email.CONTENT_ITEM_TYPE});
+                    new String[]{String.valueOf(contact.identifier), ContactsContract.CommonDataKinds.Email.CONTENT_ITEM_TYPE});
     ops.add(op.build());
 
     op = ContentProviderOperation.newDelete(ContactsContract.Data.CONTENT_URI)
             .withSelection(ContactsContract.Data.CONTACT_ID + "=? AND " + ContactsContract.Data.MIMETYPE + "=?",
-                  new String[]{String.valueOf(contact.identifier), ContactsContract.CommonDataKinds.Note.CONTENT_ITEM_TYPE});
+                    new String[]{String.valueOf(contact.identifier), ContactsContract.CommonDataKinds.Note.CONTENT_ITEM_TYPE});
     ops.add(op.build());
 
     op = ContentProviderOperation.newDelete(ContactsContract.Data.CONTENT_URI)
             .withSelection(ContactsContract.Data.CONTACT_ID + "=? AND " + ContactsContract.Data.MIMETYPE + "=?",
-                  new String[]{String.valueOf(contact.identifier), ContactsContract.CommonDataKinds.StructuredPostal.CONTENT_ITEM_TYPE});
+                    new String[]{String.valueOf(contact.identifier), ContactsContract.CommonDataKinds.StructuredPostal.CONTENT_ITEM_TYPE});
     ops.add(op.build());
 
     // Photo
     op = ContentProviderOperation.newDelete(ContactsContract.Data.CONTENT_URI)
             .withSelection(ContactsContract.Data.CONTACT_ID + "=? AND " + ContactsContract.Data.MIMETYPE + "=?",
-                  new String[]{String.valueOf(contact.identifier), ContactsContract.CommonDataKinds.Photo.CONTENT_ITEM_TYPE});
+                    new String[]{String.valueOf(contact.identifier), ContactsContract.CommonDataKinds.Photo.CONTENT_ITEM_TYPE});
     ops.add(op.build());
 
     // Update data (name)
     op = ContentProviderOperation.newUpdate(ContactsContract.Data.CONTENT_URI)
             .withSelection(ContactsContract.Data.CONTACT_ID + "=? AND " + ContactsContract.Data.MIMETYPE + "=?",
-                  new String[]{String.valueOf(contact.identifier), ContactsContract.CommonDataKinds.StructuredName.CONTENT_ITEM_TYPE})
+                    new String[]{String.valueOf(contact.identifier), ContactsContract.CommonDataKinds.StructuredName.CONTENT_ITEM_TYPE})
             .withValue(StructuredName.GIVEN_NAME, contact.givenName)
             .withValue(StructuredName.MIDDLE_NAME, contact.middleName)
             .withValue(StructuredName.FAMILY_NAME, contact.familyName)

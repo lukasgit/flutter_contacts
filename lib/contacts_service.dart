@@ -75,6 +75,23 @@ class ContactsService {
     return contacts.map((m) => Contact.fromMap(m));
   }
 
+  /// Fetches all contacts, or when specified, the contacts with the email or name
+  /// matching [query]
+  static Future<Iterable<Contact>> getContactsByEmailOrName(String query,
+      {bool withThumbnails = true,
+        bool photoHighResolution = true,
+        bool orderByGivenName = true,
+        bool iOSLocalizedLabels = true}) async {
+    Iterable contacts = await _channel.invokeMethod('getContactsByEmailOrName',<String,dynamic>{
+      'query': query,
+      'withThumbnails': withThumbnails,
+      'photoHighResolution': photoHighResolution,
+      'orderByGivenName': orderByGivenName,
+      'iOSLocalizedLabels': iOSLocalizedLabels,
+    });
+    return contacts.map((m) => Contact.fromMap(m));
+  }
+
   /// Loads the avatar for the given contact and returns it. If the user does
   /// not have an avatar, then `null` is returned in that slot. Only implemented
   /// on Android.

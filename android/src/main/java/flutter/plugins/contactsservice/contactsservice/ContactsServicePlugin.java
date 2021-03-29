@@ -107,6 +107,9 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
       } case "getContactsForPhone": {
         this.getContactsForPhone(call.method, (String)call.argument("phone"), (boolean)call.argument("withThumbnails"), (boolean)call.argument("photoHighResolution"), (boolean)call.argument("orderByGivenName"), (boolean)call.argument("androidLocalizedLabels"), result);
         break;
+      } case "getContactsByEmailOrName": {
+        this.getContactsByEmailOrName(call.method, (String)call.argument("query"), (boolean)call.argument("withThumbnails"), (boolean)call.argument("photoHighResolution"), (boolean)call.argument("orderByGivenName"), (boolean)call.argument("androidLocalizedLabels"), result);
+        break;
       } case "getAvatar": {
         final Contact contact = Contact.fromMap((HashMap)call.argument("contact"));
         this.getAvatar(contact, (boolean)call.argument("photoHighResolution"), result);
@@ -210,6 +213,10 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
 
   private void getContactsForPhone(String callMethod, String phone, boolean withThumbnails, boolean photoHighResolution, boolean orderByGivenName, boolean localizedLabels, Result result) {
     new GetContactsTask(callMethod, result, withThumbnails, photoHighResolution, orderByGivenName, localizedLabels).executeOnExecutor(executor, phone, true);
+  }
+
+  private void getContactsByEmailOrName(String callMethod, String query, boolean withThumbnails, boolean photoHighResolution, boolean orderByGivenName, boolean localizedLabels, Result result) {
+    new GetContactsTask(callMethod, result, withThumbnails, photoHighResolution, orderByGivenName, localizedLabels).executeOnExecutor(executor, query, true);
   }
 
   @Override
@@ -443,6 +450,7 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
         case "openDeviceContactPicker": contacts = getContactsFrom(getCursor(null, (String) params[0]), localizedLabels); break;
         case "getContacts": contacts = getContactsFrom(getCursor((String) params[0], null), localizedLabels); break;
         case "getContactsForPhone": contacts = getContactsFrom(getCursorForPhone(((String) params[0])), localizedLabels); break;
+        case "getContactsByEmailOrName": contacts = getContactsForEmailOrName(((String) params[0]), localizedLabels); break;
         default: return null;
       }
 
@@ -535,6 +543,14 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
     }
 
     return null;
+  }
+
+  private ArrayList<Contact> getContactsForEmailOrName(String query, boolean localizedLabels) {
+    if (query.isEmpty())
+      return null;
+    Uri uri = Uri.withAppendedPath(Email.CONTENT_FILTER_URI, Uri.encode(query));
+    Cursor cursor = contentResolver.query(uri, PROJECTION, null, null, null);
+    return getContactsFrom(cursor, localizedLabels);
   }
 
   /**

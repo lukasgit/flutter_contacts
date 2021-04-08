@@ -11,8 +11,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  collection: ^1.14.11
-  quiver: ^3.0.0-nullsafety
+  collection: ^1.15.0
+  quiver: ^3.0.0
 
 flutter:
   plugin:

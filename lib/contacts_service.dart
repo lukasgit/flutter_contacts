@@ -259,7 +259,7 @@ class Contact {
         ?.map((m) => PostalAddress.fromMap(m));
     avatar = m["avatar"];
     try {
-      birthday = DateTime.parse(m["birthday"]);
+      birthday = m["birthday"] != null ? DateTime.parse(m["birthday"]) : null;
     } catch (e) {
       birthday = null;
     }

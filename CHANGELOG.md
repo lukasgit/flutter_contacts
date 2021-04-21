@@ -1,3 +1,7 @@
+## [0.6.1] - April 20, 2021
+
+* Fixed issue of add & edit contact on android 30 i.e. 11 (@Faiyyazauxy)
+
 ## [0.6.0] - April 8, 2021
 
 * Fixed asynctask error due to permission (@Faiyyazauxy)

@@ -7,19 +7,40 @@ import 'package:quiver/core.dart';
 
 export 'share.dart';
 
+enum ContactInfo {
+  account,
+  name,
+  note,
+  phone,
+  email,
+  org,
+  location,
+}
+
 class ContactsService {
   static const MethodChannel _channel =
       MethodChannel('github.com/clovisnicolas/flutter_contacts');
 
   /// Fetches all contacts, or when specified, the contacts with a name
   /// matching [query]
-  static Future<Iterable<Contact>> getContacts(
-      {String? query,
+  static Future<Iterable<Contact>> getContacts({
+      String? query,
       bool withThumbnails = true,
       bool photoHighResolution = true,
       bool orderByGivenName = true,
       bool iOSLocalizedLabels = true,
-      bool androidLocalizedLabels = true}) async {
+      bool androidLocalizedLabels = true,
+      List<ContactInfo> contactInfos = const [
+        ContactInfo.account,
+        ContactInfo.name,
+        ContactInfo.note,
+        ContactInfo.phone,
+        ContactInfo.email,
+        ContactInfo.org,
+        ContactInfo.location
+      ]}) async {
+    List<String> contactInfoStrings = contactInfos.map((info) =>
+        info.toString()).toList();
     Iterable contacts =
         await _channel.invokeMethod('getContacts', <String, dynamic>{
       'query': query,
@@ -28,6 +49,7 @@ class ContactsService {
       'orderByGivenName': orderByGivenName,
       'iOSLocalizedLabels': iOSLocalizedLabels,
       'androidLocalizedLabels': androidLocalizedLabels,
+      'contactInfos': contactInfoStrings,
     });
     return contacts.map((m) => Contact.fromMap(m));
   }

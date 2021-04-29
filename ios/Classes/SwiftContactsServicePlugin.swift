@@ -55,6 +55,20 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin, CNContactViewC
                     localizedLabels: arguments["iOSLocalizedLabels"] as! Bool
                 )
             )
+        case "getContactsByEmailOrName":
+            let arguments = call.arguments as! [String:Any]
+            result(
+                getContacts(
+                    query: (arguments["query"] as? String),
+                    withThumbnails: arguments["withThumbnails"] as! Bool,
+                    photoHighResolution: arguments["photoHighResolution"] as! Bool,
+                    phoneQuery: false,
+                    emailQuery: false,
+                    emailOrNameQuery: true,
+                    orderByGivenName: arguments["orderByGivenName"] as! Bool,
+                    localizedLabels: arguments["iOSLocalizedLabels"] as! Bool
+                )
+            )
         case "addContact":
             let contact = dictionaryToContact(dictionary: call.arguments as! [String : Any])
 
@@ -98,7 +112,7 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin, CNContactViewC
         }
     }
 
-    func getContacts(query : String?, withThumbnails: Bool, photoHighResolution: Bool, phoneQuery: Bool, emailQuery: Bool = false, orderByGivenName: Bool, localizedLabels: Bool) -> [[String:Any]]{
+    func getContacts(query : String?, withThumbnails: Bool, photoHighResolution: Bool, phoneQuery: Bool, emailQuery: Bool = false, emailOrNameQuery: Bool = false, orderByGivenName: Bool, localizedLabels: Bool) -> [[String:Any]]{
 
         var contacts : [CNContact] = []
         var result = [[String:Any]]()
@@ -128,7 +142,7 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin, CNContactViewC
 
         let fetchRequest = CNContactFetchRequest(keysToFetch: keys as! [CNKeyDescriptor])
         // Set the predicate if there is a query
-        if query != nil && !phoneQuery && !emailQuery {
+        if query != nil && !phoneQuery && !emailQuery && !emailOrNameQuery {
             fetchRequest.predicate = CNContact.predicateForContacts(matchingName: query!)
         }
 
@@ -157,6 +171,10 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin, CNContactViewC
                     } else if query != nil && (contact.emailAddresses.contains { $0.value.caseInsensitiveCompare(query!) == .orderedSame}) {
                         contacts.append(contact)
                     }
+                } else if emailOrNameQuery {
+                    if (self.hasMatchedNameOrEmail(contact: contact, query: query!)) {
+                        contacts.append(contact)
+                    }
                 } else {
                     contacts.append(contact)
                 }
@@ -180,6 +198,17 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin, CNContactViewC
         }
 
         return result
+    }
+    
+    private func hasMatchedNameOrEmail(contact: CNContact, query: String) -> Bool {
+        if (contact.emailAddresses.contains { $0.value.lowercased.contains(query.lowercased())}) {
+            return true
+        }
+        if let _fullName = CNContactFormatter.string(from: contact, style: CNContactFormatterStyle.fullName),
+           _fullName.lowercased().contains(query.lowercased()) {
+            return true
+        }
+        return false
     }
 
     private func has(contact: CNContact, phone: String) -> Bool {

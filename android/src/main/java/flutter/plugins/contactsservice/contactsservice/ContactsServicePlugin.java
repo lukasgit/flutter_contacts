@@ -170,41 +170,47 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
     }
   }
 
-  private static final String[] PROJECTION =
-          {
-                  ContactsContract.Data.CONTACT_ID,
-                  ContactsContract.Profile.DISPLAY_NAME,
-                  ContactsContract.Contacts.Data.MIMETYPE,
-                  ContactsContract.RawContacts.ACCOUNT_TYPE,
-                  ContactsContract.RawContacts.ACCOUNT_NAME,
-                  StructuredName.DISPLAY_NAME,
-                  StructuredName.GIVEN_NAME,
-                  StructuredName.MIDDLE_NAME,
-                  StructuredName.FAMILY_NAME,
-                  StructuredName.PREFIX,
-                  StructuredName.SUFFIX,
-                  CommonDataKinds.Note.NOTE,
-                  Phone.NUMBER,
-                  Phone.TYPE,
-                  Phone.LABEL,
-                  Email.DATA,
-                  Email.ADDRESS,
-                  Email.TYPE,
-                  Email.LABEL,
-                  Organization.COMPANY,
-                  Organization.TITLE,
-                  StructuredPostal.FORMATTED_ADDRESS,
-                  StructuredPostal.TYPE,
-                  StructuredPostal.LABEL,
-                  StructuredPostal.STREET,
-                  StructuredPostal.POBOX,
-                  StructuredPostal.NEIGHBORHOOD,
-                  StructuredPostal.CITY,
-                  StructuredPostal.REGION,
-                  StructuredPostal.POSTCODE,
-                  StructuredPostal.COUNTRY,
-          };
+  private static final String[] PROJECTION = {
+      ContactsContract.Data.CONTACT_ID,
+      ContactsContract.Profile.DISPLAY_NAME,
+      ContactsContract.Contacts.Data.MIMETYPE,
+      ContactsContract.RawContacts.ACCOUNT_TYPE,
+      ContactsContract.RawContacts.ACCOUNT_NAME,
+      StructuredName.DISPLAY_NAME,
+      StructuredName.GIVEN_NAME,
+      StructuredName.MIDDLE_NAME,
+      StructuredName.FAMILY_NAME,
+      StructuredName.PREFIX,
+      StructuredName.SUFFIX,
+      CommonDataKinds.Note.NOTE,
+      Phone.NUMBER,
+      Phone.TYPE,
+      Phone.LABEL,
+      Email.DATA,
+      Email.ADDRESS,
+      Email.TYPE,
+      Email.LABEL,
+      Organization.COMPANY,
+      Organization.TITLE,
+      StructuredPostal.FORMATTED_ADDRESS,
+      StructuredPostal.TYPE,
+      StructuredPostal.LABEL,
+      StructuredPostal.STREET,
+      StructuredPostal.POBOX,
+      StructuredPostal.NEIGHBORHOOD,
+      StructuredPostal.CITY,
+      StructuredPostal.REGION,
+      StructuredPostal.POSTCODE,
+      StructuredPostal.COUNTRY,
+  };
 
+  private static final String[] PROJECTION_EMAIL_NAME = {
+      ContactsContract.Data.CONTACT_ID,
+      ContactsContract.Data.MIMETYPE,
+      ContactsContract.Contacts.DISPLAY_NAME,
+      Email.ADDRESS,
+      Email.TYPE
+  };
 
   @TargetApi(Build.VERSION_CODES.ECLAIR)
   private void getContacts(String callMethod, String query, boolean withThumbnails, boolean photoHighResolution, boolean orderByGivenName, boolean localizedLabels, Result result) {
@@ -549,8 +555,49 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
     if (query.isEmpty())
       return null;
     Uri uri = Uri.withAppendedPath(Email.CONTENT_FILTER_URI, Uri.encode(query));
-    Cursor cursor = contentResolver.query(uri, PROJECTION, null, null, null);
-    return getContactsFrom(cursor, localizedLabels);
+    Cursor cursor = contentResolver.query(uri, PROJECTION_EMAIL_NAME, null, null, null);
+    return getContactsForEmailOrNameFrom(cursor, localizedLabels);
+  }
+
+  /**
+   * Builds the list of contacts from the cursor for email or name only
+   * @param cursor email cursor filtered
+   * @return the list of contacts
+   */
+  private ArrayList<Contact> getContactsForEmailOrNameFrom(Cursor cursor, boolean localizedLabels) {
+    HashMap<String, Contact> map = new LinkedHashMap<>();
+
+    while (cursor != null && cursor.moveToNext()) {
+      try {
+        String contactId = cursor.getString(cursor.getColumnIndexOrThrow(ContactsContract.Data.CONTACT_ID));
+        if (!map.containsKey(contactId)) {
+          map.put(contactId, new Contact(contactId));
+        }
+        Contact contact = map.get(contactId);
+
+        String mimeType = cursor.getString(cursor.getColumnIndexOrThrow(ContactsContract.Data.MIMETYPE));
+
+        // NAME
+        contact.displayName = cursor.getString(cursor.getColumnIndexOrThrow(ContactsContract.Contacts.DISPLAY_NAME));
+
+        //MAILS
+        if (mimeType.equals(CommonDataKinds.Email.CONTENT_ITEM_TYPE)) {
+          String email = cursor.getString(cursor.getColumnIndexOrThrow(Email.ADDRESS));
+          int type = cursor.getInt(cursor.getColumnIndexOrThrow(Email.TYPE));
+          if (!TextUtils.isEmpty(email)) {
+            String label = Item.getEmailLabel(resources, type, cursor, localizedLabels);
+            contact.emails.add(new Item(label, email, type));
+          }
+        }
+      } catch (java.lang.Exception e) {
+        e.printStackTrace();
+      }
+    }
+
+    if(cursor != null)
+      cursor.close();
+
+    return new ArrayList<>(map.values());
   }
 
   /**

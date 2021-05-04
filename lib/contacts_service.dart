@@ -81,13 +81,15 @@ class ContactsService {
       {bool withThumbnails = true,
         bool photoHighResolution = true,
         bool orderByGivenName = true,
-        bool iOSLocalizedLabels = true}) async {
+        bool iOSLocalizedLabels = true,
+        bool androidLocalizedLabels = true}) async {
     Iterable contacts = await _channel.invokeMethod('getContactsByEmailOrName',<String,dynamic>{
       'query': query,
       'withThumbnails': withThumbnails,
       'photoHighResolution': photoHighResolution,
       'orderByGivenName': orderByGivenName,
       'iOSLocalizedLabels': iOSLocalizedLabels,
+      'androidLocalizedLabels': androidLocalizedLabels,
     });
     return contacts.map((m) => Contact.fromMap(m));
   }

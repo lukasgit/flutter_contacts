@@ -13,12 +13,13 @@ class ContactsService {
 
   /// Fetches all contacts, or when specified, the contacts with a name
   /// matching [query]
-  static Future<Iterable<Contact>> getContacts(
-      {String query,
-      bool withThumbnails = true,
-      bool photoHighResolution = true,
-      bool orderByGivenName = true,
-      bool iOSLocalizedLabels = true}) async {
+  static Future<Iterable<Contact>> getContacts({
+    String? query,
+    bool withThumbnails = true,
+    bool photoHighResolution = true,
+    bool orderByGivenName = true,
+    bool iOSLocalizedLabels = true,
+  }) async {
     Iterable contacts =
         await _channel.invokeMethod('getContacts', <String, dynamic>{
       'query': query,
@@ -32,7 +33,7 @@ class ContactsService {
 
   /// Fetches all contacts, or when specified, the contacts with the phone
   /// matching [phone]
-  static Future<Iterable<Contact>> getContactsForPhone(String phone,
+  static Future<Iterable<Contact>> getContactsForPhone(String? phone,
       {bool withThumbnails = true,
       bool photoHighResolution = true,
       bool orderByGivenName = true,
@@ -72,7 +73,7 @@ class ContactsService {
   /// Loads the avatar for the given contact and returns it. If the user does
   /// not have an avatar, then `null` is returned in that slot. Only implemented
   /// on Android.
-  static Future<Uint8List> getAvatar(final Contact contact,
+  static Future<Uint8List?> getAvatar(final Contact contact,
           {final bool photoHighRes = true}) =>
       _channel.invokeMethod('getAvatar', <String, dynamic>{
         'contact': Contact._toMap(contact),
@@ -119,7 +120,7 @@ class ContactsService {
   }
 
   // Displays the device/native contact picker dialog and returns the contact selected by the user
-  static Future<Contact> openDeviceContactPicker(
+  static Future<Contact?> openDeviceContactPicker(
       {bool iOSLocalizedLabels = true}) async {
     dynamic result = await _channel
         .invokeMethod('openDeviceContactPicker', <String, dynamic>{
@@ -160,9 +161,10 @@ class ContactsService {
 }
 
 class FormOperationException implements Exception {
-  final FormOperationErrorCode errorCode;
+  final FormOperationErrorCode? errorCode;
 
   const FormOperationException({this.errorCode});
+
   String toString() => 'FormOperationException: $errorCode';
 }
 
@@ -192,7 +194,7 @@ class Contact {
     this.androidAccountName,
   });
 
-  String identifier,
+  String? identifier,
       displayName,
       givenName,
       middleName,
@@ -201,17 +203,17 @@ class Contact {
       familyName,
       company,
       jobTitle;
-  String androidAccountTypeRaw, androidAccountName;
-  AndroidAccountType androidAccountType;
-  Iterable<Item> emails = [];
-  Iterable<Item> phones = [];
-  Iterable<PostalAddress> postalAddresses = [];
-  Uint8List avatar;
-  DateTime birthday;
+  String? androidAccountTypeRaw, androidAccountName;
+  AndroidAccountType? androidAccountType;
+  Iterable<Item>? emails = [];
+  Iterable<Item>? phones = [];
+  Iterable<PostalAddress>? postalAddresses = [];
+  Uint8List? avatar;
+  DateTime? birthday;
 
   String initials() {
-    return ((this.givenName?.isNotEmpty == true ? this.givenName[0] : "") +
-            (this.familyName?.isNotEmpty == true ? this.familyName[0] : ""))
+    return ((this.givenName?.isNotEmpty == true ? this.givenName![0] : "") +
+            (this.familyName?.isNotEmpty == true ? this.familyName![0] : ""))
         .toUpperCase();
   }
 
@@ -228,9 +230,9 @@ class Contact {
     androidAccountTypeRaw = m["androidAccountType"];
     androidAccountType = accountTypeFromString(androidAccountTypeRaw);
     androidAccountName = m["androidAccountName"];
-    emails = (m["emails"] as Iterable)?.map((m) => Item.fromMap(m));
-    phones = (m["phones"] as Iterable)?.map((m) => Item.fromMap(m));
-    postalAddresses = (m["postalAddresses"] as Iterable)
+    emails = (m["emails"] as Iterable?)?.map((m) => Item.fromMap(m));
+    phones = (m["phones"] as Iterable?)?.map((m) => Item.fromMap(m));
+    postalAddresses = (m["postalAddresses"] as Iterable?)
         ?.map((m) => PostalAddress.fromMap(m));
     avatar = m["avatar"];
     try {
@@ -256,7 +258,7 @@ class Contact {
 
     final birthday = contact.birthday == null
         ? null
-        : "${contact.birthday.year.toString()}-${contact.birthday.month.toString().padLeft(2, '0')}-${contact.birthday.day.toString().padLeft(2, '0')}";
+        : "${contact.birthday!.year.toString()}-${contact.birthday!.month.toString().padLeft(2, '0')}-${contact.birthday!.day.toString().padLeft(2, '0')}";
 
     return {
       "identifier": contact.identifier,
@@ -296,21 +298,21 @@ class Contact {
         emails: this.emails == null
             ? other.emails
             : this
-                .emails
+                .emails!
                 .toSet()
                 .union(other.emails?.toSet() ?? Set())
                 .toList(),
         phones: this.phones == null
             ? other.phones
             : this
-                .phones
+                .phones!
                 .toSet()
                 .union(other.phones?.toSet() ?? Set())
                 .toList(),
         postalAddresses: this.postalAddresses == null
             ? other.postalAddresses
             : this
-                .postalAddresses
+                .postalAddresses!
                 .toSet()
                 .union(other.postalAddresses?.toSet() ?? Set())
                 .toList(),
@@ -359,7 +361,7 @@ class Contact {
     ].where((s) => s != null));
   }
 
-  AndroidAccountType accountTypeFromString(String androidAccountType) {
+  AndroidAccountType? accountTypeFromString(String? androidAccountType) {
     if (androidAccountType == null) {
       return null;
     }
@@ -385,7 +387,8 @@ class PostalAddress {
       this.postcode,
       this.region,
       this.country});
-  String label, street, city, postcode, region, country;
+
+  String? label, street, city, postcode, region, country;
 
   PostalAddress.fromMap(Map m) {
     label = m["label"];
@@ -432,34 +435,34 @@ class PostalAddress {
   String toString() {
     String finalString = "";
     if (this.street != null) {
-      finalString += this.street;
+      finalString += this.street!;
     }
     if (this.city != null) {
       if (finalString.isNotEmpty) {
-        finalString += ", " + this.city;
+        finalString += ", " + this.city!;
       } else {
-        finalString += this.city;
+        finalString += this.city!;
       }
     }
     if (this.region != null) {
       if (finalString.isNotEmpty) {
-        finalString += ", " + this.region;
+        finalString += ", " + this.region!;
       } else {
-        finalString += this.region;
+        finalString += this.region!;
       }
     }
     if (this.postcode != null) {
       if (finalString.isNotEmpty) {
-        finalString += " " + this.postcode;
+        finalString += " " + this.postcode!;
       } else {
-        finalString += this.postcode;
+        finalString += this.postcode!;
       }
     }
     if (this.country != null) {
       if (finalString.isNotEmpty) {
-        finalString += ", " + this.country;
+        finalString += ", " + this.country!;
       } else {
-        finalString += this.country;
+        finalString += this.country!;
       }
     }
     return finalString;
@@ -471,7 +474,7 @@ class PostalAddress {
 class Item {
   Item({this.label, this.value});
 
-  String label, value;
+  String? label, value;
 
   Item.fromMap(Map m) {
     label = m["label"];

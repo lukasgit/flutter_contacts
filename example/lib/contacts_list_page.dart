@@ -1,8 +1,7 @@
+import 'package:contacts_service/contacts_service.dart';
+import 'package:contacts_service_example/main.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:contacts_service_example/main.dart';
-
-import 'package:contacts_service/contacts_service.dart';
 import 'package:intl/intl.dart';
 
 class ContactListPage extends StatefulWidget {
@@ -11,7 +10,7 @@ class ContactListPage extends StatefulWidget {
 }
 
 class _ContactListPageState extends State<ContactListPage> {
-  List<Contact> _contacts;
+  List<Contact> _contacts = [];
 
   @override
   void initState() {
@@ -40,9 +39,8 @@ class _ContactListPageState extends State<ContactListPage> {
   }
 
   void updateContact() async {
-    Contact ninja = _contacts
-        .toList()
-        .firstWhere((contact) => contact.familyName.startsWith("Ninja"));
+    Contact ninja = _contacts.toList().firstWhere(
+        (contact) => contact.familyName?.startsWith("Ninja") ?? false);
     ninja.avatar = null;
     await ContactsService.updateContact(ninja);
 
@@ -51,7 +49,7 @@ class _ContactListPageState extends State<ContactListPage> {
 
   _openContactForm() async {
     try {
-      var contact = await ContactsService.openContactForm(
+      await ContactsService.openContactForm(
           iOSLocalizedLabels: iOSLocalizedLabels);
       refreshContacts();
     } on FormOperationException catch (e) {
@@ -88,11 +86,11 @@ class _ContactListPageState extends State<ContactListPage> {
         },
       ),
       body: SafeArea(
-        child: _contacts != null
+        child: _contacts.isNotEmpty
             ? ListView.builder(
-                itemCount: _contacts?.length ?? 0,
+                itemCount: _contacts.length,
                 itemBuilder: (BuildContext context, int index) {
-                  Contact c = _contacts?.elementAt(index);
+                  Contact c = _contacts.elementAt(index);
                   return ListTile(
                     onTap: () {
                       Navigator.of(context).push(MaterialPageRoute(
@@ -102,8 +100,8 @@ class _ContactListPageState extends State<ContactListPage> {
                                     contactOnDeviceHasBeenUpdated,
                               )));
                     },
-                    leading: (c.avatar != null && c.avatar.length > 0)
-                        ? CircleAvatar(backgroundImage: MemoryImage(c.avatar))
+                    leading: (c.avatar != null && c.avatar!.length > 0)
+                        ? CircleAvatar(backgroundImage: MemoryImage(c.avatar!))
                         : CircleAvatar(child: Text(c.initials())),
                     title: Text(c.displayName ?? ""),
                   );
@@ -128,15 +126,13 @@ class ContactDetailsPage extends StatelessWidget {
   ContactDetailsPage(this._contact, {this.onContactDeviceSave});
 
   final Contact _contact;
-  final Function(Contact) onContactDeviceSave;
+  final Function(Contact)? onContactDeviceSave;
 
   _openExistingContactOnDevice(BuildContext context) async {
     try {
       var contact = await ContactsService.openExistingContact(_contact,
           iOSLocalizedLabels: iOSLocalizedLabels);
-      if (onContactDeviceSave != null) {
-        onContactDeviceSave(contact);
-      }
+      onContactDeviceSave?.call(contact);
       Navigator.of(context).pop();
     } on FormOperationException catch (e) {
       switch (e.errorCode) {
@@ -204,7 +200,7 @@ class ContactDetailsPage extends StatelessWidget {
             ListTile(
               title: Text("Birthday"),
               trailing: Text(_contact.birthday != null
-                  ? DateFormat('dd-MM-yyyy').format(_contact.birthday)
+                  ? DateFormat('dd-MM-yyyy').format(_contact.birthday!)
                   : ""),
             ),
             ListTile(
@@ -221,9 +217,9 @@ class ContactDetailsPage extends StatelessWidget {
                   ? _contact.androidAccountType.toString()
                   : ""),
             ),
-            AddressesTile(_contact.postalAddresses),
-            ItemsTile("Phones", _contact.phones),
-            ItemsTile("Emails", _contact.emails)
+            AddressesTile(_contact.postalAddresses ?? []),
+            ItemsTile("Phones", _contact.phones ?? []),
+            ItemsTile("Emails", _contact.emails ?? [])
           ],
         ),
       ),
@@ -325,7 +321,7 @@ class _AddContactPageState extends State<AddContactPage> {
         actions: <Widget>[
           FlatButton(
             onPressed: () {
-              _formKey.currentState.save();
+              _formKey.currentState?.save();
               contact.postalAddresses = [address];
               ContactsService.addContact(contact);
               Navigator.of(context).pop();
@@ -409,7 +405,7 @@ class _AddContactPageState extends State<AddContactPage> {
 }
 
 class UpdateContactsPage extends StatefulWidget {
-  UpdateContactsPage({@required this.contact});
+  UpdateContactsPage({required this.contact});
 
   final Contact contact;
 
@@ -418,7 +414,7 @@ class UpdateContactsPage extends StatefulWidget {
 }
 
 class _UpdateContactsPageState extends State<UpdateContactsPage> {
-  Contact contact;
+  late Contact contact;
   PostalAddress address = PostalAddress(label: "Home");
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
@@ -440,7 +436,7 @@ class _UpdateContactsPageState extends State<UpdateContactsPage> {
               color: Colors.white,
             ),
             onPressed: () async {
-              _formKey.currentState.save();
+              _formKey.currentState?.save();
               contact.postalAddresses = [address];
               await ContactsService.updateContact(contact);
               Navigator.of(context).pushReplacement(

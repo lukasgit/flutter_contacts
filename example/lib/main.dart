@@ -1,9 +1,8 @@
+import 'package:contacts_service_example/contacts_list_page.dart';
+import 'package:contacts_service_example/contacts_picker_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:permission_handler/permission_handler.dart';
-
-import 'package:contacts_service_example/contacts_list_page.dart';
-import 'package:contacts_service_example/contacts_picker_page.dart';
 
 void main() => runApp(ContactsExampleApp());
 
@@ -38,38 +37,30 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _askPermissions() async {
-    PermissionStatus permissionStatus = await _getContactPermission();
-    if (permissionStatus != PermissionStatus.granted) {
-      _handleInvalidPermissions(permissionStatus);
-    }
-  }
-
-  Future<PermissionStatus> _getContactPermission() async {
-    PermissionStatus permission = await PermissionHandler()
-        .checkPermissionStatus(PermissionGroup.contacts);
-    if (permission != PermissionStatus.granted &&
-        permission != PermissionStatus.disabled) {
-      Map<PermissionGroup, PermissionStatus> permissionStatus =
-          await PermissionHandler()
-              .requestPermissions([PermissionGroup.contacts]);
-      return permissionStatus[PermissionGroup.contacts] ??
-          PermissionStatus.unknown;
-    } else {
-      return permission;
+    if (await Permission.contacts.request().isDenied) {
+      _handleInvalidPermissions(await Permission.contacts.status);
     }
   }
 
   void _handleInvalidPermissions(PermissionStatus permissionStatus) {
     if (permissionStatus == PermissionStatus.denied) {
       throw PlatformException(
-          code: "PERMISSION_DENIED",
-          message: "Access to location data denied",
-          details: null);
-    } else if (permissionStatus == PermissionStatus.disabled) {
+        code: "PERMISSION_DENIED",
+        message: "Access to location data denied",
+        details: null,
+      );
+    } else if (permissionStatus == PermissionStatus.restricted) {
       throw PlatformException(
-          code: "PERMISSION_DISABLED",
-          message: "Location data is not available on device",
-          details: null);
+        code: "PERMISSION_RESTRICTED",
+        message: "Location data is not available on device",
+        details: null,
+      );
+    } else if (permissionStatus == PermissionStatus.limited) {
+      throw PlatformException(
+        code: "PERMISSION_LIMITED",
+        message: "Location data is not available on device",
+        details: null,
+      );
     }
   }
 

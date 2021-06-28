@@ -1,20 +1,24 @@
 name: contacts_service_example
 description: Demonstrates how to use the contacts_service plugin.
 
+environment:
+  sdk: '>=2.12.0 <3.0.0'
+  flutter: ^2.2.2
+
 dependencies:
   flutter:
     sdk: flutter
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
-  cupertino_icons: ^0.1.0
-  intl: ^0.16.0
+  cupertino_icons: ^1.0.3
+  intl: ^0.17.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
 
-  permission_handler: ^2.2.0
+  permission_handler: ^8.1.2
   contacts_service:
     path: ../
 

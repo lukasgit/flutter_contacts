@@ -1,7 +1,6 @@
+import 'package:contacts_service/contacts_service.dart';
 import 'package:contacts_service_example/main.dart';
 import 'package:flutter/material.dart';
-
-import 'package:contacts_service/contacts_service.dart';
 
 class ContactPickerPage extends StatefulWidget {
   @override
@@ -9,7 +8,7 @@ class ContactPickerPage extends StatefulWidget {
 }
 
 class _ContactPickerPageState extends State<ContactPickerPage> {
-  Contact _contact;
+  Contact? _contact;
 
   @override
   void initState() {
@@ -18,7 +17,7 @@ class _ContactPickerPageState extends State<ContactPickerPage> {
 
   Future<void> _pickContact() async {
     try {
-      final Contact contact = await ContactsService.openDeviceContactPicker(
+      final Contact? contact = await ContactsService.openDeviceContactPicker(
           iOSLocalizedLabels: iOSLocalizedLabels);
       setState(() {
         _contact = contact;
@@ -40,7 +39,7 @@ class _ContactPickerPageState extends State<ContactPickerPage> {
             onPressed: _pickContact,
           ),
           if (_contact != null)
-            Text('Contact selected: ${_contact.displayName}'),
+            Text('Contact selected: ${_contact?.displayName}'),
         ],
       )),
     );

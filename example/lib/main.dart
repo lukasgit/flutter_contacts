@@ -76,11 +76,11 @@ class _HomePageState extends State<HomePage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
-            RaisedButton(
+            ElevatedButton(
               child: const Text('Contacts list'),
               onPressed: () => _askPermissions('/contactsList'),
             ),
-            RaisedButton(
+            ElevatedButton(
               child: const Text('Native Contacts picker'),
               onPressed: () => _askPermissions('/nativeContactPicker'),
             ),

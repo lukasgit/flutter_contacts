@@ -13,7 +13,7 @@ class ContactsService {
 
   /// Fetches all contacts, or when specified, the contacts with a name
   /// matching [query]
-  static Future<Iterable<Contact>> getContacts(
+  static Future<List<Contact>> getContacts(
       {String? query,
       bool withThumbnails = true,
       bool photoHighResolution = true,
@@ -29,18 +29,18 @@ class ContactsService {
       'iOSLocalizedLabels': iOSLocalizedLabels,
       'androidLocalizedLabels': androidLocalizedLabels,
     });
-    return contacts.map((m) => Contact.fromMap(m));
+    return contacts.map((m) => Contact.fromMap(m)).toList();
   }
 
   /// Fetches all contacts, or when specified, the contacts with the phone
   /// matching [phone]
-  static Future<Iterable<Contact>> getContactsForPhone(String? phone,
+  static Future<List<Contact>> getContactsForPhone(String? phone,
       {bool withThumbnails = true,
       bool photoHighResolution = true,
       bool orderByGivenName = true,
       bool iOSLocalizedLabels = true,
       bool androidLocalizedLabels = true}) async {
-    if (phone == null || phone.isEmpty) return Iterable.empty();
+    if (phone == null || phone.isEmpty) return List.empty();
 
     Iterable contacts =
         await _channel.invokeMethod('getContactsForPhone', <String, dynamic>{
@@ -51,19 +51,19 @@ class ContactsService {
       'iOSLocalizedLabels': iOSLocalizedLabels,
       'androidLocalizedLabels': androidLocalizedLabels,
     });
-    return contacts.map((m) => Contact.fromMap(m));
+    return contacts.map((m) => Contact.fromMap(m)).toList();
   }
 
   /// Fetches all contacts, or when specified, the contacts with the email
   /// matching [email]
   /// Works only on iOS
-  static Future<Iterable<Contact>> getContactsForEmail(String email,
+  static Future<List<Contact>> getContactsForEmail(String email,
       {bool withThumbnails = true,
       bool photoHighResolution = true,
       bool orderByGivenName = true,
       bool iOSLocalizedLabels = true,
       bool androidLocalizedLabels = true}) async {
-    Iterable contacts =
+    List contacts =
         await _channel.invokeMethod('getContactsForEmail', <String, dynamic>{
       'email': email,
       'withThumbnails': withThumbnails,
@@ -72,7 +72,7 @@ class ContactsService {
       'iOSLocalizedLabels': iOSLocalizedLabels,
       'androidLocalizedLabels': androidLocalizedLabels,
     });
-    return contacts.map((m) => Contact.fromMap(m));
+    return contacts.map((m) => Contact.fromMap(m)).toList();
   }
 
   /// Loads the avatar for the given contact and returns it. If the user does
@@ -132,9 +132,9 @@ class ContactsService {
       'androidLocalizedLabels': androidLocalizedLabels,
     });
     // result contains either :
-    // - an Iterable of contacts containing 0 or 1 contact
+    // - an List of contacts containing 0 or 1 contact
     // - a FormOperationErrorCode value
-    if (result is Iterable) {
+    if (result is List) {
       if (result.isEmpty) {
         return null;
       }
@@ -209,9 +209,9 @@ class Contact {
       jobTitle;
   String? androidAccountTypeRaw, androidAccountName;
   AndroidAccountType? androidAccountType;
-  Iterable<Item>? emails = [];
-  Iterable<Item>? phones = [];
-  Iterable<PostalAddress>? postalAddresses = [];
+  List<Item>? emails = [];
+  List<Item>? phones = [];
+  List<PostalAddress>? postalAddresses = [];
   Uint8List? avatar;
   DateTime? birthday;
 
@@ -234,13 +234,14 @@ class Contact {
     androidAccountTypeRaw = m["androidAccountType"];
     androidAccountType = accountTypeFromString(androidAccountTypeRaw);
     androidAccountName = m["androidAccountName"];
-    emails = (m["emails"] as Iterable?)?.map((m) => Item.fromMap(m));
-    phones = (m["phones"] as Iterable?)?.map((m) => Item.fromMap(m));
-    postalAddresses = (m["postalAddresses"] as Iterable?)
-        ?.map((m) => PostalAddress.fromMap(m));
+    emails = (m["emails"] as List?)?.map((m) => Item.fromMap(m)).toList();
+    phones = (m["phones"] as List?)?.map((m) => Item.fromMap(m)).toList();
+    postalAddresses = (m["postalAddresses"] as List?)
+        ?.map((m) => PostalAddress.fromMap(m))
+        .toList();
     avatar = m["avatar"];
     try {
-      birthday = DateTime.parse(m["birthday"]);
+      birthday = m["birthday"] != null ? DateTime.parse(m["birthday"]) : null;
     } catch (e) {
       birthday = null;
     }

@@ -1,3 +1,8 @@
+## [0.6.2] - September 21, 2021
+
+* Refactored all usages of Iterable to use List (@Abion47)
+* Fixed issue "import <contacts_service/contacts_service-Swift.h> is missing" (@ZaharL)
+
 ## [0.6.1] - April 20, 2021
 
 * Fixed issue of add & edit contact on android 30 i.e. 11 (@Faiyyazauxy)

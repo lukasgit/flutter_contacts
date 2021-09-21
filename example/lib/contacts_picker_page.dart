@@ -35,7 +35,7 @@ class _ContactPickerPageState extends State<ContactPickerPage> {
       body: SafeArea(
           child: Column(
         children: <Widget>[
-          RaisedButton(
+          ElevatedButton(
             child: const Text('Pick a contact'),
             onPressed: _pickContact,
           ),

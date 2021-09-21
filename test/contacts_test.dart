@@ -44,10 +44,10 @@ void main() {
     final contacts = await ContactsService.getContacts();
     expect(contacts.length, 2);
     expect(contacts, everyElement(isInstanceOf<Contact>()));
-    expect(contacts.toList()[0].givenName, 'givenName1');
-    expect(contacts.toList()[1].postalAddresses!.toList()[0].label, 'label');
-    expect(contacts.toList()[1].emails!.toList()[0].label, 'label');
-    expect(contacts.toList()[1].birthday, DateTime(1994, 2, 1));
+    expect(contacts[0].givenName, 'givenName1');
+    expect(contacts[1].postalAddresses![0].label, 'label');
+    expect(contacts[1].emails![0].label, 'label');
+    expect(contacts[1].birthday, DateTime(1994, 2, 1));
   });
 
   test('should get avatar for contact identifiers', () async {
@@ -79,8 +79,8 @@ void main() {
     test('returns contacts if phone number supplied', () async {
       final contacts = await ContactsService.getContactsForPhone('1234567890');
       expect(contacts.length, equals(2));
-      expect(contacts.toList()[0].givenName, 'givenName1');
-      expect(contacts.toList()[1].givenName, 'givenName2');
+      expect(contacts[0].givenName, 'givenName1');
+      expect(contacts[1].givenName, 'givenName2');
     });
   });
 
@@ -91,8 +91,8 @@ void main() {
         'abc@example.net',
       );
       expect(contacts.length, equals(2));
-      expect(contacts.toList()[0].givenName, 'givenName1');
-      expect(contacts.toList()[1].givenName, 'givenName2');
+      expect(contacts[0].givenName, 'givenName1');
+      expect(contacts[1].givenName, 'givenName2');
     });
   });
 

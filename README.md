@@ -12,7 +12,7 @@ To use this plugin, add `contacts_service` as a [dependency in your `pubspec.yam
 For example:  
 ```yaml  
 dependencies:  
-    contacts_service: ^0.6.1
+    contacts_service: ^0.6.2
 ```  
   
 ## Permissions  
@@ -43,16 +43,16 @@ If you do not request user permission or have it granted, the application will f
 import 'package:contacts_service/contacts_service.dart';  
   
 // Get all contacts on device
-Iterable<Contact> contacts = await ContactsService.getContacts();  
+List<Contact> contacts = await ContactsService.getContacts();  
 
 // Get all contacts without thumbnail (faster)
-Iterable<Contact> contacts = await ContactsService.getContacts(withThumbnails: false);
+List<Contact> contacts = await ContactsService.getContacts(withThumbnails: false);
 
 // Android only: Get thumbnail for an avatar afterwards (only necessary if `withThumbnails: false` is used)
 Uint8List avatar = await ContactsService.getAvatar(contact);
   
 // Get contacts matching a string
-Iterable<Contact> johns = await ContactsService.getContacts(query : "john");
+List<Contact> johns = await ContactsService.getContacts(query : "john");
 
 // Add a contact  
 // The contact must have a firstName / lastName to be successfully added  
@@ -86,13 +86,13 @@ String displayName, givenName, middleName, prefix, suffix, familyName;
 String company, jobTitle;
 
 // Email addresses
-Iterable<Item> emails = [];
+List<Item> emails = [];
 
 // Phone numbers
-Iterable<Item> phones = [];
+List<Item> phones = [];
 
 // Post addresses
-Iterable<PostalAddress> postalAddresses = [];
+List<PostalAddress> postalAddresses = [];
 
 // Contact avatar/thumbnail
 Uint8List avatar;

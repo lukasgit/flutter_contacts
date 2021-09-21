@@ -22,10 +22,9 @@ class _ContactListPageState extends State<ContactListPage> {
   Future<void> refreshContacts() async {
     // Load without thumbnails initially.
     var contacts = (await ContactsService.getContacts(
-            withThumbnails: false, iOSLocalizedLabels: iOSLocalizedLabels))
-        .toList();
+        withThumbnails: false, iOSLocalizedLabels: iOSLocalizedLabels));
 //      var contacts = (await ContactsService.getContactsForPhone("8554964652"))
-//          .toList();
+//          ;
     setState(() {
       _contacts = contacts;
     });
@@ -41,7 +40,6 @@ class _ContactListPageState extends State<ContactListPage> {
 
   void updateContact() async {
     Contact ninja = _contacts
-        .toList()
         .firstWhere((contact) => contact.familyName.startsWith("Ninja"));
     ninja.avatar = null;
     await ContactsService.updateContact(ninja);
@@ -51,7 +49,7 @@ class _ContactListPageState extends State<ContactListPage> {
 
   _openContactForm() async {
     try {
-      var contact = await ContactsService.openContactForm(
+      var _ = await ContactsService.openContactForm(
           iOSLocalizedLabels: iOSLocalizedLabels);
       refreshContacts();
     } on FormOperationException catch (e) {
@@ -234,7 +232,7 @@ class ContactDetailsPage extends StatelessWidget {
 class AddressesTile extends StatelessWidget {
   AddressesTile(this._addresses);
 
-  final Iterable<PostalAddress> _addresses;
+  final List<PostalAddress> _addresses;
 
   Widget build(BuildContext context) {
     return Column(
@@ -242,35 +240,36 @@ class AddressesTile extends StatelessWidget {
       children: <Widget>[
         ListTile(title: Text("Addresses")),
         Column(
-          children: _addresses
-              .map((a) => Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                    child: Column(
-                      children: <Widget>[
-                        ListTile(
-                          title: Text("Street"),
-                          trailing: Text(a.street ?? ""),
-                        ),
-                        ListTile(
-                          title: Text("Postcode"),
-                          trailing: Text(a.postcode ?? ""),
-                        ),
-                        ListTile(
-                          title: Text("City"),
-                          trailing: Text(a.city ?? ""),
-                        ),
-                        ListTile(
-                          title: Text("Region"),
-                          trailing: Text(a.region ?? ""),
-                        ),
-                        ListTile(
-                          title: Text("Country"),
-                          trailing: Text(a.country ?? ""),
-                        ),
-                      ],
+          children: [
+            for (var a in _addresses)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: Column(
+                  children: <Widget>[
+                    ListTile(
+                      title: Text("Street"),
+                      trailing: Text(a.street ?? ""),
                     ),
-                  ))
-              .toList(),
+                    ListTile(
+                      title: Text("Postcode"),
+                      trailing: Text(a.postcode ?? ""),
+                    ),
+                    ListTile(
+                      title: Text("City"),
+                      trailing: Text(a.city ?? ""),
+                    ),
+                    ListTile(
+                      title: Text("Region"),
+                      trailing: Text(a.region ?? ""),
+                    ),
+                    ListTile(
+                      title: Text("Country"),
+                      trailing: Text(a.country ?? ""),
+                    ),
+                  ],
+                ),
+              ),
+          ],
         ),
       ],
     );
@@ -280,7 +279,7 @@ class AddressesTile extends StatelessWidget {
 class ItemsTile extends StatelessWidget {
   ItemsTile(this._title, this._items);
 
-  final Iterable<Item> _items;
+  final List<Item> _items;
   final String _title;
 
   @override
@@ -290,17 +289,16 @@ class ItemsTile extends StatelessWidget {
       children: <Widget>[
         ListTile(title: Text(_title)),
         Column(
-          children: _items
-              .map(
-                (i) => Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  child: ListTile(
-                    title: Text(i.label ?? ""),
-                    trailing: Text(i.value ?? ""),
-                  ),
+          children: [
+            for (var i in _items)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: ListTile(
+                  title: Text(i.label ?? ""),
+                  trailing: Text(i.value ?? ""),
                 ),
-              )
-              .toList(),
+              ),
+          ],
         ),
       ],
     );
@@ -323,7 +321,7 @@ class _AddContactPageState extends State<AddContactPage> {
       appBar: AppBar(
         title: Text("Add a contact"),
         actions: <Widget>[
-          FlatButton(
+          TextButton(
             onPressed: () {
               _formKey.currentState.save();
               contact.postalAddresses = [address];

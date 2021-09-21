@@ -556,7 +556,7 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
       return null;
     String selection = "(" + ContactsContract.Data.MIMETYPE + " = ?" + ")";
     ArrayList<String> selectionArgs = new ArrayList<>(Arrays.asList(Email.CONTENT_ITEM_TYPE));
-    selectionArgs.add(email);
+    selectionArgs.add(Uri.encode(email));
     selection += Email.ADDRESS + " Like ?";
 
     return contentResolver.query(ContactsContract.Data.CONTENT_URI, PROJECTION, selection, selectionArgs.toArray(new String[selectionArgs.size()]), null);

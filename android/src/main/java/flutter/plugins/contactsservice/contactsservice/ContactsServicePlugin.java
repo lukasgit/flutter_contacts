@@ -107,8 +107,8 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
       } case "getContactsForPhone": {
         this.getContactsForPhone(call.method, (String)call.argument("phone"), (boolean)call.argument("withThumbnails"), (boolean)call.argument("photoHighResolution"), (boolean)call.argument("orderByGivenName"), (boolean)call.argument("androidLocalizedLabels"), result);
         break;
-      } case "getContactsByEmailOrName": {
-        this.getContactsByEmailOrName(call.method, (String)call.argument("query"), (boolean)call.argument("withThumbnails"), (boolean)call.argument("photoHighResolution"), (boolean)call.argument("orderByGivenName"), (boolean)call.argument("androidLocalizedLabels"), result);
+      } case "getContactsForEmail": {
+        this.getContactsForEmail(call.method, (String)call.argument("email"), (boolean)call.argument("withThumbnails"), (boolean)call.argument("photoHighResolution"), (boolean)call.argument("orderByGivenName"), (boolean)call.argument("androidLocalizedLabels"), result);
         break;
       } case "getAvatar": {
         final Contact contact = Contact.fromMap((HashMap)call.argument("contact"));
@@ -221,8 +221,8 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
     new GetContactsTask(callMethod, result, withThumbnails, photoHighResolution, orderByGivenName, localizedLabels).executeOnExecutor(executor, phone, true);
   }
 
-  private void getContactsByEmailOrName(String callMethod, String query, boolean withThumbnails, boolean photoHighResolution, boolean orderByGivenName, boolean localizedLabels, Result result) {
-    new GetContactsTask(callMethod, result, withThumbnails, photoHighResolution, orderByGivenName, localizedLabels).executeOnExecutor(executor, query, true);
+  private void getContactsForEmail(String callMethod, String email, boolean withThumbnails, boolean photoHighResolution, boolean orderByGivenName, boolean localizedLabels, Result result) {
+    new GetContactsTask(callMethod, result, withThumbnails, photoHighResolution, orderByGivenName, localizedLabels).executeOnExecutor(executor, email, true);
   }
 
   @Override
@@ -456,7 +456,7 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
         case "openDeviceContactPicker": contacts = getContactsFrom(getCursor(null, (String) params[0]), localizedLabels); break;
         case "getContacts": contacts = getContactsFrom(getCursor((String) params[0], null), localizedLabels); break;
         case "getContactsForPhone": contacts = getContactsFrom(getCursorForPhone(((String) params[0])), localizedLabels); break;
-        case "getContactsByEmailOrName": contacts = getContactsForEmailOrName(((String) params[0]), localizedLabels); break;
+        case "getContactsForEmail": contacts = getContactsFrom(getCursorForEmail(((String) params[0]))), localizedLabels); break;
         default: return null;
       }
 
@@ -551,53 +551,28 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
     return null;
   }
 
-  private ArrayList<Contact> getContactsForEmailOrName(String query, boolean localizedLabels) {
-    if (query.isEmpty())
+  private Cursor getCursorForEmail(String email) {
+    if (email.isEmpty())
       return null;
-    Uri uri = Uri.withAppendedPath(Email.CONTENT_FILTER_URI, Uri.encode(query));
-    Cursor cursor = contentResolver.query(uri, PROJECTION_EMAIL_NAME, null, null, null);
-    return getContactsForEmailOrNameFrom(cursor, localizedLabels);
-  }
 
-  /**
-   * Builds the list of contacts from the cursor for email or name only
-   * @param cursor email cursor filtered
-   * @return the list of contacts
-   */
-  private ArrayList<Contact> getContactsForEmailOrNameFrom(Cursor cursor, boolean localizedLabels) {
-    HashMap<String, Contact> map = new LinkedHashMap<>();
+    Uri uri = Uri.withAppendedPath(Email.CONTENT_URI, Uri.encode(email));
+    String[] projection = new String[]{BaseColumns._ID};
 
-    while (cursor != null && cursor.moveToNext()) {
-      try {
-        String contactId = cursor.getString(cursor.getColumnIndexOrThrow(ContactsContract.Data.CONTACT_ID));
-        if (!map.containsKey(contactId)) {
-          map.put(contactId, new Contact(contactId));
-        }
-        Contact contact = map.get(contactId);
+    ArrayList<String> contactIds = new ArrayList<>();
+    Cursor emailCursor = contentResolver.query(uri, projection, null, null, null);
+    while (emailCursor != null && emailCursor.moveToNext()){
+      contactIds.add(emailCursor.getString(emailCursor.getColumnIndex(BaseColumns._ID)));
+    }
+    if (emailCursor!= null)
+      emailCursor.close();
 
-        String mimeType = cursor.getString(cursor.getColumnIndexOrThrow(ContactsContract.Data.MIMETYPE));
-
-        // NAME
-        contact.displayName = cursor.getString(cursor.getColumnIndexOrThrow(ContactsContract.Contacts.DISPLAY_NAME));
-
-        //MAILS
-        if (mimeType.equals(CommonDataKinds.Email.CONTENT_ITEM_TYPE)) {
-          String email = cursor.getString(cursor.getColumnIndexOrThrow(Email.ADDRESS));
-          int type = cursor.getInt(cursor.getColumnIndexOrThrow(Email.TYPE));
-          if (!TextUtils.isEmpty(email)) {
-            String label = Item.getEmailLabel(resources, type, cursor, localizedLabels);
-            contact.emails.add(new Item(label, email, type));
-          }
-        }
-      } catch (java.lang.Exception e) {
-        e.printStackTrace();
-      }
+    if (!contactIds.isEmpty()) {
+      String contactIdsListString = contactIds.toString().replace("[", "(").replace("]", ")");
+      String contactSelection = ContactsContract.Data.CONTACT_ID + " IN " + contactIdsListString;
+      return contentResolver.query(ContactsContract.Data.CONTENT_URI, PROJECTION, contactSelection, null, null);
     }
 
-    if(cursor != null)
-      cursor.close();
-
-    return new ArrayList<>(map.values());
+    return null;
   }
 
   /**

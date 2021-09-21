@@ -548,25 +548,12 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
   private Cursor getCursorForEmail(String email) {
     if (email.isEmpty())
       return null;
+    String selection = "(" + ContactsContract.Data.MIMETYPE + " = ?" + ")";
+    ArrayList<String> selectionArgs = new ArrayList<>(Arrays.asList(Email.CONTENT_ITEM_TYPE));
+    selectionArgs.add(email);
+    selection += Email.ADDRESS + " Like ?";
 
-    Uri uri = Uri.withAppendedPath(Email.CONTENT_URI, Uri.encode(email));
-    String[] projection = new String[]{BaseColumns._ID};
-
-    ArrayList<String> contactIds = new ArrayList<>();
-    Cursor emailCursor = contentResolver.query(uri, projection, null, null, null);
-    while (emailCursor != null && emailCursor.moveToNext()){
-      contactIds.add(emailCursor.getString(emailCursor.getColumnIndex(BaseColumns._ID)));
-    }
-    if (emailCursor!= null)
-      emailCursor.close();
-
-    if (!contactIds.isEmpty()) {
-      String contactIdsListString = contactIds.toString().replace("[", "(").replace("]", ")");
-      String contactSelection = ContactsContract.Data.CONTACT_ID + " IN " + contactIdsListString;
-      return contentResolver.query(ContactsContract.Data.CONTENT_URI, PROJECTION, contactSelection, null, null);
-    }
-
-    return null;
+    return contentResolver.query(ContactsContract.Data.CONTENT_URI, PROJECTION, selection, selectionArgs.toArray(new String[selectionArgs.size()]), null);
   }
 
   /**

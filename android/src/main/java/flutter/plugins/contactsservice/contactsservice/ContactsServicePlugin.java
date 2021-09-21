@@ -456,7 +456,7 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
         case "openDeviceContactPicker": contacts = getContactsFrom(getCursor(null, (String) params[0]), localizedLabels); break;
         case "getContacts": contacts = getContactsFrom(getCursor((String) params[0], null), localizedLabels); break;
         case "getContactsForPhone": contacts = getContactsFrom(getCursorForPhone(((String) params[0])), localizedLabels); break;
-        case "getContactsForEmail": contacts = getContactsFrom(getCursorForEmail(((String) params[0]))), localizedLabels); break;
+        case "getContactsForEmail": contacts = getContactsFrom(getCursorForEmail(((String) params[0])), localizedLabels); break;
         default: return null;
       }
 

@@ -546,13 +546,13 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
   }
 
   private Cursor getCursorForEmail(String email) {
+    System.out.println("EMAIL: " + email);
     if (email.isEmpty())
       return null;
     String selection = "(" + ContactsContract.Data.MIMETYPE + " = ?" + ")";
     ArrayList<String> selectionArgs = new ArrayList<>(Arrays.asList(Email.CONTENT_ITEM_TYPE));
-    selectionArgs.add(Uri.encode(email));
-    selection += Email.ADDRESS + " Like ?";
-
+    selectionArgs.add(email);
+    selection += Email.ADDRESS + " LIKE ?";
     return contentResolver.query(ContactsContract.Data.CONTENT_URI, PROJECTION, selection, selectionArgs.toArray(new String[selectionArgs.size()]), null);
   }
 

@@ -1,6 +1,6 @@
 name: contacts_service
 description: A Flutter plugin to retrieve and manage contacts on Android and iOS devices.
-version: 0.6.2
+version: 0.6.3
 homepage: https://github.com/lukasgit/flutter_contacts
 maintainer: Lukas Dickie (@lukasgit)
 

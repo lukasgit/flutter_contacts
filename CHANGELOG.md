@@ -1,3 +1,7 @@
+## [0.6.3] - September 21, 2021
+
+* Android: added method getContactsByEmail (@fjbatresv)
+
 ## [0.6.2] - September 21, 2021
 
 * Refactored all usages of Iterable to use List (@Abion47)

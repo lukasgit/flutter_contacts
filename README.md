@@ -1,6 +1,6 @@
 
 # contacts_service  
-[![pub](https://img.shields.io/pub/v/contacts_service?label=version&style=flat-square)](https://pub.dev/packages/contacts_service)
+[![pub](https://img.shields.io/pub/v/contacts_service?label=version)](https://pub.dev/packages/contacts_service)
 [![likes](https://badges.bar/contacts_service/likes)](https://pub.dev/packages/contacts_service/score)
 [![popularity](https://badges.bar/contacts_service/popularity)](https://pub.dev/packages/contacts_service/score)
 [![pub points](https://badges.bar/contacts_service/pub%20points)](https://pub.dev/packages/contacts_service/score)

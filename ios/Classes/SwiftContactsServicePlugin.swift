@@ -13,10 +13,27 @@ public class SwiftContactsServicePlugin: NSObject, FlutterPlugin, CNContactViewC
     
     public static func register(with registrar: FlutterPluginRegistrar) {
         let channel = FlutterMethodChannel(name: "github.com/clovisnicolas/flutter_contacts", binaryMessenger: registrar.messenger())
-        let rootViewController = UIApplication.shared.delegate!.window!!.rootViewController!;
-        let instance = SwiftContactsServicePlugin(rootViewController)
-        registrar.addMethodCallDelegate(instance, channel: channel)
-        instance.preLoadContactView()
+        if let rootViewController = SwiftContactsServicePlugin.getRootViewController() {
+            print("Contact Service navite iOS: Find root view controller");
+            let instance = SwiftContactsServicePlugin(rootViewController)
+            registrar.addMethodCallDelegate(instance, channel: channel)
+            instance.preLoadContactView()
+        } else {
+            print("Contact Service navite iOS: Can NOT find root view controller");
+        }
+    }
+    
+    static func getRootViewController() -> UIViewController? {
+        var window: UIWindow?
+        if #available(iOS 13.0, *) {
+            let windowScenes: UIWindowScene? = UIApplication.shared.connectedScenes
+                .first(where: { $0 is UIWindowScene }) as? UIWindowScene;
+            window = windowScenes?.windows.first(where: { $0.isKeyWindow }) ?? windowScenes?.windows.first
+        } else {
+            window = UIApplication.shared.delegate?.window as? UIWindow;
+        }
+        let rootViewController = window?.rootViewController;
+        return rootViewController;
     }
 
     init(_ rootViewController: UIViewController) {

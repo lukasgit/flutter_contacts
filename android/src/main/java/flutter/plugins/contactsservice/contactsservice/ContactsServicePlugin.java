@@ -287,6 +287,7 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
           return true;
         }
         Uri contactUri = intent.getData();
+          if (intent != null){
         Cursor cursor = contentResolver.query(contactUri, null, null, null, null);
         if (cursor.moveToFirst()) {
           String id = contactUri.getLastPathSegment();
@@ -294,7 +295,7 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
         } else {
           Log.e(LOG_TAG, "onActivityResult - cursor.moveToFirst() returns false");
           finishWithResult(FORM_OPERATION_CANCELED);
-        }
+        }}else{return true;}
         cursor.close();
         return true;
       }

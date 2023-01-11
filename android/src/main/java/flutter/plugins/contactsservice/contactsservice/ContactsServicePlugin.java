@@ -177,6 +177,7 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
                   ContactsContract.Contacts.Data.MIMETYPE,
                   ContactsContract.RawContacts.ACCOUNT_TYPE,
                   ContactsContract.RawContacts.ACCOUNT_NAME,
+                  ContactsContract.RawContacts.SOURCE_ID,
                   StructuredName.DISPLAY_NAME,
                   StructuredName.GIVEN_NAME,
                   StructuredName.MIDDLE_NAME,
@@ -579,6 +580,7 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
       contact.displayName = cursor.getString(cursor.getColumnIndex(ContactsContract.Contacts.DISPLAY_NAME));
       contact.androidAccountType = cursor.getString(cursor.getColumnIndex(ContactsContract.RawContacts.ACCOUNT_TYPE));
       contact.androidAccountName = cursor.getString(cursor.getColumnIndex(ContactsContract.RawContacts.ACCOUNT_NAME));
+      contact.sourceId = cursor.getString(cursor.getColumnIndex(ContactsContract.RawContacts.SOURCE_ID));
 
       //NAMES
       if (mimeType.equals(CommonDataKinds.StructuredName.CONTENT_ITEM_TYPE)) {

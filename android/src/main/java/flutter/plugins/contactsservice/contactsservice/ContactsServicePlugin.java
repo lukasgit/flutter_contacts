@@ -177,6 +177,7 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
                   ContactsContract.Contacts.Data.MIMETYPE,
                   ContactsContract.RawContacts.ACCOUNT_TYPE,
                   ContactsContract.RawContacts.ACCOUNT_NAME,
+                  ContactsContract.RawContacts.SOURCE_ID,
                   StructuredName.DISPLAY_NAME,
                   StructuredName.GIVEN_NAME,
                   StructuredName.MIDDLE_NAME,
@@ -271,6 +272,10 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
 
     @Override
     public boolean onActivityResult(int requestCode, int resultCode, Intent intent) {
+      if (intent == null) {
+        return true;
+      }
+
       if(requestCode == REQUEST_OPEN_EXISTING_CONTACT || requestCode == REQUEST_OPEN_CONTACT_FORM) {
         try {
           Uri ur = intent.getData();
@@ -286,8 +291,8 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
           finishWithResult(FORM_OPERATION_CANCELED);
           return true;
         }
+
         Uri contactUri = intent.getData();
-          if (intent != null){
         Cursor cursor = contentResolver.query(contactUri, null, null, null, null);
         if (cursor.moveToFirst()) {
           String id = contactUri.getLastPathSegment();
@@ -295,7 +300,7 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
         } else {
           Log.e(LOG_TAG, "onActivityResult - cursor.moveToFirst() returns false");
           finishWithResult(FORM_OPERATION_CANCELED);
-        }}else{return true;}
+        }
         cursor.close();
         return true;
       }
@@ -575,6 +580,7 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
       contact.displayName = cursor.getString(cursor.getColumnIndex(ContactsContract.Contacts.DISPLAY_NAME));
       contact.androidAccountType = cursor.getString(cursor.getColumnIndex(ContactsContract.RawContacts.ACCOUNT_TYPE));
       contact.androidAccountName = cursor.getString(cursor.getColumnIndex(ContactsContract.RawContacts.ACCOUNT_NAME));
+      contact.sourceId = cursor.getString(cursor.getColumnIndex(ContactsContract.RawContacts.SOURCE_ID));
 
       //NAMES
       if (mimeType.equals(CommonDataKinds.StructuredName.CONTENT_ITEM_TYPE)) {

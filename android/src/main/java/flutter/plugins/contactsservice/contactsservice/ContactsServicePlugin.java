@@ -287,8 +287,9 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
           return true;
         }
         Uri contactUri = intent.getData();
+        Cursor cursor;
           if (intent != null){
-        Cursor cursor = contentResolver.query(contactUri, null, null, null, null);
+        cursor = contentResolver.query(contactUri, null, null, null, null);
         if (cursor.moveToFirst()) {
           String id = contactUri.getLastPathSegment();
           getContacts("openDeviceContactPicker", id, false, false, false, localizedLabels, this.result);

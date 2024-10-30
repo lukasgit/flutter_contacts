@@ -1,3 +1,8 @@
+## [0.6.4] - October 30, 2024
+
+* Add null safety to example app
+* Remove v1 Flutter Android embedding references
+
 ## [0.6.3] - September 21, 2021
 
 * Android: added method getContactsByEmail (@fjbatresv)

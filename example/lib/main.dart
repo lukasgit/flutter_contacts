@@ -35,7 +35,7 @@ class _HomePageState extends State<HomePage> {
     _askPermissions(null);
   }
 
-  Future<void> _askPermissions(String routeName) async {
+  Future<void> _askPermissions(String? routeName) async {
     PermissionStatus permissionStatus = await _getContactPermission();
     if (permissionStatus == PermissionStatus.granted) {
       if (routeName != null) {

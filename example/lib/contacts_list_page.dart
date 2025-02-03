@@ -1,8 +1,6 @@
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:contacts_service_example/main.dart';
-
 import 'package:contacts_service/contacts_service.dart';
+import 'package:contacts_service_example/main.dart';
+import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 class ContactListPage extends StatefulWidget {
@@ -11,7 +9,7 @@ class ContactListPage extends StatefulWidget {
 }
 
 class _ContactListPageState extends State<ContactListPage> {
-  List<Contact> _contacts;
+  List<Contact>? _contacts;
 
   @override
   void initState() {
@@ -39,8 +37,9 @@ class _ContactListPageState extends State<ContactListPage> {
   }
 
   void updateContact() async {
-    Contact ninja = _contacts
-        .firstWhere((contact) => contact.familyName.startsWith("Ninja"));
+    Contact ninja = _contacts?.firstWhere(
+            (contact) => contact.familyName?.startsWith("Ninja") ?? false) ??
+        Contact();
     ninja.avatar = null;
     await ContactsService.updateContact(ninja);
 
@@ -90,7 +89,7 @@ class _ContactListPageState extends State<ContactListPage> {
             ? ListView.builder(
                 itemCount: _contacts?.length ?? 0,
                 itemBuilder: (BuildContext context, int index) {
-                  Contact c = _contacts?.elementAt(index);
+                  Contact c = _contacts?.elementAt(index) ?? Contact();
                   return ListTile(
                     onTap: () {
                       Navigator.of(context).push(MaterialPageRoute(
@@ -100,8 +99,8 @@ class _ContactListPageState extends State<ContactListPage> {
                                     contactOnDeviceHasBeenUpdated,
                               )));
                     },
-                    leading: (c.avatar != null && c.avatar.length > 0)
-                        ? CircleAvatar(backgroundImage: MemoryImage(c.avatar))
+                    leading: (c.avatar != null && ((c.avatar?.length ?? 0) > 0))
+                        ? CircleAvatar(backgroundImage: MemoryImage(c.avatar!))
                         : CircleAvatar(child: Text(c.initials())),
                     title: Text(c.displayName ?? ""),
                   );
@@ -116,14 +115,14 @@ class _ContactListPageState extends State<ContactListPage> {
 
   void contactOnDeviceHasBeenUpdated(Contact contact) {
     this.setState(() {
-      var id = _contacts.indexWhere((c) => c.identifier == contact.identifier);
-      _contacts[id] = contact;
+      var id = _contacts?.indexWhere((c) => c.identifier == contact.identifier);
+      _contacts?[id ?? 0] = contact;
     });
   }
 }
 
 class ContactDetailsPage extends StatelessWidget {
-  ContactDetailsPage(this._contact, {this.onContactDeviceSave});
+  ContactDetailsPage(this._contact, {required this.onContactDeviceSave});
 
   final Contact _contact;
   final Function(Contact) onContactDeviceSave;
@@ -132,9 +131,7 @@ class ContactDetailsPage extends StatelessWidget {
     try {
       var contact = await ContactsService.openExistingContact(_contact,
           iOSLocalizedLabels: iOSLocalizedLabels);
-      if (onContactDeviceSave != null) {
-        onContactDeviceSave(contact);
-      }
+      onContactDeviceSave(contact);
       Navigator.of(context).pop();
     } on FormOperationException catch (e) {
       switch (e.errorCode) {
@@ -202,7 +199,8 @@ class ContactDetailsPage extends StatelessWidget {
             ListTile(
               title: Text("Birthday"),
               trailing: Text(_contact.birthday != null
-                  ? DateFormat('dd-MM-yyyy').format(_contact.birthday)
+                  ? DateFormat('dd-MM-yyyy')
+                      .format(_contact.birthday ?? DateTime.now())
                   : ""),
             ),
             ListTile(
@@ -219,9 +217,9 @@ class ContactDetailsPage extends StatelessWidget {
                   ? _contact.androidAccountType.toString()
                   : ""),
             ),
-            AddressesTile(_contact.postalAddresses),
-            ItemsTile("Phones", _contact.phones),
-            ItemsTile("Emails", _contact.emails)
+            AddressesTile(_contact.postalAddresses ?? []),
+            ItemsTile("Phones", _contact.phones ?? []),
+            ItemsTile("Emails", _contact.emails ?? [])
           ],
         ),
       ),
@@ -323,7 +321,7 @@ class _AddContactPageState extends State<AddContactPage> {
         actions: <Widget>[
           TextButton(
             onPressed: () {
-              _formKey.currentState.save();
+              _formKey.currentState?.save();
               contact.postalAddresses = [address];
               ContactsService.addContact(contact);
               Navigator.of(context).pop();
@@ -407,7 +405,7 @@ class _AddContactPageState extends State<AddContactPage> {
 }
 
 class UpdateContactsPage extends StatefulWidget {
-  UpdateContactsPage({@required this.contact});
+  UpdateContactsPage({required this.contact});
 
   final Contact contact;
 
@@ -416,7 +414,7 @@ class UpdateContactsPage extends StatefulWidget {
 }
 
 class _UpdateContactsPageState extends State<UpdateContactsPage> {
-  Contact contact;
+  Contact? contact;
   PostalAddress address = PostalAddress(label: "Home");
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
@@ -438,9 +436,9 @@ class _UpdateContactsPageState extends State<UpdateContactsPage> {
               color: Colors.white,
             ),
             onPressed: () async {
-              _formKey.currentState.save();
-              contact.postalAddresses = [address];
-              await ContactsService.updateContact(contact);
+              _formKey.currentState?.save();
+              contact?.postalAddresses = [address];
+              await ContactsService.updateContact(contact ?? Contact());
               Navigator.of(context).pushReplacement(
                   MaterialPageRoute(builder: (context) => ContactListPage()));
             },
@@ -454,51 +452,51 @@ class _UpdateContactsPageState extends State<UpdateContactsPage> {
           child: ListView(
             children: <Widget>[
               TextFormField(
-                initialValue: contact.givenName ?? "",
+                initialValue: contact?.givenName ?? "",
                 decoration: const InputDecoration(labelText: 'First name'),
-                onSaved: (v) => contact.givenName = v,
+                onSaved: (v) => contact?.givenName = v,
               ),
               TextFormField(
-                initialValue: contact.middleName ?? "",
+                initialValue: contact?.middleName ?? "",
                 decoration: const InputDecoration(labelText: 'Middle name'),
-                onSaved: (v) => contact.middleName = v,
+                onSaved: (v) => contact?.middleName = v,
               ),
               TextFormField(
-                initialValue: contact.familyName ?? "",
+                initialValue: contact?.familyName ?? "",
                 decoration: const InputDecoration(labelText: 'Last name'),
-                onSaved: (v) => contact.familyName = v,
+                onSaved: (v) => contact?.familyName = v,
               ),
               TextFormField(
-                initialValue: contact.prefix ?? "",
+                initialValue: contact?.prefix ?? "",
                 decoration: const InputDecoration(labelText: 'Prefix'),
-                onSaved: (v) => contact.prefix = v,
+                onSaved: (v) => contact?.prefix = v,
               ),
               TextFormField(
-                initialValue: contact.suffix ?? "",
+                initialValue: contact?.suffix ?? "",
                 decoration: const InputDecoration(labelText: 'Suffix'),
-                onSaved: (v) => contact.suffix = v,
+                onSaved: (v) => contact?.suffix = v,
               ),
               TextFormField(
                 decoration: const InputDecoration(labelText: 'Phone'),
                 onSaved: (v) =>
-                    contact.phones = [Item(label: "mobile", value: v)],
+                    contact?.phones = [Item(label: "mobile", value: v)],
                 keyboardType: TextInputType.phone,
               ),
               TextFormField(
                 decoration: const InputDecoration(labelText: 'E-mail'),
                 onSaved: (v) =>
-                    contact.emails = [Item(label: "work", value: v)],
+                    contact?.emails = [Item(label: "work", value: v)],
                 keyboardType: TextInputType.emailAddress,
               ),
               TextFormField(
-                initialValue: contact.company ?? "",
+                initialValue: contact?.company ?? "",
                 decoration: const InputDecoration(labelText: 'Company'),
-                onSaved: (v) => contact.company = v,
+                onSaved: (v) => contact?.company = v,
               ),
               TextFormField(
-                initialValue: contact.jobTitle ?? "",
+                initialValue: contact?.jobTitle ?? "",
                 decoration: const InputDecoration(labelText: 'Job'),
-                onSaved: (v) => contact.jobTitle = v,
+                onSaved: (v) => contact?.jobTitle = v,
               ),
               TextFormField(
                 initialValue: address.street ?? "",

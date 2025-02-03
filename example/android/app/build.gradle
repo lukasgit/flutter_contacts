@@ -15,8 +15,10 @@ apply plugin: 'com.android.application'
 apply from: "$flutterRoot/packages/flutter_tools/gradle/flutter.gradle"
 
 android {
-    compileSdkVersion 30
 
+    namespace "flutter.plugins.contactsservice.contactsserviceexample"
+    compileSdk flutter.compileSdkVersion
+    ndkVersion flutter.ndkVersion
     lintOptions {
         disable 'InvalidPackage'
     }
@@ -26,6 +28,7 @@ android {
         applicationId "flutter.plugins.contactsservice.contactsserviceexample"
         minSdkVersion 16
         targetSdkVersion 30
+        compileSdkVersion 35
         versionCode 1
         versionName "1.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"

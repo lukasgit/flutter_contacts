@@ -709,8 +709,8 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
     ArrayList<ContentProviderOperation> ops = new ArrayList<>();
 
     ContentProviderOperation.Builder op = ContentProviderOperation.newInsert(ContactsContract.RawContacts.CONTENT_URI)
-            .withValue(ContactsContract.RawContacts.ACCOUNT_TYPE, null)
-            .withValue(ContactsContract.RawContacts.ACCOUNT_NAME, null);
+            .withValue(ContactsContract.RawContacts.ACCOUNT_TYPE, contact.androidAccountType)
+            .withValue(ContactsContract.RawContacts.ACCOUNT_NAME, contact.androidAccountName);
     ops.add(op.build());
 
     op = ContentProviderOperation.newInsert(ContactsContract.Data.CONTENT_URI)

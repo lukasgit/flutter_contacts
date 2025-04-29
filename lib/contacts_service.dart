@@ -196,6 +196,7 @@ class Contact {
     this.androidAccountType,
     this.androidAccountTypeRaw,
     this.androidAccountName,
+    this.sourceId,
   });
 
   String? identifier,
@@ -207,7 +208,7 @@ class Contact {
       familyName,
       company,
       jobTitle;
-  String? androidAccountTypeRaw, androidAccountName;
+  String? androidAccountTypeRaw, androidAccountName, sourceId;
   AndroidAccountType? androidAccountType;
   List<Item>? emails = [];
   List<Item>? phones = [];
@@ -234,6 +235,7 @@ class Contact {
     androidAccountTypeRaw = m["androidAccountType"];
     androidAccountType = accountTypeFromString(androidAccountTypeRaw);
     androidAccountName = m["androidAccountName"];
+    sourceId = m["sourceId"];
     emails = (m["emails"] as List?)?.map((m) => Item.fromMap(m)).toList();
     phones = (m["phones"] as List?)?.map((m) => Item.fromMap(m)).toList();
     postalAddresses = (m["postalAddresses"] as List?)
@@ -300,6 +302,7 @@ class Contact {
         jobTitle: this.jobTitle ?? other.jobTitle,
         androidAccountType: this.androidAccountType ?? other.androidAccountType,
         androidAccountName: this.androidAccountName ?? other.androidAccountName,
+        sourceId: this.sourceId ?? other.sourceId,
         emails: this.emails == null
             ? other.emails
             : this
@@ -338,6 +341,7 @@ class Contact {
         this.jobTitle == other.jobTitle &&
         this.androidAccountType == other.androidAccountType &&
         this.androidAccountName == other.androidAccountName &&
+        this.sourceId == other.sourceId &&
         this.middleName == other.middleName &&
         this.prefix == other.prefix &&
         this.suffix == other.suffix &&
@@ -359,6 +363,7 @@ class Contact {
       this.jobTitle,
       this.androidAccountType,
       this.androidAccountName,
+      this.sourceId,
       this.middleName,
       this.prefix,
       this.suffix,

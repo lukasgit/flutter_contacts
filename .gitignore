@@ -76,3 +76,5 @@ unlinked_spec.ds
 
 # code coverage
 coverage
+example/ios/Flutter/ephemeral/flutter_lldbinit
+example/ios/Flutter/ephemeral/flutter_lldb_helper.py

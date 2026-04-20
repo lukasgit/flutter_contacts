@@ -41,7 +41,6 @@ import io.flutter.plugin.common.MethodChannel;
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler;
 import io.flutter.plugin.common.MethodChannel.Result;
 import io.flutter.plugin.common.PluginRegistry;
-import io.flutter.plugin.common.PluginRegistry.Registrar;
 
 import static android.app.Activity.RESULT_CANCELED;
 import static android.provider.ContactsContract.CommonDataKinds;
@@ -65,16 +64,6 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
 
   private final ExecutorService executor =
           new ThreadPoolExecutor(0, 10, 60, TimeUnit.SECONDS, new ArrayBlockingQueue<Runnable>(1000));
-
-  private void initDelegateWithRegister(Registrar registrar) {
-    this.delegate = new ContactServiceDelegateOld(registrar);
-  }
-
-  public static void registerWith(Registrar registrar) {
-    ContactsServicePlugin instance = new ContactsServicePlugin();
-    instance.initInstance(registrar.messenger(), registrar.context());
-    instance.initDelegateWithRegister(registrar);
-  }
 
   private void initInstance(BinaryMessenger messenger, Context context) {
     methodChannel = new MethodChannel(messenger, "github.com/clovisnicolas/flutter_contacts");
@@ -282,21 +271,24 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
       }
 
       if (requestCode == REQUEST_OPEN_CONTACT_PICKER) {
-        if (resultCode == RESULT_CANCELED) {
+        if (resultCode == RESULT_CANCELED || intent == null) {
           finishWithResult(FORM_OPERATION_CANCELED);
           return true;
         }
         Uri contactUri = intent.getData();
-          if (intent != null){
         Cursor cursor = contentResolver.query(contactUri, null, null, null, null);
-        if (cursor.moveToFirst()) {
-          String id = contactUri.getLastPathSegment();
-          getContacts("openDeviceContactPicker", id, false, false, false, localizedLabels, this.result);
+        if (cursor != null) {
+          if (cursor.moveToFirst()) {
+            String id = contactUri.getLastPathSegment();
+            getContacts("openDeviceContactPicker", id, false, false, false, localizedLabels, this.result);
+          } else {
+            Log.e(LOG_TAG, "onActivityResult - cursor.moveToFirst() returns false");
+            finishWithResult(FORM_OPERATION_CANCELED);
+          }
+          cursor.close();
         } else {
-          Log.e(LOG_TAG, "onActivityResult - cursor.moveToFirst() returns false");
           finishWithResult(FORM_OPERATION_CANCELED);
-        }}else{return true;}
-        cursor.close();
+        }
         return true;
       }
 
@@ -374,25 +366,6 @@ public class ContactsServicePlugin implements MethodCallHandler, FlutterPlugin, 
         result.success(FORM_COULD_NOT_BE_OPEN);
       }
   }
-  
-  private class ContactServiceDelegateOld extends BaseContactsServiceDelegate {
-    private final PluginRegistry.Registrar registrar;
-
-    ContactServiceDelegateOld(PluginRegistry.Registrar registrar) {
-      this.registrar = registrar;
-      registrar.addActivityResultListener(this);
-    }
-
-    @Override
-    void startIntent(Intent intent, int request) {
-      if (registrar.activity() != null) {
-        registrar.activity().startActivityForResult(intent, request);
-      } else {
-        registrar.context().startActivity(intent);
-      }
-    }
-  }
-
   private class ContactServiceDelegate extends BaseContactsServiceDelegate {
     private final Context context;
     private ActivityPluginBinding activityPluginBinding;

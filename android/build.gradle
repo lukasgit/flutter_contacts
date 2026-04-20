@@ -23,11 +23,11 @@ apply plugin: 'com.android.library'
 
 android {
     namespace 'flutter.plugins.contactsservice.contactsservice'
-    compileSdkVersion 30
+    compileSdkVersion 34
 
     defaultConfig {
         minSdkVersion 16
-        targetSdkVersion 30
+        targetSdkVersion 34
         versionCode 1
         versionName "1.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
